@@ -60,7 +60,7 @@ h1{font-size:clamp(3.2rem,8vw,7.2rem);line-height:.92;letter-spacing:-4px;margin
 <footer>© <span id="year"></span> Admit Strategy. Built by Rayan (Ryan) Zayd Quereshi.</footer>
 
 <script>
-const CONFIG={ownerEmail:"ryanwbdl@gmail.com",googleScriptUrl:"PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE",timeZoneLabel:"Doha time",startTime:"08:00",endTime:"19:30",unavailableStart:"15:00",unavailableEnd:"18:30",durationMinutes:30};
+const CONFIG={ownerEmail:"ryanwbdl@gmail.com",googleScriptUrl:"https://script.google.com/macros/s/AKfycbxClY0JwqglQpckmQ0txhXAwBdlDhPnuDxN9FBOqP-0frxZm5hxni_9pMYrDV7F5gVD/exec",timeZoneLabel:"Doha time",startTime:"08:00",endTime:"19:30",unavailableStart:"15:00",unavailableEnd:"18:30",durationMinutes:30};
 let selectedTime="",bookedTimes=[];
 function isBackendConnected(){return CONFIG.googleScriptUrl&&CONFIG.googleScriptUrl.startsWith("https://script.google.com/macros/s/")&&!CONFIG.googleScriptUrl.includes("PASTE_YOUR")}
 function minutes(t){let [h,m]=t.split(":").map(Number);return h*60+m}
