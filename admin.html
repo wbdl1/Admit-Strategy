@@ -31,7 +31,7 @@ button{border:0;border-radius:999px;padding:13px 16px;margin-top:14px;font-weigh
     <label>Google Apps Script Web App URL</label>
     <input id="scriptUrl" value="https://script.google.com/macros/s/AKfycbxA7WKEAj1XGPCgwqTveIylnH_L4rEmMN7zYNTdTe8UwXWFTp3ZmjzydIlp5VFm_aT8sQ/exec">
     <label>Admin Key</label>
-    <input id="adminKey" value="CHANGE_THIS_TO_A_PRIVATE_PASSWORD">
+    <input id="adminKey" value="Rayan@11">
     <button onclick="loadStudents()">Load students</button>
     <div class="msg" id="loadMsg"></div>
   </div>
@@ -79,13 +79,13 @@ button{border:0;border-radius:999px;padding:13px 16px;margin-top:14px;font-weigh
   </div>
 
   <div class="card hidden" id="meetingPanel">
-    <h2>Add next meeting manually</h2>
+    <h2>Add next one-hour meeting manually</h2>
     <div class="grid">
       <div><label>Date</label><input id="meetingDate" type="date"></div>
       <div><label>Time, 24-hour format</label><input id="meetingTime" placeholder="14:30"></div>
     </div>
     <label>Notes</label>
-    <input id="meetingNotes" placeholder="Manual next meeting added by admin.">
+    <input id="meetingNotes" placeholder="Manual one-hour meeting added by admin.">
     <button onclick="addMeeting()">Add meeting to portal</button>
   </div>
 
