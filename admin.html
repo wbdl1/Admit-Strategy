@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admit Strategy Admin</title>
+<style>
+:root{--bg:#050816;--card:rgba(255,255,255,.085);--line:rgba(255,255,255,.14);--text:#f7fbff;--muted:#aab7cf;--accent:#7c5cff;--accent2:#20e3b2}
+*{box-sizing:border-box;margin:0;padding:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+body{min-height:100vh;background:radial-gradient(circle at 20% 10%,rgba(124,92,255,.35),transparent 28%),radial-gradient(circle at 80% 20%,rgba(32,227,178,.22),transparent 28%),#050816;color:var(--text);padding:24px}
+.wrap{max-width:1000px;margin:0 auto}.top{margin-bottom:20px}.top h1{font-size:clamp(2rem,5vw,4rem);letter-spacing:-2px}.top p{color:var(--muted);line-height:1.7;margin-top:8px}
+.card{border:1px solid var(--line);background:var(--card);backdrop-filter:blur(16px);border-radius:24px;padding:22px;margin-bottom:16px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}label{display:block;margin:12px 0 7px;font-weight:800}input,select,textarea{width:100%;padding:13px;border-radius:14px;background:rgba(5,8,22,.72);border:1px solid var(--line);color:white;font-size:1rem}textarea{min-height:100px;resize:vertical}
+button{border:0;border-radius:999px;padding:13px 16px;margin-top:14px;font-weight:900;cursor:pointer;background:linear-gradient(135deg,#fff,#dff7ff);color:#050816}
+.msg{margin-top:12px;color:#adfff0}.warn{color:#fff4b8;line-height:1.6}.hidden{display:none}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>Admit Strategy Admin</h1>
+    <p>Update student portals without manually pasting tokens into multiple tabs.</p>
+  </div>
+
+  <div class="card warn">
+    Do not send this page to clients. Change the admin key in Apps Script and in this page before using it seriously.
+  </div>
+
+  <div class="card">
+    <label>Google Apps Script Web App URL</label>
+    <input id="scriptUrl" value="PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE">
+    <label>Admin Key</label>
+    <input id="adminKey" value="CHANGE_THIS_TO_A_PRIVATE_PASSWORD">
+    <button onclick="loadStudents()">Load students</button>
+    <div class="msg" id="loadMsg"></div>
+  </div>
+
+  <div class="card hidden" id="mainPanel">
+    <label>Choose student</label>
+    <select id="studentSelect"></select>
+
+    <div class="grid">
+      <div>
+        <h2 style="margin-top:16px">Update profile</h2>
+        <label>Summary</label>
+        <textarea id="summary" placeholder="Current student summary..."></textarea>
+        <label>Study System score %</label>
+        <input id="studySystem" type="number" min="0" max="100" placeholder="Example: 35">
+        <label>Consistency score %</label>
+        <input id="consistency" type="number" min="0" max="100" placeholder="Example: 25">
+        <label>Direction score %</label>
+        <input id="direction" type="number" min="0" max="100" placeholder="Example: 40">
+        <label>Parent Update</label>
+        <textarea id="parentUpdate" placeholder="Parent-friendly update..."></textarea>
+        <button onclick="updateStudent()">Save profile update</button>
+      </div>
+
+      <div>
+        <h2 style="margin-top:16px">Add portal item</h2>
+        <label>Item type</label>
+        <select id="itemType">
+          <option value="task">Task</option>
+          <option value="weak">Weak Point</option>
+          <option value="session">Session Note</option>
+          <option value="project">Project</option>
+        </select>
+        <label>Title</label>
+        <input id="itemTitle" placeholder="Example: Redo science formative">
+        <label>Detail</label>
+        <textarea id="itemDetail" placeholder="Explain the update."></textarea>
+        <label>Status</label>
+        <input id="itemStatus" placeholder="Not started / In progress / Completed / Needs practice">
+        <label>Due date, only for tasks</label>
+        <input id="dueDate" type="date">
+        <button onclick="addItem()">Add item</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="meetingPanel">
+    <h2>Add next meeting manually</h2>
+    <div class="grid">
+      <div><label>Date</label><input id="meetingDate" type="date"></div>
+      <div><label>Time, 24-hour format</label><input id="meetingTime" placeholder="14:30"></div>
+    </div>
+    <label>Notes</label>
+    <input id="meetingNotes" placeholder="Manual next meeting added by admin.">
+    <button onclick="addMeeting()">Add meeting to portal</button>
+  </div>
+
+  <div class="msg" id="resultMsg"></div>
+</div>
+
+<iframe name="adminFrame" style="display:none"></iframe>
+<form id="adminForm" method="POST" target="adminFrame" style="display:none"></form>
+
+<script>
+function jsonp(url,callbackName="callback",timeout=10000){return new Promise((resolve,reject)=>{const cb="jsonp_"+Date.now()+"_"+Math.random().toString(16).slice(2);const s=document.createElement("script");const timer=setTimeout(()=>{cleanup();reject(new Error("Request timed out."));},timeout);function cleanup(){delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);clearTimeout(timer)}window[cb]=data=>{cleanup();resolve(data)};s.onerror=()=>{cleanup();reject(new Error("Request failed."))};s.src=url+(url.includes("?")?"&":"?")+callbackName+"="+cb;document.body.appendChild(s);})}
+function scriptUrl(){return document.getElementById("scriptUrl").value.trim()}
+function adminKey(){return document.getElementById("adminKey").value.trim()}
+function token(){return document.getElementById("studentSelect").value}
+function submitPost(fields){const f=document.getElementById("adminForm");f.action=scriptUrl();f.innerHTML="";Object.entries(fields).forEach(([k,v])=>{const input=document.createElement("input");input.name=k;input.value=v||"";f.appendChild(input)});f.submit();document.getElementById("resultMsg").textContent="Submitted. Refresh the portal in a few seconds."}
+async function loadStudents(){const msg=document.getElementById("loadMsg");msg.textContent="Loading...";try{const data=await jsonp(`${scriptUrl()}?action=students&adminKey=${encodeURIComponent(adminKey())}`);if(!data.ok)throw new Error(data.error||"Could not load.");const sel=document.getElementById("studentSelect");sel.innerHTML="";data.students.forEach(s=>{const opt=document.createElement("option");opt.value=s.portalToken;opt.textContent=`${s.name||"Unnamed"} — ${s.email||""} ${s.grade?"— "+s.grade:""}`;sel.appendChild(opt)});document.getElementById("mainPanel").classList.remove("hidden");document.getElementById("meetingPanel").classList.remove("hidden");msg.textContent=`Loaded ${data.students.length} students.`}catch(e){msg.textContent=e.message}}
+function updateStudent(){submitPost({action:"updatestudent",adminKey:adminKey(),portalToken:token(),summary:document.getElementById("summary").value,studySystem:document.getElementById("studySystem").value,consistency:document.getElementById("consistency").value,direction:document.getElementById("direction").value,parentUpdate:document.getElementById("parentUpdate").value})}
+function addItem(){submitPost({action:"additem",adminKey:adminKey(),portalToken:token(),type:document.getElementById("itemType").value,title:document.getElementById("itemTitle").value,detail:document.getElementById("itemDetail").value,status:document.getElementById("itemStatus").value,dueDate:document.getElementById("dueDate").value})}
+function addMeeting(){submitPost({action:"addmanualbooking",adminKey:adminKey(),portalToken:token(),date:document.getElementById("meetingDate").value,time:document.getElementById("meetingTime").value,notes:document.getElementById("meetingNotes").value})}
+</script>
+</body>
+</html>
