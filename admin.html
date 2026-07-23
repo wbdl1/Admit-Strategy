@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="referrer" content="no-referrer" />
 <title>Admit Strategy Admin</title>
 <style>
 :root{--bg:#050816;--card:rgba(255,255,255,.085);--line:rgba(255,255,255,.14);--text:#f7fbff;--muted:#aab7cf;--accent:#7c5cff;--accent2:#20e3b2}
@@ -31,7 +32,7 @@ button{border:0;border-radius:999px;padding:13px 16px;margin-top:14px;font-weigh
     <label>Google Apps Script Web App URL</label>
     <input id="scriptUrl" value="https://script.google.com/macros/s/AKfycbxA7WKEAj1XGPCgwqTveIylnH_L4rEmMN7zYNTdTe8UwXWFTp3ZmjzydIlp5VFm_aT8sQ/exec">
     <label>Admin Key</label>
-    <input id="adminKey" value="Rayan@11">
+    <input id="adminKey" type="password" autocomplete="off" placeholder="Enter your rotated admin key">
     <button onclick="loadStudents()">Load students</button>
     <div class="msg" id="loadMsg"></div>
   </div>
