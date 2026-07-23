@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="referrer" content="no-referrer" />
 <title>Admit Strategy Portal</title>
 <style>
 :root{
@@ -46,6 +47,8 @@ body{
 .error h1{font-size:1.4rem;margin-bottom:8px}
 .error code{background:rgba(255,255,255,.11);padding:3px 6px;border-radius:7px;color:#fff}
 .help{margin-top:14px;color:var(--warn)}
+.meeting-help{margin-top:14px;padding:13px 14px;border:1px solid rgba(32,227,178,.22);background:rgba(32,227,178,.09);border-radius:16px;color:#dffff6;line-height:1.55}
+.meeting-help a{color:#adfff0;font-weight:850}
 .footer{margin-top:18px;text-align:center;color:var(--muted);font-size:.9rem}
 @media(max-width:850px){.grid,.columns{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
 </style>
@@ -150,6 +153,10 @@ function render(d){
       <div class="card">
         <h2>Next Meeting</h2>
         <p class="muted">${safe(d.nextMeeting || "No upcoming meeting found yet.")}</p>
+        <div class="meeting-help">
+          <strong>Need to delay or reschedule?</strong><br>
+          Email <a href="mailto:ryanwbdl@gmail.com?subject=Delay%20Admit%20Strategy%20meeting">ryanwbdl@gmail.com</a>. Changing one meeting never cancels your Admit Strategy course, portal, tasks, notes, or progress.
+        </div>
       </div>
 
       <div class="card">
