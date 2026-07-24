@@ -29,14 +29,22 @@
     .portal-preview{padding:28px}.portal-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}.portal-box{background:rgba(5,8,22,.45);border:1px solid var(--line);border-radius:22px;padding:18px}.portal-box strong{font-size:1.7rem;display:block}.portal-box span{color:var(--muted);line-height:1.55;font-size:.94rem}.bar{height:10px;background:rgba(255,255,255,.12);border-radius:999px;margin-top:12px;overflow:hidden}.bar div{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:999px}
     .booking-card{width:min(920px,100%);margin:0 auto;padding:28px}.booking-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}label{display:block;margin:15px 0 7px;font-weight:800;color:#edf4ff}input,textarea,select{width:100%;border:1px solid rgba(255,255,255,.15);background:rgba(5,8,22,.68);color:white;padding:14px;border-radius:16px;outline:none;font-size:1rem}input:focus,textarea:focus,select:focus{border-color:rgba(32,227,178,.55);box-shadow:0 0 0 3px rgba(32,227,178,.10)}textarea{min-height:100px;resize:vertical}.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:10px}.slot{border:1px solid var(--line);color:white;background:rgba(255,255,255,.075);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer;font-weight:850;transition:.2s ease;font-size:.9rem}.slot:hover{transform:translateY(-2px);background:rgba(255,255,255,.13)}.slot.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;border-color:transparent}.slot.booked{opacity:.35;cursor:not-allowed;text-decoration:line-through}.slot.unavailable{opacity:.2;cursor:not-allowed;text-decoration:line-through}.status{margin-top:14px;color:var(--muted);line-height:1.6;font-size:.94rem}.result{display:none;margin-top:18px;padding:18px;border:1px solid rgba(32,227,178,.2);background:rgba(32,227,178,.08);border-radius:20px;line-height:1.65}.result strong{color:var(--success)}.backend-box{color:var(--warm);background:rgba(255,244,184,.08);border:1px solid rgba(255,244,184,.18);padding:14px;border-radius:17px;margin-top:14px;line-height:1.58;font-size:.93rem}.backend-box.connected{color:#dffff6;background:rgba(32,227,178,.08);border-color:rgba(32,227,178,.2)}.opt{display:flex;gap:10px;align-items:flex-start;margin-top:14px;color:#cbd6ec;line-height:1.5}.opt input{width:auto;margin-top:4px}
     .testimonial{text-align:center;max-width:720px;margin:0 auto;padding:32px;color:#eaf1ff;line-height:1.75;font-size:1.1rem}.faq-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.faq-card{padding:22px}.faq-card h3{font-size:1.12rem;margin-bottom:9px}.faq-card p{color:#cbd6ec;line-height:1.65}.contact-card{border:1px solid var(--line);background:rgba(255,255,255,.08);border-radius:28px;padding:28px;text-align:center}.contact-card a{color:#adfff0;text-decoration:none;font-weight:850}footer{padding:36px 24px 60px;color:var(--muted);text-align:center}.tiny{color:var(--muted);font-size:.86rem;line-height:1.55;margin-top:12px}
-    .chat-launch{position:fixed;right:22px;bottom:22px;z-index:80;border:none;border-radius:999px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;font-weight:900;padding:15px 18px;box-shadow:0 18px 55px rgba(0,0,0,.4);cursor:pointer}.chat{position:fixed;right:22px;bottom:82px;width:min(380px,calc(100% - 30px));height:560px;max-height:calc(100vh - 110px);z-index:90;display:none;flex-direction:column;border:1px solid var(--line);background:rgba(5,8,22,.92);backdrop-filter:blur(20px);border-radius:26px;box-shadow:0 25px 80px rgba(0,0,0,.5);overflow:hidden}.chat-head{display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid var(--line);font-weight:900}.chat-head button{border:none;background:rgba(255,255,255,.1);color:white;border-radius:999px;width:30px;height:30px;cursor:pointer}.chat-body{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px}.msg{max-width:88%;padding:11px 13px;border-radius:17px;line-height:1.45;font-size:.95rem}.bot{background:rgba(255,255,255,.1);align-self:flex-start}.user{background:linear-gradient(135deg,rgba(124,92,255,.8),rgba(32,227,178,.55));align-self:flex-end}.chat-input{display:flex;gap:8px;padding:14px;border-top:1px solid var(--line)}.chat-input input{border-radius:999px;padding:12px}.chat-input button{border:none;border-radius:999px;background:white;color:#050816;font-weight:900;padding:0 14px;cursor:pointer}.lead-done{padding:10px;border-radius:14px;background:rgba(32,227,178,.1);border:1px solid rgba(32,227,178,.18);color:#dffff6;line-height:1.5}
+    .chat-launch{position:fixed;right:22px;bottom:22px;z-index:80;border:none;border-radius:999px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;font-weight:900;padding:15px 18px;box-shadow:0 18px 55px rgba(0,0,0,.4);cursor:pointer}
+    .chat{position:fixed;right:22px;bottom:82px;width:min(430px,calc(100% - 30px));height:620px;max-height:calc(100vh - 110px);z-index:90;display:none;flex-direction:column;border:1px solid var(--line);background:rgba(5,8,22,.96);backdrop-filter:blur(20px);border-radius:26px;box-shadow:0 25px 80px rgba(0,0,0,.5);overflow:hidden}
+    .chat-head{display:flex;justify-content:space-between;align-items:center;padding:15px 16px;border-bottom:1px solid var(--line);font-weight:900}.chat-head-title{display:grid;gap:3px}.chat-progress{color:var(--muted);font-size:.78rem;font-weight:750}.chat-head button{border:none;background:rgba(255,255,255,.1);color:white;border-radius:999px;width:30px;height:30px;cursor:pointer}
+    .chat-body{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px}.msg{max-width:92%;padding:11px 13px;border-radius:17px;line-height:1.45;font-size:.95rem}.bot{background:rgba(255,255,255,.1);align-self:flex-start}.user{background:linear-gradient(135deg,rgba(124,92,255,.8),rgba(32,227,178,.55));align-self:flex-end}
+    .chat-options{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:2px 0 8px}.chat-choice{border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.075);color:white;padding:11px 10px;text-align:left;font-weight:800;line-height:1.25;cursor:pointer;transition:.18s ease}.chat-choice:hover,.chat-choice:focus-visible{transform:translateY(-2px);background:rgba(255,255,255,.14);border-color:rgba(32,227,178,.55);outline:none}
+    .chat-result{padding:14px;border:1px solid rgba(32,227,178,.24);background:rgba(32,227,178,.09);border-radius:18px;color:#e7fff8;line-height:1.55}.chat-result strong{display:block;color:var(--success);margin-bottom:5px}.chat-note{color:#cbd6ec;font-size:.88rem;line-height:1.5}
+    .chat-capture{display:grid;gap:9px;padding:13px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.055)}.chat-capture label{margin:0;color:#edf4ff;font-size:.86rem}.chat-capture input[type="text"],.chat-capture input[type="email"]{padding:11px 12px;border-radius:12px;font-size:.93rem}.chat-consent{display:flex!important;gap:8px;align-items:flex-start;color:#cbd6ec!important;line-height:1.38}.chat-consent input{width:auto;margin-top:3px}.chat-submit{border:0;border-radius:999px;background:linear-gradient(135deg,#fff,#dff7ff);color:#050816;font-weight:900;padding:12px 14px;cursor:pointer}.chat-submit:disabled{opacity:.6;cursor:wait}.chat-error{min-height:1.2em;color:var(--danger);font-size:.84rem}
+    .chat-actions{display:grid;gap:8px}.chat-cta,.chat-restart{border:0;border-radius:999px;padding:12px 14px;font-weight:900;cursor:pointer}.chat-cta{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white}.chat-restart{background:rgba(255,255,255,.09);color:white;border:1px solid var(--line)}
     .hidden-frame{display:none}
     @media(max-width:900px){nav .links{display:none}.hero-grid,.split,.booking-grid,.founder-card,.pricing{grid-template-columns:1fr}.cards,.faq-grid,.portal-grid{grid-template-columns:1fr}.slots{grid-template-columns:repeat(2,1fr)}h1{letter-spacing:-2px}section{padding:80px 18px}.timeline:before,.timeline-progress{left:18px}.step,.step.left,.step.right{width:100%;left:0;text-align:left;padding-left:52px;padding-right:0}.left .dot,.right .dot{left:8px;right:auto}.founder-badge{min-height:190px}.chat{right:15px;bottom:78px}}
+    @media(max-width:520px){.chat{left:10px;right:10px;bottom:76px;width:auto;height:min(650px,calc(100vh - 96px));max-height:none}.chat-launch{right:14px;bottom:14px}.chat-options{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
-  <nav><div class="brand"><div class="logo">A</div> Admit Strategy</div><div class="links"><a href="#how">How it works</a><a href="#program">Program</a><a href="#journey">Journey</a><a href="#portal">Portal</a><a href="#parents">Parents</a><a href="#faq">FAQ</a><a href="#booking" class="nav-cta">Book free trial</a></div></nav>
-  <section class="hero"><div class="wrap hero-grid"><div><div class="eyebrow"><span class="pulse"></span> Limited free beta spots now open</div><h1><span class="gradient-text">Build the system.</span><br>Become the applicant.</h1><p class="lead">For students who want better grades, stronger study habits, and clearer direction toward top universities. Admit Strategy helps students build stronger study systems, clearer extracurricular direction, and a long-term academic plan toward Ivy League and T20 goals.</p><div class="hero-actions"><a class="btn primary" href="#booking">Book your start time</a><button class="btn secondary" onclick="toggleChat(true)">Ask the chatbot</button></div></div><div class="hero-panel"><div class="stat-grid"><div class="stat"><strong>300+</strong><span>hours of research being organized into a live student program.</span></div><div class="stat"><strong>4 weeks</strong><span>recommended free beta to test study systems, planning, and accountability.</span></div><div class="stat"><strong>1:1</strong><span>live study surgery using the student’s real assignments and weak points.</span></div><div class="stat"><strong>Proof</strong><span>track grades, study sessions, projects, parent updates, and progress.</span></div></div><div class="quote" id="motivationLine">“You started now — that already puts you ahead of most people.”</div></div></div></section>
+  <nav><div class="brand"><div class="logo">A</div> Admit Strategy</div><div class="links"><a href="#how">How it works</a><a href="#program">Program</a><a href="#journey">Journey</a><a href="#portal">Portal</a><a href="#parents">Parents</a><a href="#faq">FAQ</a><a href="#booking" class="nav-cta">Book free beta</a></div></nav>
+  <section class="hero"><div class="wrap hero-grid"><div><div class="eyebrow"><span class="pulse"></span> Limited free beta spots now open</div><h1><span class="gradient-text">Build better systems.</span><br>Make progress visible.</h1><p class="lead">Admit Strategy helps students build stronger study systems, clearer academic direction, and better weekly planning — with progress tracked through a private portal.</p><div class="hero-actions"><a class="btn primary" href="#booking">Book your start time</a><button class="btn secondary" onclick="toggleChat(true)">Start 60-second diagnosis</button></div></div><div class="hero-panel"><div class="stat-grid"><div class="stat"><strong>300+</strong><span>hours of research being organized into a live student program.</span></div><div class="stat"><strong>4 weeks</strong><span>recommended free beta to test study systems, planning, and accountability.</span></div><div class="stat"><strong>1:1</strong><span>live study surgery using the student’s real assignments and weak points.</span></div><div class="stat"><strong>Proof</strong><span>track grades, study sessions, projects, parent updates, and progress.</span></div></div><div class="quote" id="motivationLine">“You started now — that already puts you ahead of most people.”</div></div></div></section>
 
   <section id="how"><div class="wrap"><div class="section-title"><h2>How it works.</h2><p>Simple process. Clear tracking. Real follow-through for students and parents.</p></div><div class="cards"><div class="card"><div class="icon">1</div><h3>Book the free beta call</h3><p>Choose a time and share what you need help with: grades, studying, procrastination, extracurriculars, or college planning.</p></div><div class="card"><div class="icon">2</div><h3>Complete student diagnosis</h3><p>We identify weak subjects, current habits, upcoming tests, distractions, schedule problems, and parent goals.</p></div><div class="card"><div class="icon">3</div><h3>Build the first plan</h3><p>You get a study plan, first tasks, weak-point tracker, and live coaching on how to study more effectively.</p></div><div class="card"><div class="icon">4</div><h3>Track progress in the portal</h3><p>Tasks, weak points, session notes, progress scores, and parent updates are organized in a private student portal.</p></div><div class="card"><div class="icon">5</div><h3>Parents stay updated</h3><p>Parents can see what was completed, what improved, what still needs work, and what should happen next.</p></div><div class="card"><div class="icon">6</div><h3>Improve the system weekly</h3><p>Each session turns into clearer next steps, better study habits, and stronger direction over time.</p></div></div></div></section>
 
@@ -48,11 +56,29 @@
   <section id="value"><div class="wrap"><div class="section-title"><h2>Why the beta is free.</h2><p>Academic coaching can become expensive quickly. Admit Strategy is currently free because it is in a limited beta phase, being tested and improved with a small number of serious students.</p></div><div class="pricing"><div class="price-card"><h3>Free beta</h3><div class="price">$0</div><p>For early students who are serious about trying the system, giving feedback, and improving their study habits, academic direction, and long-term planning.</p></div><div class="price-card"><h3>What students get</h3><ul><li>Study system training and live practice</li><li>Weekly accountability and parent visibility</li><li>Extracurricular and passion project direction</li><li>College roadmap basics and long-term planning</li><li>Early access while the program is still being improved</li></ul><p class="tiny">No admissions result is guaranteed. The goal is to help students become stronger, more organized applicants over time.</p></div></div></div></section>
   <section id="testimonials"><div class="wrap"><div class="section-title"><h2>Beta results coming soon.</h2><p>Admit Strategy is currently testing with early students. Testimonials will be added once beta clients complete the program.</p></div><div class="testimonial">“Testimonial coming soon from beta students.”</div></div></section>
   <section id="faq"><div class="wrap"><div class="section-title"><h2>FAQ</h2><p>Quick answers for students and parents before booking.</p></div><div class="faq-grid"><div class="faq-card"><h3>Is this an admissions guarantee?</h3><p>No. Admit Strategy does not guarantee admission to any college or university. It helps students build stronger systems, clearer direction, and better long-term preparation.</p></div><div class="faq-card"><h3>Who is this for?</h3><p>Motivated middle school or high school students who want stronger study habits, clearer extracurricular direction, and long-term academic planning.</p></div><div class="faq-card"><h3>How long is the free beta?</h3><p>The recommended beta is 4 weeks. This is long enough to test study systems, weekly planning, parent updates, and an initial roadmap.</p></div><div class="faq-card"><h3>What is “study surgery”?</h3><p>A live session where the student brings real schoolwork, and we fix how they study using active recall, feedback loops, and simple explanations.</p></div><div class="faq-card"><h3>Do parents get updates?</h3><p>Yes. Parent visibility is part of the program, including what was done, what improved, and what should happen next.</p></div><div class="faq-card"><h3>Is there a chatbot?</h3><p>Yes. The website includes a lead-capture chatbot that saves interested students into your CRM when the backend is connected.</p></div><div class="faq-card"><h3>What happens after booking?</h3><p>You receive a confirmation email, meeting reminders, and a private portal link where progress can be tracked after sessions.</p></div></div></div></section>
-  <section id="booking"><div class="wrap"><div class="section-title"><h2>Book your free beta start time.</h2><p>Available from 8:00 AM to 7:30 PM. Times from 3:00 PM to 6:30 PM are unavailable. Once the backend is connected, booked slots automatically lock.</p></div><div class="booking-card"><form id="bookingForm" method="POST" target="bookingFrame"><input type="hidden" name="action" value="booking"><input type="hidden" name="time" id="formTime"><input type="hidden" name="source" value="website-booking"><div class="booking-grid"><div><label for="studentName">Student name</label><input id="studentName" name="name" type="text" placeholder="Type your name"><label for="studentEmail">Student email</label><input id="studentEmail" name="email" type="email" placeholder="Type your email"><label for="parentEmail">Parent email</label><input id="parentEmail" name="parentEmail" type="email" placeholder="Optional but recommended"><label class="opt"><input type="checkbox" name="campaignOptIn" value="yes" checked> <span>Send helpful study tips, reminders, and beta updates by email.</span></label></div><div><label for="meetingDate">Choose a date</label><input id="meetingDate" name="date" type="date"><label for="grade">Grade level</label><select id="grade" name="grade"><option value="">Choose grade</option><option>Grade 8</option><option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option><option>Other</option></select><label for="notes">What do you need help with?</label><textarea id="notes" name="notes" placeholder="Example: study habits, math, procrastination, extracurriculars, college plan..."></textarea></div></div><label>Choose a time</label><div class="slots" id="slots"></div><p class="status" id="availabilityStatus">Choose a date to load available times.</p><button type="button" class="btn primary" style="width:100%;margin-top:18px" onclick="confirmBooking()">Confirm my spot</button></form><iframe name="bookingFrame" class="hidden-frame"></iframe><div class="result" id="resultBox"><p id="bookingText"></p><a class="btn secondary" style="width:100%;margin-top:12px" id="gmailFallback" target="_blank">Open Gmail backup</a><a class="btn secondary" style="width:100%;margin-top:12px" id="calendarLink" target="_blank">Add to Google Calendar</a></div><div class="backend-box" id="backendBox"><strong>Backend status:</strong> <span id="backendStatus">Checking...</span> <span id="backendDetails"></span></div><p class="tiny">Professional note: Admit Strategy does not guarantee admission to any college or university. The goal is to help students become more organized, consistent, and strategically prepared over time.</p></div></div></section>
+  <section id="booking"><div class="wrap"><div class="section-title"><h2>Book your free beta start time.</h2><p>Available from 8:00 AM to 7:30 PM. Times from 3:00 PM to 6:30 PM are unavailable. Once the backend is connected, booked slots automatically lock.</p></div><div class="booking-card"><form id="bookingForm" method="POST" target="bookingFrame"><input type="hidden" name="action" value="booking"><input type="hidden" name="time" id="formTime"><input type="hidden" name="source" value="website-booking"><div class="booking-grid"><div><label for="studentName">Student name</label><input id="studentName" name="name" type="text" placeholder="Type your name"><label for="studentEmail">Student email</label><input id="studentEmail" name="email" type="email" placeholder="Type your email"><label for="parentEmail">Parent email</label><input id="parentEmail" name="parentEmail" type="email" placeholder="Optional but recommended"><label class="opt"><input type="checkbox" name="campaignOptIn" value="yes"> <span>Send helpful study tips, reminders, and beta updates by email.</span></label></div><div><label for="meetingDate">Choose a date</label><input id="meetingDate" name="date" type="date"><label for="grade">Grade level</label><select id="grade" name="grade"><option value="">Choose grade</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option><option>Other</option></select><label for="notes">What do you need help with?</label><textarea id="notes" name="notes" placeholder="Example: study habits, math, procrastination, extracurriculars, college plan..."></textarea></div></div><label>Choose a time</label><div class="slots" id="slots"></div><p class="status" id="availabilityStatus">Choose a date to load available times.</p><button type="button" class="btn primary" style="width:100%;margin-top:18px" onclick="confirmBooking()">Confirm my spot</button></form><iframe name="bookingFrame" class="hidden-frame"></iframe><div class="result" id="resultBox"><p id="bookingText"></p><a class="btn secondary" style="width:100%;margin-top:12px" id="gmailFallback" target="_blank">Open Gmail backup</a><a class="btn secondary" style="width:100%;margin-top:12px" id="calendarLink" target="_blank">Add to Google Calendar</a></div><div class="backend-box" id="backendBox"><strong>Backend status:</strong> <span id="backendStatus">Checking...</span> <span id="backendDetails"></span></div><p class="tiny">Professional note: Admit Strategy does not guarantee admission to any college or university. The goal is to help students become more organized, consistent, and strategically prepared over time.</p></div></div></section>
   <section id="contact"><div class="wrap contact-card"><h2>Contact</h2><p style="color:#cbd6ec;line-height:1.7;margin-top:10px">Founder: <strong>Rayan (Ryan) Zayd Quereshi</strong><br>Email: <a href="mailto:ryanwbdl@gmail.com">ryanwbdl@gmail.com</a><br>Location: Doha, Qatar</p></div></section>
   <footer>© <span id="year"></span> Admit Strategy. Built by Rayan (Ryan) Zayd Quereshi.</footer>
-  <button class="chat-launch" onclick="toggleChat(true)">Chat + Book</button><div class="chat" id="chat"><div class="chat-head"><span>Admit Strategy Assistant</span><button onclick="toggleChat(false)">×</button></div><div class="chat-body" id="chatBody"></div><div class="chat-input"><input id="chatInput" placeholder="Type here..." onkeydown="if(event.key==='Enter') chatSend()"><button onclick="chatSend()">Send</button></div></div>
-  <form id="leadForm" method="POST" target="leadFrame" class="hidden-frame"><input type="hidden" name="action" value="lead"><input type="hidden" name="source" value="chatbot"><input type="hidden" name="name"><input type="hidden" name="email"><input type="hidden" name="parentEmail"><input type="hidden" name="grade"><input type="hidden" name="goal"><input type="hidden" name="challenge"><input type="hidden" name="campaignOptIn" value="yes"></form><iframe name="leadFrame" class="hidden-frame"></iframe>
+  <button class="chat-launch" onclick="toggleChat(true)" aria-controls="chat">60-second study check</button>
+  <div class="chat" id="chat" role="dialog" aria-modal="false" aria-labelledby="chatTitle">
+    <div class="chat-head">
+      <div class="chat-head-title"><span id="chatTitle">Student diagnosis</span><small class="chat-progress" id="chatProgress">4 quick questions</small></div>
+      <button onclick="toggleChat(false)" aria-label="Close diagnosis">×</button>
+    </div>
+    <div class="chat-body" id="chatBody" aria-live="polite"></div>
+  </div>
+  <form id="leadForm" method="POST" target="leadFrame" class="hidden-frame">
+    <input type="hidden" name="action" value="lead"><input type="hidden" name="source" value="website-chatbot">
+    <input type="hidden" name="name"><input type="hidden" name="email"><input type="hidden" name="parentEmail">
+    <input type="hidden" name="grade"><input type="hidden" name="goal"><input type="hidden" name="challenge">
+    <input type="hidden" name="userType"><input type="hidden" name="studyMethod"><input type="hidden" name="diagnosisKey">
+    <input type="hidden" name="diagnosisSummary"><input type="hidden" name="ageGateStatus">
+    <input type="hidden" name="serviceContactConsent"><input type="hidden" name="campaignOptIn">
+    <input type="hidden" name="privacyNoticeVersion" value="2026-07-24"><input type="hidden" name="diagnosisElapsedSeconds">
+    <input type="hidden" name="referrer"><input type="hidden" name="utmSource"><input type="hidden" name="utmMedium"><input type="hidden" name="utmCampaign">
+    <input type="hidden" name="website">
+  </form>
+  <iframe name="leadFrame" class="hidden-frame" title="Lead submission"></iframe>
   <script>
     const CONFIG={ownerEmail:"ryanwbdl@gmail.com",googleScriptUrl:"https://script.google.com/macros/s/AKfycbxA7WKEAj1XGPCgwqTveIylnH_L4rEmMN7zYNTdTe8UwXWFTp3ZmjzydIlp5VFm_aT8sQ/exec",timeZoneLabel:"Doha time",startTime:"08:00",endTime:"19:30",unavailableStart:"15:00",unavailableEnd:"18:30",durationMinutes:60,slotStepMinutes:30};
     let selectedTime="",bookedTimes=[];
@@ -70,7 +96,307 @@
     function confirmBooking(){const f=document.getElementById("bookingForm");const b={name:f.name.value.trim(),email:f.email.value.trim(),parentEmail:f.parentEmail.value.trim(),date:f.date.value,time:selectedTime,grade:f.grade.value,notes:f.notes.value.trim()};if(!b.name||!b.email||!b.date||!b.time){alert("Please fill student name, student email, date, and time.");return}if(isUnavailable(b.time)||bookedTimes.includes(b.time)){alert("That time is unavailable. Please choose another time.");return}updateFallbackLinks(b);document.getElementById("resultBox").style.display="block";const pretty=formatPretty(makeLocalDate(b.date,b.time));if(!isBackendConnected()){document.getElementById("bookingText").innerHTML=`Welcome aboard, <strong>${b.name}</strong>.<br>Your booking request is ready for <strong>${pretty}</strong>.<br>Backend is not connected yet, so use the Gmail backup button.`;celebrate();return}f.action=CONFIG.googleScriptUrl;document.getElementById("formTime").value=b.time;f.submit();bookedTimes.push(b.time);renderSlots();document.getElementById("bookingText").innerHTML=`Welcome aboard, <strong>${b.name}</strong>.<br>Your booking request was submitted for <strong>${pretty}</strong>.<br>If the slot is still available, Ryan, the student, and the parent will receive emails. A private portal link and a link to cancel only that single meeting will be included. Cancelling one meeting never cancels the course. To delay or reschedule, email Ryan directly at ryanwbdl@gmail.com with the subject “Delay Admit Strategy meeting.”`;celebrate()}
     function celebrate(){const end=Date.now()+1800;(function frame(){confetti({particleCount:3,angle:60,spread:55,origin:{x:0}});confetti({particleCount:3,angle:120,spread:55,origin:{x:1}});if(Date.now()<end)requestAnimationFrame(frame)})()}function updateTimelineProgress(){const t=document.getElementById("timelineLine"),p=document.getElementById("timelineProgress");if(!t||!p)return;const rect=t.getBoundingClientRect(),start=innerHeight*.75,end=rect.height-innerHeight*.25,passed=start-rect.top,percent=Math.max(0,Math.min(1,passed/end));p.style.height=`${percent*100}%`}
     const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add("show")})},{threshold:.2});document.querySelectorAll(".step").forEach(s=>observer.observe(s));window.addEventListener("scroll",updateTimelineProgress);document.getElementById("meetingDate").addEventListener("change",loadAvailability);
-    function toggleChat(show){const c=document.getElementById("chat");c.style.display=show?"flex":"none";if(show&&chatStep===0)chatStart()}let chatStep=0,lead={};const qs=["What is your name?","What email should we use?","What grade are you in?","What is your biggest goal right now?","What is your biggest problem right now: grades, studying, procrastination, extracurriculars, or college planning?","Do you want me to save this and have Ryan follow up? Type yes or no."];function addMsg(text,type="bot"){const d=document.createElement("div");d.className="msg "+type;d.textContent=text;document.getElementById("chatBody").appendChild(d);document.getElementById("chatBody").scrollTop=999999}function chatStart(){chatStep=1;addMsg("Welcome aboard. I can help Ryan understand what you need before you book.");addMsg(qs[0])}function chatSend(){const input=document.getElementById("chatInput"),v=input.value.trim();if(!v)return;addMsg(v,"user");input.value="";if(chatStep===1)lead.name=v;if(chatStep===2)lead.email=v;if(chatStep===3)lead.grade=v;if(chatStep===4)lead.goal=v;if(chatStep===5)lead.challenge=v;if(chatStep===6){if(v.toLowerCase().startsWith("y")){saveLead();addMsg("Done. Your lead info was saved if the backend is connected. You can also book a time below.");const done=document.createElement("div");done.className="lead-done";done.innerHTML='<a href="#booking" style="color:#adfff0;font-weight:900">Go to booking form →</a>';document.getElementById("chatBody").appendChild(done)}else addMsg("No problem. You can still book anytime on the page.");chatStep=99;return}chatStep++;if(chatStep<=6)addMsg(qs[chatStep-1])}function saveLead(){if(!isBackendConnected())return;const f=document.getElementById("leadForm");f.action=CONFIG.googleScriptUrl;f.name.value=lead.name||"";f.email.value=lead.email||"";f.parentEmail.value="";f.grade.value=lead.grade||"";f.goal.value=lead.goal||"";f.challenge.value=lead.challenge||"";f.submit()}
+    const CHAT_TOTAL_STEPS=4;
+    const userTypeOptions=[["student","Student"],["parent","Parent"]];
+    const gradeOptions=["Grade 6","Grade 7","Grade 8","Grade 9","Grade 10","Grade 11","Grade 12"].map(v=>[v,v]);
+    const challengeOptions=[
+      ["procrastination","Procrastination"],
+      ["forgetting","Studying but forgetting"],
+      ["weak-class","One weak class"],
+      ["no-plan","No weekly plan"],
+      ["phone","Phone distraction"],
+      ["direction","No clear direction"]
+    ];
+    const methodOptions=[
+      ["rereads","Rereads notes"],
+      ["videos","Watches videos"],
+      ["practice","Practice questions"],
+      ["flashcards","Makes flashcards"],
+      ["night-before","Studies the night before"],
+      ["inconsistent","Not consistently"]
+    ];
+    const diagnosisMap={
+      "procrastination":{
+        goal:"Build an easier starting system",
+        summary:"The first focus should be a simple weekly system and a five-minute starting routine. The problem is probably not motivation; it is making schoolwork easier to begin."
+      },
+      "forgetting":{
+        goal:"Replace passive review with self-testing",
+        summary:"The study method may be too passive. The first focus should be active recall, practice questions, and weak-point tracking so the student can find what was forgotten before the test."
+      },
+      "weak-class":{
+        goal:"Find and fix exact weak points",
+        summary:"The first focus should be identifying the exact gaps in that class using real assignments, quizzes, and mistakes, then building a short plan around those gaps."
+      },
+      "no-plan":{
+        goal:"Build a realistic weekly plan",
+        summary:"The first focus should be a simple weekly plan tied to real deadlines. The plan needs to show what to do, when to start, and what can wait."
+      },
+      "phone":{
+        goal:"Reduce phone friction",
+        summary:"The first focus should be changing the study environment: put the phone out of reach, use a clear start cue, and make the first task small enough to begin."
+      },
+      "direction":{
+        goal:"Clarify academic priorities",
+        summary:"The first focus should be clearer academic direction: which subjects matter most, which habit needs fixing first, and what longer-term path could make sense later."
+      }
+    };
+    const methodNotes={
+      "rereads":"Rereading can feel productive without proving what was remembered, so self-testing should be added.",
+      "videos":"Videos can explain a topic, but the student still needs to answer questions without help afterward.",
+      "practice":"Practice questions are a strength; the missing piece may be tracking every mistake and retrying it.",
+      "flashcards":"Flashcards help only when answers are recalled before checking and weak cards are repeated.",
+      "night-before":"Studying the night before makes feedback arrive too late, so the system needs an earlier first review.",
+      "inconsistent":"Consistency comes before advanced techniques; the first win is a repeatable start time."
+    };
+    let chatStep=0,lead={},diagnosisStartedAt=0;
+
+    function toggleChat(show){
+      const chat=document.getElementById("chat");
+      chat.style.display=show?"flex":"none";
+      if(show&&chatStep===0)chatStart();
+    }
+
+    function setChatProgress(step){
+      document.getElementById("chatProgress").textContent=step<=CHAT_TOTAL_STEPS
+        ?`Question ${step} of ${CHAT_TOTAL_STEPS}`
+        :"Diagnosis complete";
+    }
+
+    function addMsg(text,type="bot"){
+      const message=document.createElement("div");
+      message.className="msg "+type;
+      message.textContent=text;
+      document.getElementById("chatBody").appendChild(message);
+      scrollChat();
+    }
+
+    function scrollChat(){
+      const body=document.getElementById("chatBody");
+      body.scrollTop=body.scrollHeight;
+    }
+
+    function addOptions(options,onChoose){
+      const wrap=document.createElement("div");
+      wrap.className="chat-options";
+      options.forEach(([value,label])=>{
+        const button=document.createElement("button");
+        button.type="button";
+        button.className="chat-choice";
+        button.textContent=label;
+        button.addEventListener("click",()=>{
+          wrap.querySelectorAll("button").forEach(b=>b.disabled=true);
+          addMsg(label,"user");
+          wrap.remove();
+          onChoose(value);
+        },{once:true});
+        wrap.appendChild(button);
+      });
+      document.getElementById("chatBody").appendChild(wrap);
+      scrollChat();
+    }
+
+    function askQuestion(step,text,options,onChoose){
+      chatStep=step;
+      setChatProgress(step);
+      addMsg(text);
+      addOptions(options,onChoose);
+    }
+
+    function chatStart(){
+      lead={};
+      diagnosisStartedAt=Date.now();
+      document.getElementById("chatBody").innerHTML="";
+      addMsg("Not sure what is actually holding your grades back? Take a 60-second student diagnosis and see what Admit Strategy would focus on first.");
+      askQuestion(1,"Are you a student or a parent?",userTypeOptions,value=>{
+        lead.userType=value;
+        askQuestion(2,value==="parent"?"What grade is the student in?":"What grade are you in?",gradeOptions,grade=>{
+          lead.grade=grade;
+          askQuestion(3,"What is the biggest challenge right now?",challengeOptions,challenge=>{
+            lead.challenge=challenge;
+            askQuestion(4,"How does the student usually study?",methodOptions,method=>{
+              lead.studyMethod=method;
+              showDiagnosis();
+            });
+          });
+        });
+      });
+    }
+
+    function showDiagnosis(){
+      chatStep=CHAT_TOTAL_STEPS+1;
+      setChatProgress(chatStep);
+      const diagnosis=diagnosisMap[lead.challenge]||diagnosisMap.direction;
+      const methodNote=methodNotes[lead.studyMethod]||"";
+      lead.goal=diagnosis.goal;
+      lead.diagnosisKey=lead.challenge+"__"+lead.studyMethod;
+      lead.diagnosisSummary=diagnosis.summary+" "+methodNote;
+
+      const result=document.createElement("div");
+      result.className="chat-result";
+      const title=document.createElement("strong");
+      title.textContent="What to focus on first";
+      const summary=document.createElement("span");
+      summary.textContent=lead.diagnosisSummary;
+      result.append(title,summary);
+      document.getElementById("chatBody").appendChild(result);
+
+      const explanation=document.createElement("div");
+      explanation.className="chat-note";
+      explanation.textContent="Admit Strategy is testing a free beta in Qatar. The first session uses real schoolwork to review study habits, weak points, procrastination, and goals. Progress can then be tracked through a private portal. No admissions guarantees.";
+      document.getElementById("chatBody").appendChild(explanation);
+
+      const parentRequired=lead.userType==="student"&&(lead.grade==="Grade 6"||lead.grade==="Grade 7");
+      if(parentRequired){
+        addMsg("For Grade 6–7 students, a parent or guardian must complete the contact step.");
+      }
+      renderLeadCapture(parentRequired);
+    }
+
+    function renderLeadCapture(parentRequired){
+      const isParent=lead.userType==="parent";
+      const form=document.createElement("form");
+      form.className="chat-capture";
+      form.id="chatCaptureForm";
+      form.noValidate=true;
+      const contactLabel=parentRequired?"Parent or guardian name":isParent?"Your name":"First name";
+      const emailLabel=parentRequired?"Parent or guardian email":isParent?"Your email":"Email";
+      const parentEmailField=!parentRequired&&!isParent
+        ?'<label>Parent email <span class="chat-note">(optional)</span><input id="chatParentEmail" type="email" maxlength="254" autocomplete="email"></label>'
+        :"";
+      form.innerHTML=
+        '<label>'+contactLabel+'<input id="chatContactName" type="text" maxlength="120" autocomplete="name" required></label>'+
+        '<label>'+emailLabel+'<input id="chatContactEmail" type="email" maxlength="254" autocomplete="email" required></label>'+
+        parentEmailField+
+        '<label class="chat-consent"><input id="chatServiceConsent" type="checkbox" required><span>Admit Strategy may email me about this diagnosis and a beta session.</span></label>'+
+        '<label class="chat-consent"><input id="chatMarketingOptIn" type="checkbox"><span>Also send occasional study tips and beta updates. Optional.</span></label>'+
+        '<input id="chatWebsite" class="hidden-frame" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">'+
+        '<button class="chat-submit" type="submit">Save result & book free session</button>'+
+        '<div class="chat-error" id="chatCaptureError" role="alert"></div>';
+      form.addEventListener("submit",event=>submitLeadCapture(event,parentRequired));
+      document.getElementById("chatBody").appendChild(form);
+      scrollChat();
+    }
+
+    function validEmail(value){
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+    }
+
+    function submitLeadCapture(event,parentRequired){
+      event.preventDefault();
+      const form=event.currentTarget;
+      const name=form.querySelector("#chatContactName").value.trim();
+      const email=form.querySelector("#chatContactEmail").value.trim();
+      const optionalParent=form.querySelector("#chatParentEmail");
+      const consent=form.querySelector("#chatServiceConsent").checked;
+      const error=form.querySelector("#chatCaptureError");
+      const honeypot=form.querySelector("#chatWebsite").value;
+      if(honeypot)return;
+      if(!name||!validEmail(email)){
+        error.textContent="Enter a valid name and email.";
+        return;
+      }
+      if(!consent){
+        error.textContent="Permission to reply about the diagnosis is required.";
+        return;
+      }
+
+      lead.name=name;
+      lead.email=email;
+      lead.parentEmail=parentRequired||lead.userType==="parent"
+        ?email
+        :(optionalParent?optionalParent.value.trim():"");
+      if(lead.parentEmail&&!validEmail(lead.parentEmail)){
+        error.textContent="Enter a valid parent email or leave it blank.";
+        return;
+      }
+      lead.ageGateStatus=parentRequired?"parent_handoff":lead.userType==="parent"?"parent_contact":"not_required";
+      lead.serviceContactConsent="yes";
+      lead.campaignOptIn=form.querySelector("#chatMarketingOptIn").checked?"yes":"no";
+
+      const submitButton=form.querySelector(".chat-submit");
+      submitButton.disabled=true;
+      submitButton.textContent="Saving...";
+      if(!saveLead()){
+        submitButton.disabled=false;
+        submitButton.textContent="Save result & book free session";
+        error.textContent="Saving is temporarily unavailable. You can still use the booking form below.";
+        return;
+      }
+      prefillBooking(parentRequired);
+      form.replaceWith(completionActions());
+      scrollChat();
+    }
+
+    function saveLead(){
+      if(!isBackendConnected())return false;
+      const form=document.getElementById("leadForm");
+      const set=(name,value)=>{
+        const input=form.elements.namedItem(name);
+        if(input)input.value=value||"";
+      };
+      const params=new URLSearchParams(location.search);
+      form.action=CONFIG.googleScriptUrl;
+      set("name",lead.name);
+      set("email",lead.email);
+      set("parentEmail",lead.parentEmail);
+      set("grade",lead.grade);
+      set("goal",lead.goal);
+      set("challenge",lead.challenge);
+      set("userType",lead.userType);
+      set("studyMethod",lead.studyMethod);
+      set("diagnosisKey",lead.diagnosisKey);
+      set("diagnosisSummary",lead.diagnosisSummary);
+      set("ageGateStatus",lead.ageGateStatus);
+      set("serviceContactConsent",lead.serviceContactConsent);
+      set("campaignOptIn",lead.campaignOptIn);
+      set("diagnosisElapsedSeconds",String(Math.max(1,Math.round((Date.now()-diagnosisStartedAt)/1000))));
+      set("referrer",document.referrer.slice(0,500));
+      set("utmSource",(params.get("utm_source")||"").slice(0,120));
+      set("utmMedium",(params.get("utm_medium")||"").slice(0,120));
+      set("utmCampaign",(params.get("utm_campaign")||"").slice(0,120));
+      form.submit();
+      return true;
+    }
+
+    function prefillBooking(parentRequired){
+      const booking=document.getElementById("bookingForm");
+      if(lead.userType==="student"&&!parentRequired){
+        booking.elements.namedItem("name").value=lead.name;
+        booking.elements.namedItem("email").value=lead.email;
+        booking.elements.namedItem("parentEmail").value=lead.parentEmail||"";
+      }else{
+        booking.elements.namedItem("parentEmail").value=lead.email;
+      }
+      booking.elements.namedItem("grade").value=lead.grade;
+      booking.elements.namedItem("notes").value="Chatbot starting point: "+lead.diagnosisSummary;
+    }
+
+    function completionActions(){
+      const wrap=document.createElement("div");
+      wrap.className="chat-actions";
+      const done=document.createElement("div");
+      done.className="chat-result";
+      done.textContent="Saved. Based on your answers, a free beta diagnosis could be useful.";
+      const book=document.createElement("button");
+      book.type="button";
+      book.className="chat-cta";
+      book.textContent="Book Free Beta Session";
+      book.addEventListener("click",goToBooking);
+      const restart=document.createElement("button");
+      restart.type="button";
+      restart.className="chat-restart";
+      restart.textContent="Start over";
+      restart.addEventListener("click",()=>{chatStep=0;chatStart()});
+      wrap.append(done,book,restart);
+      return wrap;
+    }
+
+    function goToBooking(){
+      toggleChat(false);
+      document.getElementById("booking").scrollIntoView({behavior:"smooth"});
+      setTimeout(()=>document.getElementById("studentName").focus(),500);
+    }
     window.onload=()=>{document.getElementById("year").textContent=new Date().getFullYear();document.getElementById("motivationLine").textContent=lines[Math.floor(Math.random()*lines.length)];const today=new Date();document.getElementById("meetingDate").min=`${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;const box=document.getElementById("backendBox"),status=document.getElementById("backendStatus"),details=document.getElementById("backendDetails");if(isBackendConnected()){box.classList.add("connected");status.textContent="Connected.";details.textContent=" Bookings can save to your Google Sheet, send emails, lock booked slots, create portal links, and send reminders."}else{status.textContent="Not connected yet.";details.textContent=" The site still works with Gmail backup, but automatic emails, booked-slot locking, client portal, chatbot saving, and reminders need Google Apps Script."}renderSlots();updateTimelineProgress();setTimeout(celebrate,400)};
   </script>
 </body>
