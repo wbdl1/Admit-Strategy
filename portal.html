@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="referrer" content="no-referrer" />
+<meta name="robots" content="noindex,nofollow,noarchive" />
 <title>Admit Strategy Portal</title>
 <style>
 :root{
@@ -48,7 +49,7 @@ body{
 .error code{background:rgba(255,255,255,.11);padding:3px 6px;border-radius:7px;color:#fff}
 .help{margin-top:14px;color:var(--warn)}
 .meeting-help{margin-top:14px;padding:13px 14px;border:1px solid rgba(32,227,178,.22);background:rgba(32,227,178,.09);border-radius:16px;color:#dffff6;line-height:1.55}
-.meeting-help a{color:#adfff0;font-weight:850}
+.meeting-help a{color:#adfff0;font-weight:850}.portal-note,.rubric{margin-top:14px;padding:13px 14px;border:1px solid var(--line);background:rgba(255,255,255,.06);border-radius:16px;color:#dce8ff;line-height:1.55}.rubric strong{color:#adfff0}.privacy-link{color:#adfff0;font-weight:800}
 .footer{margin-top:18px;text-align:center;color:var(--muted);font-size:.9rem}
 @media(max-width:850px){.grid,.columns{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
 </style>
@@ -57,7 +58,7 @@ body{
 <div class="wrap">
   <div class="top">
     <div class="brand">Admit Strategy Portal</div>
-    <div class="pill">Private student progress link</div>
+    <div class="pill">Private student-and-parent progress link</div>
   </div>
 
   <div id="app">
@@ -67,7 +68,7 @@ body{
     </div>
   </div>
 
-  <div class="footer">Admit Strategy • Rayan (Ryan) Zayd Quereshi</div>
+  <div class="footer">Admit Strategy • Rayan (Ryan) Zayd Quereshi • <a class="privacy-link" href="privacy.html">Privacy</a></div>
 </div>
 
 <script>
@@ -141,13 +142,16 @@ function render(d){
     <div class="hero">
       <h1>Welcome, ${safe(d.student.name || "student")}.</h1>
       <p>${safe(d.student.summary || "Track your weekly tasks, weak points, meetings, parent updates, and progress.")}</p>
+      <div class="portal-note"><strong>Private link:</strong> Everything shown here is intended to be visible to the student and parent or guardian. Do not forward this link.</div>
     </div>
 
     <div class="grid">
-      ${progressCard("Study System", d.progress.studySystem)}
-      ${progressCard("Consistency", d.progress.consistency)}
-      ${progressCard("Direction", d.progress.direction)}
+      ${progressCard("Study System", d.progress.studySystem, "Preparation and use of effective methods on real schoolwork.")}
+      ${progressCard("Consistency", d.progress.consistency, "Completion of agreed study sessions and tasks during the current week.")}
+      ${progressCard("Direction", d.progress.direction, "Clarity of current priorities and the next actions to take.")}
     </div>
+
+    <div class="rubric"><strong>How scores work:</strong> coach-rated at 0, 25, 50, 75, or 100 — not started, inconsistent, developing, mostly consistent, or independent. Blank means not scored yet.</div>
 
     <div class="columns">
       <div class="card">
@@ -187,13 +191,15 @@ function render(d){
   `;
 }
 
-function progressCard(title, value){
-  const v = pct(value);
+function progressCard(title, value, detail){
+  const scored = value !== null && value !== undefined && value !== "";
+  const v = scored ? pct(value) : 0;
   return `
     <div class="card">
       <h2>${safe(title)}</h2>
-      <div class="num">${v}%</div>
+      <div class="num">${scored ? v + "%" : "Not scored"}</div>
       <div class="bar"><div style="width:${v}%"></div></div>
+      <p class="muted" style="margin-top:10px">${safe(detail)}</p>
     </div>
   `;
 }
@@ -226,7 +232,7 @@ async function load(){
       renderError(
         "Could not load this portal.",
         safe(data.error || "Portal unavailable."),
-        safe(data.help || "Use the portalUrl column from the Bookings tab, or the portalToken column from the Students tab.")
+        safe(data.help || "Use the full private portal link sent by Admit Strategy.")
       );
       return;
     }
