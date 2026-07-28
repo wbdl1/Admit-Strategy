@@ -86,7 +86,7 @@ function getToken(){
   return new URLSearchParams(location.search).get("token") || "";
 }
 
-function jsonp(url, callbackName="callback", timeout=10000){
+function jsonp(url, callbackName="callback", timeout=45000){
   return new Promise((resolve,reject)=>{
     const cb = "jsonp_" + Date.now() + "_" + Math.random().toString(16).slice(2);
     const script = document.createElement("script");
