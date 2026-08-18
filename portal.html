@@ -50,7 +50,7 @@ body{
 .help{margin-top:14px;color:var(--warn)}
 .meeting-help{margin-top:14px;padding:13px 14px;border:1px solid rgba(32,227,178,.22);background:rgba(32,227,178,.09);border-radius:16px;color:#dffff6;line-height:1.55}
 .meeting-help a{color:#adfff0;font-weight:850}.portal-note,.rubric{margin-top:14px;padding:13px 14px;border:1px solid var(--line);background:rgba(255,255,255,.06);border-radius:16px;color:#dce8ff;line-height:1.55}.rubric strong{color:#adfff0}.privacy-link{color:#adfff0;font-weight:800}
-.footer{margin-top:18px;text-align:center;color:var(--muted);font-size:.9rem}
+.demo-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.demo-actions a{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-weight:850;border-radius:999px;padding:12px 16px;background:linear-gradient(135deg,#fff,#dff7ff);color:#050816}.demo-actions a.secondary{background:rgba(255,255,255,.09);color:#fff;border:1px solid var(--line)}.footer{margin-top:18px;text-align:center;color:var(--muted);font-size:.9rem}
 @media(max-width:850px){.grid,.columns{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
 </style>
 </head>
@@ -58,7 +58,7 @@ body{
 <div class="wrap">
   <div class="top">
     <div class="brand">Admit Strategy Portal</div>
-    <div class="pill">Private student-and-parent progress link</div>
+    <div class="pill" id="portalMode">Private student-and-parent progress link</div>
   </div>
 
   <div id="app">
@@ -75,6 +75,30 @@ body{
 const CONFIG = {
   googleScriptUrl: "https://script.google.com/macros/s/AKfycbxA7WKEAj1XGPCgwqTveIylnH_L4rEmMN7zYNTdTe8UwXWFTp3ZmjzydIlp5VFm_aT8sQ/exec"
 };
+
+const DEMO_DATA = Object.freeze({
+  student: {
+    name: "Alex",
+    summary: "Sample data: Alex is building a repeatable study system, correcting specific weak points, and turning broad goals into weekly actions."
+  },
+  progress: { studySystem: 50, consistency: 25, direction: 50 },
+  nextMeeting: "Thursday at 4:30 PM Doha time",
+  parentUpdate: "Sample update: Alex completed two focused practice blocks, identified a recurring algebra error, and has one overdue planning task to finish before the next session.",
+  tasks: [
+    { title: "Complete two active-recall sessions", detail: "Use current science notes, close the book, retrieve from memory, check gaps, and repeat.", status: "In progress" },
+    { title: "Correct the algebra quiz", detail: "Redo every missed question and label the exact reason for each error.", status: "Due next" }
+  ],
+  weakPoints: [
+    { title: "Linear equations: sign errors", detail: "Errors appear when moving negative terms across the equals sign.", status: "Active" },
+    { title: "Starting assignments late", detail: "Use a ten-minute start immediately after the planned study block begins.", status: "Improving" }
+  ],
+  sessionNotes: [
+    { title: "Diagnosis complete", detail: "Reviewed current grades, study habits, distractions, upcoming work, and the first two priorities.", status: "Completed" }
+  ],
+  projects: [
+    { title: "School recycling audit", detail: "Draft a one-page problem statement and list the data needed before choosing a solution.", status: "Exploring" }
+  ]
+});
 
 function isConnected(){
   return CONFIG.googleScriptUrl &&
@@ -137,12 +161,15 @@ function renderError(title, message, help=""){
   `;
 }
 
-function render(d){
+function render(d, demoMode=false){
   document.getElementById("app").innerHTML = `
     <div class="hero">
       <h1>Welcome, ${safe(d.student.name || "student")}.</h1>
       <p>${safe(d.student.summary || "Track your weekly tasks, weak points, meetings, parent updates, and progress.")}</p>
-      <div class="portal-note"><strong>Private link:</strong> Everything shown here is intended to be visible to the student and parent or guardian. Do not forward this link.</div>
+      <div class="portal-note">${demoMode
+        ? "<strong>Sample portal:</strong> Every item on this page is fictional. No client data or private token is being used."
+        : "<strong>Private link:</strong> Everything shown here is intended to be visible to the student and parent or guardian. Do not forward this link."}</div>
+      ${demoMode ? '<div class="demo-actions"><a href="index.html#booking">Book free beta</a><a class="secondary" href="index.html">Back to website</a></div>' : ""}
     </div>
 
     <div class="grid">
@@ -205,6 +232,13 @@ function progressCard(title, value, detail){
 }
 
 async function load(){
+  const params = new URLSearchParams(location.search);
+  if(params.get("demo") === "1"){
+    document.getElementById("portalMode").textContent = "Sample portal — fictional data";
+    render(DEMO_DATA, true);
+    return;
+  }
+
   const token = getToken();
 
   if(!isConnected()){
