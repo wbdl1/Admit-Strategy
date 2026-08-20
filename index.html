@@ -86,7 +86,7 @@
   <iframe name="leadFrame" class="hidden-frame" title="Lead submission"></iframe>
   <script>
     const CONFIG={ownerEmail:"ryanwbdl@gmail.com",googleScriptUrl:"https://script.google.com/macros/s/AKfycbxA7WKEAj1XGPCgwqTveIylnH_L4rEmMN7zYNTdTe8UwXWFTp3ZmjzydIlp5VFm_aT8sQ/exec",timeZoneLabel:"Doha time",startTime:"08:00",endTime:"19:30",weekdayAvailableStart:"15:30",weekdayAvailableEnd:"17:00",weekendUnavailableStart:"15:00",weekendUnavailableEnd:"20:00",durationMinutes:60,slotStepMinutes:30,maxBookingDays:30};
-    let selectedTime="",bookedTimes=[],unavailableTimes=[],bookingPending=false,bookingRequestId="",bookingResponseTimer=null;const bookingOpenedAt=Date.now();
+    let selectedTime="",bookedTimes=[],unavailableTimes=[],bookingPending=false,bookingRequestId="",bookingResponseTimer=null,bookingStatusTimer=null,bookingStatusChecks=0,bookingSubmittedDate="",bookingSubmittedTime="";const bookingOpenedAt=Date.now();
     const lines=["“You started now — that already puts you ahead of most people.”","“A stronger future starts with one serious system.”","“You are not just booking a meeting. You are starting the process.”","“Small consistent effort can create serious change over time.”","“The goal is not random motivation. The goal is repeatable execution.”"];
     function isBackendConnected(){return CONFIG.googleScriptUrl&&CONFIG.googleScriptUrl.startsWith("https://script.google.com/macros/s/")&&!CONFIG.googleScriptUrl.includes("PASTE_YOUR")}
     function minutes(time){const[h,m]=time.split(":").map(Number);return h*60+m}function pad(n){return String(n).padStart(2,"0")}function timeFromMinutes(total){return `${pad(Math.floor(total/60))}:${pad(total%60)}`}function prettyTime(time){const[h,m]=time.split(":").map(Number);const suffix=h>=12?"PM":"AM";const hour=h%12||12;return `${hour}:${pad(m)} ${suffix}`}function rangesOverlap(startA,endA,startB,endB){return startA<endB&&endA>startB}
@@ -100,6 +100,53 @@
     function makeLocalDate(dateValue,timeValue){return new Date(`${dateValue}T${timeValue}:00`)}function formatPretty(date){return date.toLocaleString([],{weekday:"long",year:"numeric",month:"long",day:"numeric",hour:"numeric",minute:"2-digit"})}function toGoogleDate(date){return date.getUTCFullYear()+pad(date.getUTCMonth()+1)+pad(date.getUTCDate())+"T"+pad(date.getUTCHours())+pad(date.getUTCMinutes())+pad(date.getUTCSeconds())+"Z"}
     function createMessage(b){const start=makeLocalDate(b.date,b.time);return `Admit Strategy free beta booking request.\n\nStudent: ${b.name}\nStudent email: ${b.email}\nParent or guardian email: ${b.parentEmail}\nGrade: ${b.grade||"Not provided"}\nBooking time: ${formatPretty(start)} (${CONFIG.timeZoneLabel})\nFocus: ${b.notes||"Not specified"}`}
     function updateFallbackLinks(b){const start=makeLocalDate(b.date,b.time),end=new Date(start.getTime()+CONFIG.durationMinutes*60000),msg=createMessage(b);document.getElementById("gmailFallback").href=`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(CONFIG.ownerEmail)}&su=${encodeURIComponent("Free Course Booking - "+b.name)}&body=${encodeURIComponent(msg)}`;const dates=`${toGoogleDate(start)}/${toGoogleDate(end)}`;document.getElementById("calendarLink").href=`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent("Admit Strategy Free Beta")}&dates=${dates}&details=${encodeURIComponent(msg)}&add=${encodeURIComponent(CONFIG.ownerEmail)}`}
+    function finishBookingConfirmation(warning=""){
+      const wasPending=bookingPending;
+      clearTimeout(bookingResponseTimer);
+      clearTimeout(bookingStatusTimer);
+      bookingPending=false;
+      const result=document.getElementById("resultBox");
+      const text=document.getElementById("bookingText");
+      const button=document.getElementById("bookingButton");
+      result.style.display="block";
+      result.className="result";
+      text.textContent=warning?"Your booking is confirmed, but the confirmation email could not be sent. Contact Ryan if needed.":"Your booking is confirmed. The student and parent or guardian will receive the portal and meeting details by email.";
+      if(document.getElementById("meetingDate").value===bookingSubmittedDate){
+        if(!bookedTimes.includes(bookingSubmittedTime))bookedTimes.push(bookingSubmittedTime);
+        if(selectedTime===bookingSubmittedTime)selectedTime="";
+        renderSlots();
+        document.getElementById("availabilityStatus").textContent=`${prettyTime(bookingSubmittedTime)} is booked and locked for ${bookingSubmittedDate}.`;
+      }
+      button.disabled=true;
+      button.textContent="Booking confirmed";
+      if(wasPending)celebrate();
+    }
+    function scheduleBookingStatusCheck(delay=1500){
+      clearTimeout(bookingStatusTimer);
+      bookingStatusTimer=setTimeout(checkBookingStatus,delay);
+    }
+    async function checkBookingStatus(){
+      if(!bookingPending||!bookingRequestId)return;
+      const requestId=bookingRequestId;
+      bookingStatusChecks++;
+      try{
+        const url=`${CONFIG.googleScriptUrl}?action=bookingstatus&requestId=${encodeURIComponent(requestId)}`;
+        const data=await jsonp(url,"callback",20000);
+        if(!bookingPending||requestId!==bookingRequestId)return;
+        if(data.ok&&data.status==="confirmed"){
+          finishBookingConfirmation();
+          return;
+        }
+      }catch(e){}
+      if(!bookingPending||requestId!==bookingRequestId)return;
+      const text=document.getElementById("bookingText");
+      if(bookingStatusChecks<6){
+        text.textContent=bookingStatusChecks<2?"Saving your booking securely. Keep this page open; confirmation will appear automatically.":"Still verifying your exact booking. If the email arrives first, the booking is saved—do not submit again.";
+        scheduleBookingStatusCheck(2500);
+      }else{
+        text.textContent="The page could not refresh the final status yet. If a confirmation email arrived, your booking is saved. Refresh this page and reselect the date to see the locked time; do not submit again.";
+      }
+    }
     function confirmBooking(){
       if(bookingPending)return;
       const f=document.getElementById("bookingForm");
@@ -127,38 +174,39 @@
         return;
       }
       bookingPending=true;
+      bookingStatusChecks=0;
+      bookingSubmittedDate=b.date;
+      bookingSubmittedTime=b.time;
       button.disabled=true;
-      button.textContent="Confirming with the server...";
+      button.textContent="Saving your booking...";
       bookingRequestId=window.crypto&&crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(16).slice(2);
       document.getElementById("bookingRequestId").value=bookingRequestId;
       document.getElementById("bookingElapsedSeconds").value=String(Math.max(1,Math.round((Date.now()-bookingOpenedAt)/1000)));
       document.getElementById("formTime").value=b.time;
       f.action=CONFIG.googleScriptUrl;
-      text.textContent="Checking the live calendar and saving your booking. Do not submit again.";
+      text.textContent="Saving and checking the live calendar. This usually takes about 10–20 seconds. Keep this page open.";
       f.submit();
+      scheduleBookingStatusCheck();
       clearTimeout(bookingResponseTimer);
       bookingResponseTimer=setTimeout(()=>{
         if(!bookingPending)return;
-        text.textContent="Confirmation is taking longer than expected. Do not submit again. Check the student and parent email, or contact Ryan if no confirmation arrives.";
-      },25000);
+        text.textContent="Your booking is still being verified automatically. If the email arrives first, it is already saved—do not submit again.";
+      },20000);
     }
     function handleBookingResponse(event){
       const trusted=event.origin==="https://script.google.com"||event.origin.endsWith(".googleusercontent.com");
       const data=event.data||{};
       if(!trusted||data.source!=="admit-strategy-booking"||data.requestId!==bookingRequestId)return;
-      clearTimeout(bookingResponseTimer);
-      bookingPending=false;
-      const result=document.getElementById("resultBox");
-      const text=document.getElementById("bookingText");
-      const button=document.getElementById("bookingButton");
       if(data.ok){
-        result.className="result";
-        text.textContent=data.warning?"Your booking is confirmed, but the confirmation email could not be sent. Contact Ryan if needed.":"Your booking is confirmed. The student and parent or guardian will receive the portal and meeting details by email.";
-        if(!bookedTimes.includes(selectedTime))bookedTimes.push(selectedTime);
-        renderSlots();
-        button.textContent="Booking confirmed";
-        celebrate();
+        finishBookingConfirmation(data.warning||"");
       }else{
+        if(!bookingPending)return;
+        clearTimeout(bookingResponseTimer);
+        clearTimeout(bookingStatusTimer);
+        bookingPending=false;
+        const result=document.getElementById("resultBox");
+        const text=document.getElementById("bookingText");
+        const button=document.getElementById("bookingButton");
         result.className="result error";
         text.textContent=data.error||"The booking was not confirmed. Please choose another time or contact Ryan.";
         button.disabled=false;
