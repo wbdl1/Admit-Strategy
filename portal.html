@@ -108,7 +108,9 @@ a{color:var(--success)}
   padding:11px 15px;font-weight:900;text-decoration:none;background:linear-gradient(135deg,#fff,#dff7ff);color:#050816
 }
 .btn.secondary{background:rgba(255,255,255,.09);color:#fff;border:1px solid var(--line)}
+.btn.ghost{background:transparent;color:#dce8ff;border:1px solid var(--line)}
 .btn:disabled{opacity:.55;cursor:not-allowed}
+.form-actions{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
 .form-help{font-size:.78rem;color:var(--muted);line-height:1.5}
 .planner-day{display:grid;grid-template-columns:130px 1fr;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
 .planner-day:first-child{border-top:0;padding-top:0}
@@ -120,6 +122,8 @@ a{color:var(--success)}
 .evidence-link{display:inline-flex;margin-top:3px;font-weight:850;overflow-wrap:anywhere}
 .settings-row{display:flex;align-items:center;justify-content:space-between;gap:18px}
 .demo-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.editing-note{display:grid;grid-template-columns:auto 1fr;gap:11px;align-items:start}
+.editing-note .status{margin-top:1px}
 .footer{margin-top:28px;text-align:center;color:var(--muted);font-size:.9rem}
 .hidden-frame{display:none}
 @media(max-width:950px){.grid.four{grid-template-columns:repeat(2,1fr)}}
@@ -138,6 +142,7 @@ a{color:var(--success)}
   .card{padding:18px}
   .detail-row,.form-grid,.planner-day{grid-template-columns:1fr;gap:5px}
   .record-head,.assessment-main{flex-direction:column}
+  .form-actions .btn{width:100%}
   .countdown{font-size:1.55rem}
   .quick-nav{margin-left:-4px;margin-right:-4px}
 }
@@ -381,12 +386,12 @@ function progressCard(title,value,description){
 
 function nextAssessmentCard(assessment){
   if(!assessment){
-    return "<div class='card'><h3>Next Assessment</h3><div class='empty'>No upcoming assessment has been added yet. Add the next test, quiz, deadline, or major assignment below.</div></div>";
+    return "<div class='card'><h3>Next Summative</h3><div class='empty'>No upcoming summative or assessment has been added yet. Add the next test, deadline, presentation, or major assignment below.</div></div>";
   }
   const target = Number(assessment.prepTarget || 0);
   const complete = Number(assessment.prepCompleted || 0);
   const percentage = target > 0 ? Math.min(100,Math.round(complete / target * 100)) : 0;
-  return "<div class='card'><div class='assessment-main'><div><h3>Next Assessment</h3><strong>" +
+  return "<div class='card'><div class='assessment-main'><div><h3>Next Summative</h3><strong>" +
     safe(assessment.name) + "</strong><div class='muted'>" + safe(assessment.subject || assessment.type || "") +
     " • " + safe(formatDate(assessment.date)) + "</div></div><div class='countdown'>" +
     safe(daysLabel(assessment.date)) + "</div></div><div class='prep-line'><span>Preparation</span><span>" +
@@ -409,13 +414,20 @@ function taskList(items){
       detail("Action",item.detail) + detail("Proof required",item.proofRequired) +
       detail("Submitted evidence",item.proofNote) + linkedDetail("Evidence link",item.proofUrl) +
       detail("Coach feedback",item.coachFeedback) + "</div>" +
+      "<details class='form-panel'><summary>Edit task details</summary><form class='portal-form' data-portal-form>" +
+      "<input type='hidden' name='operation' value='updatetask'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
+      "<label>Task title<input name='title' maxlength='160' required value='" + safe(item.title || "") + "'></label>" +
+      "<label>Action<textarea name='detail' maxlength='1200' placeholder='What needs to be done?'>" + safe(item.detail || "") + "</textarea></label>" +
+      "<div class='form-grid'><label>Due date<input name='dueDate' type='date' value='" + safe(item.dueDate || "") + "'></label>" +
+      "<label>Proof expected<input name='proofRequired' maxlength='500' value='" + safe(item.proofRequired || "") + "'></label></div>" +
+      "<p class='form-help'>Coach review, feedback, and submitted proof remain protected.</p>" + formActions("Save task") + "</form></details>" +
       "<details class='form-panel'><summary>Submit or replace evidence</summary><form class='portal-form' data-portal-form>" +
       "<input type='hidden' name='operation' value='submittaskproof'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
       "<label>What did you complete?<textarea name='proofNote' maxlength='1200' placeholder='Describe the actual work, score, correction, or output.'>" + safe(item.proofNote || "") + "</textarea></label>" +
       "<label>Evidence link (optional)<input name='proofUrl' type='url' maxlength='1000' placeholder='https://drive.google.com/... or another secure link' value='" + safe(item.proofUrl || "") + "'></label>" +
       "<label>Reflection (optional)<textarea name='reflection' maxlength='800' placeholder='What improved and what still needs work?'></textarea></label>" +
       "<p class='form-help'>Add a note, a secure https link, or both. Do not submit passwords or highly sensitive information.</p>" +
-      "<button class='btn' type='submit'>Send evidence to Ryan</button></form></details></article>";
+      formActions("Send evidence to Ryan") + "</form></details></article>";
   }).join("");
 }
 
@@ -435,12 +447,20 @@ function plannerList(items){
         detail("Method",item.method) + detail("Finish line",item.goal) + detail("Proof required",item.proofRequired) +
         detail("Evidence",item.proofNote) + linkedDetail("Evidence link",item.proofUrl) +
         detail("Coach review",item.coachReview) + detail("Coach feedback",item.coachFeedback) + "</div>" +
-        "<details class='form-panel'><summary>Update this block</summary><form class='portal-form' data-portal-form>" +
+        "<details class='form-panel'><summary>Edit study block</summary><form class='portal-form' data-portal-form>" +
         "<input type='hidden' name='operation' value='updateplanner'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
-        "<label>Status<select name='status' required>" + optionList(["Planned","In progress","Completed","Skipped"],item.status) + "</select></label>" +
+        "<div class='form-grid'><label>Date<input name='date' type='date' required value='" + safe(item.date || "") + "'></label>" +
+        "<label>Subject<input name='subject' maxlength='80' value='" + safe(item.subject || "") + "'></label></div>" +
+        "<div class='form-grid'><label>Start time<input name='startTime' type='time' required value='" + safe(item.startTime || "") + "'></label>" +
+        "<label>End time<input name='endTime' type='time' required value='" + safe(item.endTime || "") + "'></label></div>" +
+        "<label>Title<input name='title' maxlength='160' required value='" + safe(item.title || "") + "'></label>" +
+        "<div class='form-grid'><label>Method<select name='method'>" + optionListWithCurrent(["Active recall","Practice questions","Retrieval + correction","Teach-back","Mixed practice","Project work","Other"],item.method) + "</select></label>" +
+        "<label>Status<select name='status' required>" + optionList(["Planned","In progress","Completed","Skipped"],item.status) + "</select></label></div>" +
+        "<label>Finish line<textarea name='goal' maxlength='500'>" + safe(item.goal || "") + "</textarea></label>" +
+        "<label>Proof required (optional)<input name='proofRequired' maxlength='300' value='" + safe(item.proofRequired || "") + "'></label>" +
         "<label>Evidence note (optional)<textarea name='proofNote' maxlength='800' placeholder='What did you complete or learn?'>" + safe(item.proofNote || "") + "</textarea></label>" +
         "<label>Evidence link (optional)<input name='proofUrl' type='url' maxlength='1000' value='" + safe(item.proofUrl || "") + "' placeholder='https://...'></label>" +
-        "<button class='btn' type='submit'>Save block update</button></form></details></article>";
+        formActions("Save study block") + "</form></details></article>";
     }).join("");
     return "<div class='planner-day'><div class='planner-date'>" + safe(formatDate(date)) +
       "<div class='muted'>" + safe(daysLabel(date)) + "</div></div><div class='planner-blocks'>" + blocks + "</div></div>";
@@ -452,6 +472,25 @@ function optionList(options,current){
     return "<option" + (String(option) === String(current) ? " selected" : "") + ">" + safe(option) + "</option>";
   }).join("");
 }
+
+function optionListWithCurrent(options,current){
+  const list = options.slice();
+  if(current && list.indexOf(String(current)) === -1) list.unshift(String(current));
+  return optionList(list,current);
+}
+
+function allowedValue(options,current,fallback){
+  return options.indexOf(String(current || "")) >= 0 ? String(current) : fallback;
+}
+
+function formActions(label){
+  return "<div class='form-actions'><button class='btn' type='submit'>" + safe(label) +
+    "</button><button class='btn ghost' type='button' data-close-form>Cancel</button></div>";
+}
+
+const ASSESSMENT_TYPES = ["Summative","Formative","Quiz","Test","Exam","Assignment","Presentation","Project deadline","Other"];
+const PROJECT_STATUSES = ["Idea","Planning","In progress","Paused","Completed","Archived"];
+const WEAK_POINT_STATUSES = ["Active","Practiced","Improving","Mastered","Archived"];
 
 function reviewQueueList(items){
   if(!items || !items.length) return "<div class='empty'>Nothing is due for review. New review items come from the Weak Points & Error Log.</div>";
@@ -467,7 +506,7 @@ function reviewQueueList(items){
       optionList(["Practiced","Improving","Mastered"],item.status === "Active" ? "Practiced" : item.status) +
       "</select></label><label>Next review date<input name='nextReview' type='date' value='" + safe(item.nextReview || "") + "'></label></div>" +
       "<p class='form-help'>If you choose Mastered, the item leaves the review queue and no next date is needed.</p>" +
-      "<button class='btn' type='submit'>Save review</button></form></details></article>";
+      formActions("Save review") + "</form></details></article>";
   }).join("");
 }
 
@@ -478,12 +517,21 @@ function errorLogList(items){
       "</strong>" + reviewBadge(item.status) + "</div><div class='details'>" +
       detail("Mistake",item.mistake || item.detail) + detail("Cause",item.cause) + detail("Fix",item.fix) +
       detail("Retry",item.retry) + detail("Next review",item.nextReview ? formatDate(item.nextReview) : "") +
-      "</div></article>";
+      "</div><details class='form-panel'><summary>Edit error-log entry</summary><form class='portal-form' data-portal-form>" +
+      "<input type='hidden' name='operation' value='updateweakpoint'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
+      "<label>Weak-point title<input name='title' maxlength='160' required value='" + safe(item.title || "") + "'></label>" +
+      "<label>Exact mistake<textarea name='mistake' maxlength='1200' required>" + safe(item.mistake || item.detail || "") + "</textarea></label>" +
+      "<div class='form-grid'><label>Cause<textarea name='cause' maxlength='1200'>" + safe(item.cause || "") + "</textarea></label>" +
+      "<label>Fix<textarea name='fix' maxlength='1200'>" + safe(item.fix || "") + "</textarea></label></div>" +
+      "<label>Latest retry result<textarea name='retry' maxlength='800'>" + safe(item.retry || "") + "</textarea></label>" +
+      "<div class='form-grid'><label>Next review<input name='nextReview' type='date' value='" + safe(item.nextReview || "") + "'></label>" +
+      "<label>Status<select name='status'>" + optionList(WEAK_POINT_STATUSES,item.status || "Active") + "</select></label></div>" +
+      formActions("Save error-log entry") + "</form></details></article>";
   }).join("");
 }
 
 function assessmentList(items){
-  if(!items || !items.length) return "<div class='empty'>No assessments added yet.</div>";
+  if(!items || !items.length) return "<div class='empty'>No summatives or assessments added yet.</div>";
   return items.map(function(item){
     const target = Number(item.prepTarget || 0);
     const complete = Number(item.prepCompleted || 0);
@@ -494,12 +542,18 @@ function assessmentList(items){
       detail("Subject",item.subject) + detail("Type",item.type) + detail("Confidence",item.confidence) +
       detail("Notes",item.notes) + "</div><div class='prep-line'><span>Preparation</span><span>" +
       complete + "/" + target + " actions</span></div><div class='bar'><div style='width:" + percentage +
-      "%'></div></div><details class='form-panel'><summary>Update preparation</summary><form class='portal-form' data-portal-form>" +
+      "%'></div></div><details class='form-panel'><summary>Edit summative or assessment</summary><form class='portal-form' data-portal-form>" +
       "<input type='hidden' name='operation' value='updateassessment'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
-      "<div class='form-grid'><label>Prep actions completed<input name='prepCompleted' type='number' min='0' max='99' value='" + safe(complete) + "' required></label>" +
-      "<label>Confidence<select name='confidence'>" + optionList(["Low","Medium","High"],item.confidence) + "</select></label></div>" +
-      "<label>Status<select name='status' required>" + optionList(["Upcoming","Preparing","Ready","Completed","Cancelled"],item.status) + "</select></label>" +
-      "<button class='btn' type='submit'>Save assessment progress</button></form></details></article>";
+      "<div class='form-grid'><label>Name<input name='name' maxlength='160' required value='" + safe(item.name || "") + "'></label>" +
+      "<label>Subject<input name='subject' maxlength='80' value='" + safe(item.subject || "") + "'></label></div>" +
+      "<div class='form-grid'><label>Date<input name='date' type='date' required value='" + safe(item.date || "") + "'></label>" +
+      "<label>Type<select name='type'>" + optionListWithCurrent(ASSESSMENT_TYPES,item.type) + "</select></label></div>" +
+      "<div class='form-grid'><label>Planned prep actions<input name='prepTarget' type='number' min='0' max='99' value='" + safe(target) + "'></label>" +
+      "<label>Prep actions completed<input name='prepCompleted' type='number' min='0' max='99' value='" + safe(complete) + "' required></label></div>" +
+      "<div class='form-grid'><label>Confidence<select name='confidence'>" + optionListWithCurrent(["Low","Medium","High"],item.confidence) + "</select></label>" +
+      "<label>Status<select name='status' required>" + optionList(["Upcoming","Preparing","Ready","Completed","Cancelled"],allowedValue(["Upcoming","Preparing","Ready","Completed","Cancelled"],item.status,"Upcoming")) + "</select></label></div>" +
+      "<label>Topics or notes<textarea name='notes' maxlength='800'>" + safe(item.notes || "") + "</textarea></label>" +
+      formActions("Save summative") + "</form></details></article>";
   }).join("");
 }
 
@@ -511,7 +565,20 @@ function projectList(items){
       detail("Summary",item.detail) + detail("Role",item.role) + detail("Stage",item.stage) +
       detail("Current goal",item.currentGoal) + detail("Next action",item.nextAction) +
       detail("Output",item.output) + detail("Impact / evidence",item.impact) +
-      detail("Direction",item.longTermDirection) + "</div></article>";
+      detail("Direction",item.longTermDirection) + "</div>" +
+      "<details class='form-panel'><summary>Edit project or activity</summary><form class='portal-form' data-portal-form>" +
+      "<input type='hidden' name='operation' value='updateproject'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
+      "<div class='form-grid'><label>Name<input name='title' maxlength='160' required value='" + safe(item.title || "") + "'></label>" +
+      "<label>Role<input name='role' maxlength='160' value='" + safe(item.role || "") + "' placeholder='Founder, team member, volunteer'></label></div>" +
+      "<label>Summary<textarea name='detail' maxlength='1200'>" + safe(item.detail || "") + "</textarea></label>" +
+      "<div class='form-grid'><label>Stage<input name='stage' maxlength='100' value='" + safe(item.stage || "") + "' placeholder='Idea, research, prototype, launched'></label>" +
+      "<label>Status<select name='status'>" + optionList(PROJECT_STATUSES,allowedValue(PROJECT_STATUSES,item.status,"Idea")) + "</select></label></div>" +
+      "<label>Current goal<textarea name='currentGoal' maxlength='800'>" + safe(item.currentGoal || "") + "</textarea></label>" +
+      "<label>Next concrete action<textarea name='nextAction' maxlength='800'>" + safe(item.nextAction || "") + "</textarea></label>" +
+      "<div class='form-grid'><label>Output<textarea name='output' maxlength='800'>" + safe(item.output || "") + "</textarea></label>" +
+      "<label>Impact or evidence<textarea name='impact' maxlength='800'>" + safe(item.impact || "") + "</textarea></label></div>" +
+      "<label>Long-term direction<textarea name='longTermDirection' maxlength='800'>" + safe(item.longTermDirection || "") + "</textarea></label>" +
+      formActions("Save project") + "</form></details></article>";
   }).join("");
 }
 
@@ -523,7 +590,18 @@ function evidenceList(items){
       reviewBadge(item.status) + " " + reviewBadge(item.coachReview) + "</div></div><div class='details'>" +
       detail("What I did",item.whatIDid) + detail("Evidence",item.evidence) + linkedDetail("Evidence link",item.proofUrl) +
       detail("Result",item.result) + detail("Reflection",item.reflection) +
-      detail("Coach feedback",item.coachFeedback) + "</div></article>";
+      detail("Coach feedback",item.coachFeedback) + "</div>" +
+      "<details class='form-panel'><summary>Edit evidence or win</summary><form class='portal-form' data-portal-form>" +
+      "<input type='hidden' name='operation' value='updateevidence'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
+      "<div class='form-grid'><label>Date<input name='date' type='date' required value='" + safe(item.date || "") + "'></label>" +
+      "<label>Activity<input name='activity' maxlength='160' required value='" + safe(item.activity || "") + "'></label></div>" +
+      "<label>What did you actually do?<textarea name='whatIDid' maxlength='1200' required>" + safe(item.whatIDid || "") + "</textarea></label>" +
+      "<label>Evidence or proof description<textarea name='evidence' maxlength='800'>" + safe(item.evidence || "") + "</textarea></label>" +
+      "<label>Evidence link (optional)<input name='proofUrl' type='url' maxlength='1000' value='" + safe(item.proofUrl || "") + "' placeholder='https://...'></label>" +
+      "<div class='form-grid'><label>Result<textarea name='result' maxlength='800'>" + safe(item.result || "") + "</textarea></label>" +
+      "<label>Reflection<textarea name='reflection' maxlength='800'>" + safe(item.reflection || "") + "</textarea></label></div>" +
+      "<p class='form-help'>Editing approved evidence sends it back to Ryan for review.</p>" + formActions("Save evidence") +
+      "</form></details></article>";
   }).join("");
 }
 
@@ -555,45 +633,83 @@ function simpleList(items,empty){
   }).join("");
 }
 
+function addTaskForm(){
+  return "<details class='form-panel'><summary>Add a task</summary><form class='portal-form' data-portal-form>" +
+    "<input type='hidden' name='operation' value='addtask'>" +
+    "<label>Task title<input name='title' maxlength='160' required placeholder='Prepare history essay outline'></label>" +
+    "<label>Action<textarea name='detail' maxlength='1200' placeholder='What exactly needs to be done?'></textarea></label>" +
+    "<div class='form-grid'><label>Due date<input name='dueDate' type='date'></label>" +
+    "<label>Proof expected<input name='proofRequired' maxlength='500' placeholder='Outline, score, screenshot, or link'></label></div>" +
+    formActions("Add task") + "</form></details>";
+}
+
 function addPlannerForm(){
   return "<details class='form-panel'><summary>Add a study block</summary><form class='portal-form' data-portal-form>" +
     "<input type='hidden' name='operation' value='addplanner'><div class='form-grid'>" +
-    "<label>Date<input name='date' type='date' required></label><label>Subject<input name='subject' maxlength='80' placeholder='Biology'></label></div>" +
+    "<label>Date<input name='date' type='date' required data-default-today></label><label>Subject<input name='subject' maxlength='80' placeholder='Biology'></label></div>" +
     "<div class='form-grid'><label>Start time<input name='startTime' type='time' required></label><label>End time<input name='endTime' type='time' required></label></div>" +
     "<label>Clear study block title<input name='title' maxlength='160' required placeholder='Correct quiz errors'></label>" +
     "<div class='form-grid'><label>Method<select name='method'><option>Active recall</option><option>Practice questions</option><option>Retrieval + correction</option><option>Teach-back</option><option>Mixed practice</option><option>Project work</option><option>Other</option></select></label>" +
     "<label>Proof required (optional)<input name='proofRequired' maxlength='300' placeholder='Corrected worksheet or quiz score'></label></div>" +
     "<label>Finish line<input name='goal' maxlength='500' placeholder='What exactly will be finished by the end?'></label>" +
-    "<button class='btn' type='submit'>Add study block</button></form></details>";
+    formActions("Add study block") + "</form></details>";
 }
 
 function addAssessmentForm(){
-  return "<details class='form-panel'><summary>Add an assessment</summary><form class='portal-form' data-portal-form>" +
+  return "<details class='form-panel'><summary>Add a summative or assessment</summary><form class='portal-form' data-portal-form>" +
     "<input type='hidden' name='operation' value='addassessment'><div class='form-grid'>" +
-    "<label>Assessment name<input name='name' maxlength='160' required placeholder='Chemistry quiz'></label>" +
+    "<label>Name<input name='name' maxlength='160' required placeholder='Chemistry bonding summative'></label>" +
     "<label>Subject<input name='subject' maxlength='80' placeholder='Chemistry'></label></div>" +
-    "<div class='form-grid'><label>Date<input name='date' type='date' required></label>" +
-    "<label>Type<select name='type'><option>Quiz</option><option>Test</option><option>Exam</option><option>Assignment</option><option>Presentation</option><option>Project deadline</option><option>Other</option></select></label></div>" +
+    "<div class='form-grid'><label>Date<input name='date' type='date' required data-default-today></label>" +
+    "<label>Type<select name='type'>" + optionList(ASSESSMENT_TYPES,"Summative") + "</select></label></div>" +
     "<div class='form-grid'><label>Planned prep actions<input name='prepTarget' type='number' min='0' max='99' value='3'></label>" +
     "<label>Confidence<select name='confidence'><option>Low</option><option selected>Medium</option><option>High</option></select></label></div>" +
     "<label>Topics or notes<textarea name='notes' maxlength='800' placeholder='What is covered and what needs attention?'></textarea></label>" +
-    "<button class='btn' type='submit'>Add assessment</button></form></details>";
+    formActions("Add summative") + "</form></details>";
+}
+
+function addWeakPointForm(){
+  return "<details class='form-panel'><summary>Add a weak point</summary><form class='portal-form' data-portal-form>" +
+    "<input type='hidden' name='operation' value='addweakpoint'>" +
+    "<label>Weak-point title<input name='title' maxlength='160' required placeholder='Functions — choosing the correct method'></label>" +
+    "<label>Exact mistake<textarea name='mistake' maxlength='1200' required placeholder='Describe the specific error, not just the subject.'></textarea></label>" +
+    "<div class='form-grid'><label>Likely cause<textarea name='cause' maxlength='1200'></textarea></label>" +
+    "<label>Correction method<textarea name='fix' maxlength='1200'></textarea></label></div>" +
+    "<div class='form-grid'><label>Next review<input name='nextReview' type='date'></label>" +
+    "<label>Status<select name='status'>" + optionList(WEAK_POINT_STATUSES,"Active") + "</select></label></div>" +
+    formActions("Add weak point") + "</form></details>";
+}
+
+function addProjectForm(){
+  return "<details class='form-panel'><summary>Add a project or extracurricular</summary><form class='portal-form' data-portal-form>" +
+    "<input type='hidden' name='operation' value='addproject'>" +
+    "<div class='form-grid'><label>Name<input name='title' maxlength='160' required placeholder='Doha light pollution project'></label>" +
+    "<label>Role<input name='role' maxlength='160' placeholder='Founder, team member, volunteer'></label></div>" +
+    "<label>Summary<textarea name='detail' maxlength='1200' placeholder='What is the project and why does it matter?'></textarea></label>" +
+    "<div class='form-grid'><label>Stage<input name='stage' maxlength='100' placeholder='Idea, research, prototype, launched'></label>" +
+    "<label>Status<select name='status'>" + optionList(PROJECT_STATUSES,"Idea") + "</select></label></div>" +
+    "<label>Current goal<textarea name='currentGoal' maxlength='800'></textarea></label>" +
+    "<label>Next concrete action<textarea name='nextAction' maxlength='800'></textarea></label>" +
+    "<div class='form-grid'><label>Output<textarea name='output' maxlength='800' placeholder='Map, event, prototype, article, competition entry'></textarea></label>" +
+    "<label>Impact or evidence<textarea name='impact' maxlength='800' placeholder='Who used it, what changed, or what proves the work?'></textarea></label></div>" +
+    "<label>Long-term direction<textarea name='longTermDirection' maxlength='800' placeholder='How this connects to the student's interests or future direction'></textarea></label>" +
+    formActions("Add project") + "</form></details>";
 }
 
 function addEvidenceForm(){
   return "<details class='form-panel'><summary>Add Evidence &amp; Win</summary><form class='portal-form' data-portal-form>" +
     "<input type='hidden' name='operation' value='addevidence'><div class='form-grid'>" +
-    "<label>Date<input name='date' type='date' required></label><label>Activity<input name='activity' maxlength='160' required placeholder='Biology quiz correction'></label></div>" +
+    "<label>Date<input name='date' type='date' required data-default-today></label><label>Activity<input name='activity' maxlength='160' required placeholder='Biology quiz correction'></label></div>" +
     "<label>What did you actually do?<textarea name='whatIDid' maxlength='1200' required></textarea></label>" +
     "<label>Evidence or proof description<textarea name='evidence' maxlength='800' placeholder='Score, corrected questions, attendance, output, or artifact.'></textarea></label>" +
     "<label>Evidence link (optional)<input name='proofUrl' type='url' maxlength='1000' placeholder='https://...'></label>" +
     "<div class='form-grid'><label>Result<textarea name='result' maxlength='800'></textarea></label><label>Reflection<textarea name='reflection' maxlength='800'></textarea></label></div>" +
-    "<p class='form-help'>Your submission appears as Pending until Ryan reviews it.</p><button class='btn' type='submit'>Add evidence</button></form></details>";
+    "<p class='form-help'>Your submission appears as Pending until Ryan reviews it.</p>" + formActions("Add evidence") + "</form></details>";
 }
 
 function quickNav(){
   return "<nav class='quick-nav' aria-label='Portal sections'><a href='#dashboard'>Dashboard</a><a href='#planner'>Study Planner</a>" +
-    "<a href='#tasks'>Tasks</a><a href='#reviews'>Review Queue</a><a href='#assessments'>Assessments</a>" +
+    "<a href='#tasks'>Tasks</a><a href='#reviews'>Review Queue</a><a href='#assessments'>Summatives</a>" +
     "<a href='#academics'>Error Log</a><a href='#projects'>Projects</a><a href='#evidence'>Evidence</a><a href='#coaching'>Coaching</a></nav>";
 }
 
@@ -634,6 +750,7 @@ function render(data,demoMode){
     "<strong>Private link:</strong> This workspace is intended for the student and parent or guardian. Do not forward it.") +
     "</div>" + (demoMode ? "<div class='demo-actions'><a class='btn' href='index.html#booking'>Book free beta</a><a class='btn secondary' href='index.html'>Back to website</a></div>" : "") +
     "</div>" + quickNav() +
+    "<div class='info-box editing-note'><span class='status'>Editable</span><div><strong>Your working records are yours to maintain.</strong><br>Use Add or Edit in the planner, tasks, summatives, error log, projects, and evidence. Coach ratings, feedback, parent updates, sessions, meetings, and security settings stay coach-maintained.</div></div>" +
     "<section class='portal-section' id='dashboard'><div class='section-head'><div><span class='section-kicker'>Dashboard</span><h2>Current focus</h2></div><p>Coach-rated progress, the next assessment, and the next meeting in one view.</p></div>" +
     "<div class='grid four'>" +
     progressCard("Study System",progress.studySystem,"Use of effective methods on real schoolwork.") +
@@ -643,16 +760,16 @@ function render(data,demoMode){
     "<div class='rubric'><strong>How scores work:</strong> coach-rated at 0, 25, 50, 75, or 100 — not started, emerging, developing, consistent, or independent.</div></section>" +
     "<section class='portal-section' id='planner'><div class='section-head'><div><span class='section-kicker'>Plan</span><h2>Study Planner</h2></div><p>Block real work into the week with a method, finish line, and optional proof requirement.</p></div><div class='card'><div class='list'>" +
     plannerList(currentData.planner) + "</div>" + addPlannerForm() + "</div></section>" +
-    "<section class='portal-section' id='tasks'><div class='section-head'><div><span class='section-kicker'>This week</span><h2>Weekly Tasks &amp; Proof</h2></div><p>Every task has a due date, proof expectation, and coach-review status.</p></div><div class='card'><div class='list'>" +
-    taskList(currentData.tasks) + "</div></div></section>" +
+    "<section class='portal-section' id='tasks'><div class='section-head'><div><span class='section-kicker'>This week</span><h2>Weekly Tasks &amp; Proof</h2></div><p>Add personal tasks, edit the action and due date, then submit proof without changing Ryan's review.</p></div><div class='card'><div class='list'>" +
+    taskList(currentData.tasks) + "</div>" + addTaskForm() + "</div></section>" +
     "<section class='portal-section' id='reviews'><div class='section-head'><div><span class='section-kicker'>Spaced review</span><h2>Review Queue</h2></div><p>Due weak points reappear here until the student retries them and either reschedules or masters them.</p></div><div class='card'><div class='list'>" +
     reviewQueueList(currentData.reviewQueue) + "</div></div></section>" +
-    "<section class='portal-section' id='assessments'><div class='section-head'><div><span class='section-kicker'>Deadlines</span><h2>Assessments</h2></div><p>Track days remaining, preparation actions, confidence, and current readiness.</p></div><div class='card'><div class='list'>" +
+    "<section class='portal-section' id='assessments'><div class='section-head'><div><span class='section-kicker'>Deadlines</span><h2>Summatives &amp; Assessments</h2></div><p>Add every summative, test, presentation, or major deadline; edit all details as the school plan changes.</p></div><div class='card'><div class='list'>" +
     assessmentList(currentData.assessments) + "</div>" + addAssessmentForm() + "</div></section>" +
     "<section class='portal-section' id='academics'><div class='section-head'><div><span class='section-kicker'>Academics</span><h2>Weak Points &amp; Error Log</h2></div><p>Attempt → diagnose the cause → fix → retry → schedule the next review.</p></div><div class='card'><div class='list'>" +
-    errorLogList(currentData.weakPoints) + "</div></div></section>" +
+    errorLogList(currentData.weakPoints) + "</div>" + addWeakPointForm() + "</div></section>" +
     "<section class='portal-section' id='projects'><div class='section-head'><div><span class='section-kicker'>Profile</span><h2>Projects &amp; Extracurriculars</h2></div><p>Track role, stage, next action, tangible output, contribution, and direction.</p></div><div class='card'><div class='list'>" +
-    projectList(currentData.projects) + "</div></div></section>" +
+    projectList(currentData.projects) + "</div>" + addProjectForm() + "</div></section>" +
     "<section class='portal-section' id='evidence'><div class='section-head'><div><span class='section-kicker'>Proof</span><h2>Evidence &amp; Wins</h2></div><p>A running record of real work, artifacts, results, reflection, and coach verification.</p></div><div class='card'><div class='list'>" +
     evidenceList(currentData.evidenceWins) + "</div>" + addEvidenceForm() + "</div></section>" +
     "<section class='portal-section' id='coaching'><div class='section-head'><div><span class='section-kicker'>Coaching</span><h2>Sessions, progress &amp; parent update</h2></div><p>See how the scores changed, what happened in each session, and what comes next.</p></div><div class='columns'>" +
@@ -670,7 +787,7 @@ function render(data,demoMode){
 
 function setFormDateDefaults(){
   const today = qatarToday();
-  document.querySelectorAll("form[data-portal-form] input[type='date']").forEach(function(input){
+  document.querySelectorAll("form[data-portal-form] input[data-default-today]").forEach(function(input){
     if(!input.value) input.value = today;
   });
 }
@@ -704,7 +821,20 @@ function applyDemoAction(values){
   }
   if(operation === "updateplanner"){
     const item = currentData.planner.find(function(entry){ return entry.id === values.recordId; });
-    if(item){ item.status = values.status; item.proofNote = values.proofNote; item.proofUrl = values.proofUrl; item.coachReview = values.proofNote || values.proofUrl ? "Pending" : item.coachReview; }
+    if(item){
+      Object.assign(item,{date:values.date,startTime:values.startTime,endTime:values.endTime,subject:values.subject,
+        title:values.title,method:values.method,goal:values.goal,proofRequired:values.proofRequired,
+        status:values.status,proofNote:values.proofNote,proofUrl:values.proofUrl});
+      item.coachReview = values.proofNote || values.proofUrl ? "Pending" : item.coachReview;
+    }
+  }
+  if(operation === "addtask"){
+    currentData.tasks.push({id:actionId(),title:values.title,detail:values.detail,status:"Not started",
+      dueDate:values.dueDate,proofRequired:values.proofRequired,coachReview:"Not submitted"});
+  }
+  if(operation === "updatetask"){
+    const task = currentData.tasks.find(function(entry){ return entry.id === values.recordId; });
+    if(task) Object.assign(task,{title:values.title,detail:values.detail,dueDate:values.dueDate,proofRequired:values.proofRequired});
   }
   if(operation === "submittaskproof"){
     const task = currentData.tasks.find(function(entry){ return entry.id === values.recordId; });
@@ -720,11 +850,38 @@ function applyDemoAction(values){
     const weak = currentData.weakPoints.find(function(entry){ return entry.id === values.recordId; });
     if(weak){ weak.retry = values.retry;weak.status = values.status;weak.nextReview = values.status === "Mastered" ? "" : values.nextReview;weak.lastReviewedAt = qatarToday(); }
   }
+  if(operation === "addweakpoint"){
+    currentData.weakPoints.push({id:actionId(),title:values.title,mistake:values.mistake,cause:values.cause,
+      fix:values.fix,retry:"",nextReview:values.nextReview,status:values.status});
+  }
+  if(operation === "updateweakpoint"){
+    const weak = currentData.weakPoints.find(function(entry){ return entry.id === values.recordId; });
+    if(weak) Object.assign(weak,{title:values.title,mistake:values.mistake,cause:values.cause,fix:values.fix,
+      retry:values.retry,nextReview:values.status === "Mastered" || values.status === "Archived" ? "" : values.nextReview,status:values.status});
+  }
   if(operation === "addevidence"){
     currentData.evidenceWins.unshift({
       id:actionId(),date:values.date,activity:values.activity,whatIDid:values.whatIDid,evidence:values.evidence,
       proofUrl:values.proofUrl,result:values.result,reflection:values.reflection,status:"Submitted",coachReview:"Pending"
     });
+  }
+  if(operation === "updateevidence"){
+    const evidence = currentData.evidenceWins.find(function(entry){ return entry.id === values.recordId; });
+    if(evidence){
+      Object.assign(evidence,{date:values.date,activity:values.activity,whatIDid:values.whatIDid,evidence:values.evidence,
+        proofUrl:values.proofUrl,result:values.result,reflection:values.reflection,status:"Submitted",coachReview:"Pending",coachFeedback:""});
+    }
+  }
+  if(operation === "addproject"){
+    currentData.projects.push({id:actionId(),title:values.title,detail:values.detail,role:values.role,stage:values.stage,
+      currentGoal:values.currentGoal,nextAction:values.nextAction,output:values.output,impact:values.impact,
+      longTermDirection:values.longTermDirection,status:values.status});
+  }
+  if(operation === "updateproject"){
+    const project = currentData.projects.find(function(entry){ return entry.id === values.recordId; });
+    if(project) Object.assign(project,{title:values.title,detail:values.detail,role:values.role,stage:values.stage,
+      currentGoal:values.currentGoal,nextAction:values.nextAction,output:values.output,impact:values.impact,
+      longTermDirection:values.longTermDirection,status:values.status});
   }
   if(operation === "addassessment"){
     currentData.assessments.push({
@@ -734,7 +891,11 @@ function applyDemoAction(values){
   }
   if(operation === "updateassessment"){
     const assessment = currentData.assessments.find(function(entry){ return entry.id === values.recordId; });
-    if(assessment){ assessment.prepCompleted = Number(values.prepCompleted || 0);assessment.confidence = values.confidence;assessment.status = values.status; }
+    if(assessment){
+      Object.assign(assessment,{name:values.name,subject:values.subject,date:values.date,type:values.type,
+        prepTarget:Number(values.prepTarget || 0),prepCompleted:Number(values.prepCompleted || 0),
+        confidence:values.confidence,status:values.status,notes:values.notes});
+    }
   }
   if(operation === "setreminders") currentData.portalReminders = values.enabled === "true";
   render(derive(currentData),true);
@@ -789,12 +950,23 @@ document.getElementById("app").addEventListener("submit",function(event){
     showStatus("Choose the next review date, or mark the weak point Mastered.",false);
     return;
   }
-  if(values.operation === "addevidence" && !String(values.evidence || "").trim() && !String(values.proofUrl || "").trim()){
+  if((values.operation === "addevidence" || values.operation === "updateevidence") &&
+      !String(values.evidence || "").trim() && !String(values.proofUrl || "").trim()){
     showStatus("Add proof details or an https evidence link.",false);
     return;
   }
   if(isDemo) applyDemoAction(values);
   else submitRealAction(form,values);
+});
+
+document.getElementById("app").addEventListener("click",function(event){
+  const button = event.target.closest("[data-close-form]");
+  if(!button) return;
+  const panel = button.closest("details.form-panel");
+  const form = button.closest("form");
+  if(form) form.reset();
+  setFormDateDefaults();
+  if(panel) panel.open = false;
 });
 
 window.addEventListener("message",async function(event){
