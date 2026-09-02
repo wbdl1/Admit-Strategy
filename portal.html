@@ -63,6 +63,9 @@ a{color:var(--success)}
 .item strong{display:inline-block;margin-bottom:4px}
 .record-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
 .record-head strong{font-size:1.02rem;margin:0}
+.record-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap}
+.record-edit{border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.08);color:#fff;padding:6px 10px;font-size:.78rem;font-weight:850}
+.record-edit:hover,.record-edit:focus-visible{border-color:var(--accent2);outline:none;background:rgba(32,227,178,.12)}
 .details{display:grid;gap:8px}
 .detail-row{display:grid;grid-template-columns:minmax(105px,135px) 1fr;gap:12px;align-items:start}
 .detail-label{color:var(--success);font-size:.76rem;font-weight:850;letter-spacing:.02em;text-transform:uppercase}
@@ -103,6 +106,7 @@ a{color:var(--success)}
 .portal-form input:focus,.portal-form select:focus,.portal-form textarea:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(32,227,178,.12)}
 .portal-form textarea{min-height:84px;resize:vertical}
 .portal-form option{color:#111}
+.portal-form .opt{display:flex;grid-template-columns:auto 1fr;gap:9px;align-items:flex-start;font-weight:650;line-height:1.5}.portal-form .opt input{width:auto;margin-top:3px}
 .btn{
   display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:999px;
   padding:11px 15px;font-weight:900;text-decoration:none;background:linear-gradient(135deg,#fff,#dff7ff);color:#050816
@@ -124,6 +128,22 @@ a{color:var(--success)}
 .demo-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
 .editing-note{display:grid;grid-template-columns:auto 1fr;gap:11px;align-items:start}
 .editing-note .status{margin-top:1px}
+.edit-panel{display:none}
+.editor-dialog{width:min(720px,calc(100% - 24px));max-height:88vh;margin:auto;border:1px solid var(--line);border-radius:24px;background:#0b1024;color:#fff;padding:0;box-shadow:0 30px 100px rgba(0,0,0,.7)}
+.editor-dialog::backdrop{background:rgba(2,4,12,.78);backdrop-filter:blur(5px)}
+.editor-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:17px 18px;background:#0b1024;border-bottom:1px solid var(--line)}
+.editor-head h2{font-size:1.2rem}.editor-close{border:1px solid var(--line);background:rgba(255,255,255,.08);color:#fff;border-radius:999px;width:36px;height:36px;font-size:1.25rem}
+.editor-body{overflow:auto}.editor-body .portal-form{padding:18px}
+.leitner-wrap{overflow-x:auto;padding-bottom:8px}
+.leitner-board{display:grid;grid-template-columns:repeat(5,minmax(210px,1fr));gap:10px;min-width:1080px}
+.leitner-box{min-height:260px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.045);padding:11px;transition:.18s ease}
+.leitner-box.drag-over{border-color:var(--accent2);background:rgba(32,227,178,.12);transform:translateY(-2px)}
+.leitner-title{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:10px}.leitner-title strong{font-size:.92rem}.leitner-title span{color:var(--muted);font-size:.72rem;text-align:right}
+.review-card{border:1px solid var(--line);border-radius:14px;background:rgba(124,92,255,.13);padding:11px;margin-top:8px;cursor:grab}.review-card:active{cursor:grabbing}.review-card[aria-grabbed='true']{opacity:.55}
+.review-card strong{display:block;overflow-wrap:anywhere}.review-meta{color:var(--muted);font-size:.76rem;line-height:1.45;margin-top:4px}.move-row{display:flex;gap:6px;margin-top:9px}.move-row button{flex:1;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.08);color:#fff;padding:6px;font-weight:850}
+.review-card .detail-row{grid-template-columns:1fr;gap:2px}.review-card .detail-value{font-size:.82rem}
+.calendar-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.calendar-source{border:1px solid var(--line);border-radius:16px;padding:14px;background:rgba(255,255,255,.055)}
+.privacy-callout{border-color:rgba(32,227,178,.3);background:rgba(32,227,178,.08)}
 .footer{margin-top:28px;text-align:center;color:var(--muted);font-size:.9rem}
 .hidden-frame{display:none}
 @media(max-width:950px){.grid.four{grid-template-columns:repeat(2,1fr)}}
@@ -141,10 +161,11 @@ a{color:var(--success)}
   .hero{padding:23px}
   .card{padding:18px}
   .detail-row,.form-grid,.planner-day{grid-template-columns:1fr;gap:5px}
-  .record-head,.assessment-main{flex-direction:column}
+  .record-head,.assessment-main{flex-direction:column}.record-actions{justify-content:flex-start}
   .form-actions .btn{width:100%}
   .countdown{font-size:1.55rem}
   .quick-nav{margin-left:-4px;margin-right:-4px}
+  .calendar-grid{grid-template-columns:1fr}.editor-dialog{max-height:94vh}
 }
 </style>
 </head>
@@ -162,6 +183,10 @@ a{color:var(--success)}
     </div>
   </div>
   <iframe class="hidden-frame" name="portalFrame" title="Portal update response"></iframe>
+  <dialog class="editor-dialog" id="portalEditor" aria-labelledby="portalEditorTitle">
+    <div class="editor-head"><h2 id="portalEditorTitle">Edit record</h2><button class="editor-close" type="button" data-close-editor aria-label="Close editor">×</button></div>
+    <div class="editor-body" id="portalEditorBody"></div>
+  </dialog>
   <div class="footer">Admit Strategy • Rayan (Ryan) Zayd Quereshi • <a class="privacy-link" href="privacy.html">Privacy</a></div>
 </div>
 <script>
@@ -262,7 +287,19 @@ const DEMO_DATA = {
       progress: { studySystem: 50, consistency: 25, direction: 50 }
     }
   ],
-  progressHistory: []
+  progressHistory: [],
+  reviewCards: [
+    {id:"review-demo-1",subject:"Biology",unit:"Cell structure",term:"Mitochondria",prompt:"What is its main function?",answer:"Produces ATP through aerobic respiration.",box:1,nextReview:"2026-09-02",status:"Active"},
+    {id:"review-demo-2",subject:"Chemistry",unit:"Bonding",term:"Ionic bond",prompt:"How does it form?",answer:"Electron transfer creates oppositely charged ions.",box:2,nextReview:"2026-09-05",status:"Active"},
+    {id:"review-demo-3",subject:"Math",unit:"Functions",term:"Domain",prompt:"What values can be inputs?",answer:"The permitted input values of a function.",box:3,nextReview:"2026-09-09",status:"Active"}
+  ],
+  calendarSources: [
+    {id:"calendar-demo-1",provider:"Google Calendar",calendarName:"Sample school deadlines",category:"Both",status:"Connected",lastSyncStatus:"3 upcoming events synced",lastSyncAt:"2026-09-02"}
+  ],
+  calendarEvents: [
+    {id:"event-demo-1",title:"Physics forces formative",date:"2026-09-12",description:"Free-body diagrams and Newton's laws.",category:"Academic",sourceName:"Sample school deadlines",assessmentId:"assessment-demo-2",status:"Active"},
+    {id:"event-demo-2",title:"Robotics club competition",date:"2026-09-18",description:"Regional school robotics event.",category:"Extracurricular",sourceName:"Sample school deadlines",status:"Active"}
+  ]
 };
 
 let currentData = null;
@@ -410,18 +447,20 @@ function taskList(items){
     const due = item.dueDate ? formatDate(item.dueDate) + " • " + daysLabel(item.dueDate) : "No due date";
     return "<article class='item'><div class='record-head'><div><strong>" + safe(item.title || "Task") +
       "</strong><div><span class='date-chip'>" + safe(due) + "</span></div></div><div>" +
-      reviewBadge(item.status) + " " + reviewBadge(item.coachReview) + "</div></div><div class='details'>" +
+      reviewBadge(item.status) + " " + reviewBadge(item.coachReview) +
+      " <button class='record-edit' type='button' data-open-editor='0' data-editor-title='Edit task'>Edit</button>" +
+      " <button class='record-edit' type='button' data-open-editor='1' data-editor-title='Submit evidence'>Evidence</button></div></div><div class='details'>" +
       detail("Action",item.detail) + detail("Proof required",item.proofRequired) +
       detail("Submitted evidence",item.proofNote) + linkedDetail("Evidence link",item.proofUrl) +
       detail("Coach feedback",item.coachFeedback) + "</div>" +
-      "<details class='form-panel'><summary>Edit task details</summary><form class='portal-form' data-portal-form>" +
+      "<details class='form-panel edit-panel'><summary>Edit task details</summary><form class='portal-form' data-portal-form>" +
       "<input type='hidden' name='operation' value='updatetask'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
       "<label>Task title<input name='title' maxlength='160' required value='" + safe(item.title || "") + "'></label>" +
       "<label>Action<textarea name='detail' maxlength='1200' placeholder='What needs to be done?'>" + safe(item.detail || "") + "</textarea></label>" +
       "<div class='form-grid'><label>Due date<input name='dueDate' type='date' value='" + safe(item.dueDate || "") + "'></label>" +
       "<label>Proof expected<input name='proofRequired' maxlength='500' value='" + safe(item.proofRequired || "") + "'></label></div>" +
       "<p class='form-help'>Coach review, feedback, and submitted proof remain protected.</p>" + formActions("Save task") + "</form></details>" +
-      "<details class='form-panel'><summary>Submit or replace evidence</summary><form class='portal-form' data-portal-form>" +
+      "<details class='form-panel edit-panel'><summary>Submit or replace evidence</summary><form class='portal-form' data-portal-form>" +
       "<input type='hidden' name='operation' value='submittaskproof'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
       "<label>What did you complete?<textarea name='proofNote' maxlength='1200' placeholder='Describe the actual work, score, correction, or output.'>" + safe(item.proofNote || "") + "</textarea></label>" +
       "<label>Evidence link (optional)<input name='proofUrl' type='url' maxlength='1000' placeholder='https://drive.google.com/... or another secure link' value='" + safe(item.proofUrl || "") + "'></label>" +
@@ -443,11 +482,12 @@ function plannerList(items){
     const blocks = grouped[date].map(function(item){
       return "<article class='item'><div class='record-head'><div><strong>" + safe(item.title || "Study block") +
         "</strong><div class='muted'>" + safe((item.startTime || "") + (item.endTime ? "–" + item.endTime : "") +
-        (item.subject ? " • " + item.subject : "")) + "</div></div>" + reviewBadge(item.status) + "</div><div class='details'>" +
+        (item.subject ? " • " + item.subject : "")) + "</div></div><div class='record-actions'>" + reviewBadge(item.status) +
+        "<button class='record-edit' type='button' data-open-editor='0' data-editor-title='Edit study block'>Edit</button></div></div><div class='details'>" +
         detail("Method",item.method) + detail("Finish line",item.goal) + detail("Proof required",item.proofRequired) +
         detail("Evidence",item.proofNote) + linkedDetail("Evidence link",item.proofUrl) +
         detail("Coach review",item.coachReview) + detail("Coach feedback",item.coachFeedback) + "</div>" +
-        "<details class='form-panel'><summary>Edit study block</summary><form class='portal-form' data-portal-form>" +
+        "<details class='form-panel edit-panel'><summary>Edit study block</summary><form class='portal-form' data-portal-form>" +
         "<input type='hidden' name='operation' value='updateplanner'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
         "<div class='form-grid'><label>Date<input name='date' type='date' required value='" + safe(item.date || "") + "'></label>" +
         "<label>Subject<input name='subject' maxlength='80' value='" + safe(item.subject || "") + "'></label></div>" +
@@ -497,9 +537,10 @@ function reviewQueueList(items){
   return items.map(function(item){
     return "<article class='item'><div class='record-head'><div><strong>" + safe(item.title || "Review item") +
       "</strong><div><span class='date-chip'>" + safe(formatDate(item.nextReview) + " • " + daysLabel(item.nextReview)) +
-      "</span></div></div>" + reviewBadge(item.status) + "</div><div class='details'>" +
+      "</span></div></div><div class='record-actions'>" + reviewBadge(item.status) +
+      "<button class='record-edit' type='button' data-open-editor='0' data-editor-title='Log spaced review'>Review</button></div></div><div class='details'>" +
       detail("Mistake",item.mistake || item.detail) + detail("Fix",item.fix) + detail("Last retry",item.retry) +
-      "</div><details class='form-panel'><summary>Log this review</summary><form class='portal-form' data-portal-form>" +
+      "</div><details class='form-panel edit-panel'><summary>Log this review</summary><form class='portal-form' data-portal-form>" +
       "<input type='hidden' name='operation' value='reviewweakpoint'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
       "<label>What happened when you retried it?<textarea name='retry' maxlength='800' required placeholder='Record the attempt and result.'></textarea></label>" +
       "<div class='form-grid'><label>Status<select name='status' required>" +
@@ -514,10 +555,11 @@ function errorLogList(items){
   if(!items || !items.length) return "<div class='empty'>No weak points or error-log entries added yet.</div>";
   return items.map(function(item){
     return "<article class='item'><div class='record-head'><strong>" + safe(item.title || "Weak point") +
-      "</strong>" + reviewBadge(item.status) + "</div><div class='details'>" +
+      "</strong><div class='record-actions'>" + reviewBadge(item.status) +
+      "<button class='record-edit' type='button' data-open-editor='0' data-editor-title='Edit error-log entry'>Edit</button></div></div><div class='details'>" +
       detail("Mistake",item.mistake || item.detail) + detail("Cause",item.cause) + detail("Fix",item.fix) +
       detail("Retry",item.retry) + detail("Next review",item.nextReview ? formatDate(item.nextReview) : "") +
-      "</div><details class='form-panel'><summary>Edit error-log entry</summary><form class='portal-form' data-portal-form>" +
+      "</div><details class='form-panel edit-panel'><summary>Edit error-log entry</summary><form class='portal-form' data-portal-form>" +
       "<input type='hidden' name='operation' value='updateweakpoint'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
       "<label>Weak-point title<input name='title' maxlength='160' required value='" + safe(item.title || "") + "'></label>" +
       "<label>Exact mistake<textarea name='mistake' maxlength='1200' required>" + safe(item.mistake || item.detail || "") + "</textarea></label>" +
@@ -538,11 +580,12 @@ function assessmentList(items){
     const percentage = target > 0 ? Math.min(100,Math.round(complete / target * 100)) : 0;
     return "<article class='item'><div class='record-head'><div><strong>" + safe(item.name || "Assessment") +
       "</strong><div><span class='date-chip'>" + safe(formatDate(item.date) + " • " + daysLabel(item.date)) +
-      "</span></div></div>" + reviewBadge(item.status) + "</div><div class='details'>" +
+      "</span></div></div><div class='record-actions'>" + reviewBadge(item.status) +
+      "<button class='record-edit' type='button' data-open-editor='0' data-editor-title='Edit summative'>Edit</button></div></div><div class='details'>" +
       detail("Subject",item.subject) + detail("Type",item.type) + detail("Confidence",item.confidence) +
       detail("Notes",item.notes) + "</div><div class='prep-line'><span>Preparation</span><span>" +
       complete + "/" + target + " actions</span></div><div class='bar'><div style='width:" + percentage +
-      "%'></div></div><details class='form-panel'><summary>Edit summative or assessment</summary><form class='portal-form' data-portal-form>" +
+      "%'></div></div><details class='form-panel edit-panel'><summary>Edit summative or assessment</summary><form class='portal-form' data-portal-form>" +
       "<input type='hidden' name='operation' value='updateassessment'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
       "<div class='form-grid'><label>Name<input name='name' maxlength='160' required value='" + safe(item.name || "") + "'></label>" +
       "<label>Subject<input name='subject' maxlength='80' value='" + safe(item.subject || "") + "'></label></div>" +
@@ -561,12 +604,13 @@ function projectList(items){
   if(!items || !items.length) return "<div class='empty'>No project or extracurricular updates added yet.</div>";
   return items.map(function(item){
     return "<article class='item'><div class='record-head'><strong>" + safe(item.title || "Project or activity") +
-      "</strong>" + reviewBadge(item.status) + "</div><div class='details'>" +
+      "</strong><div class='record-actions'>" + reviewBadge(item.status) +
+      "<button class='record-edit' type='button' data-open-editor='0' data-editor-title='Edit project or activity'>Edit</button></div></div><div class='details'>" +
       detail("Summary",item.detail) + detail("Role",item.role) + detail("Stage",item.stage) +
       detail("Current goal",item.currentGoal) + detail("Next action",item.nextAction) +
       detail("Output",item.output) + detail("Impact / evidence",item.impact) +
       detail("Direction",item.longTermDirection) + "</div>" +
-      "<details class='form-panel'><summary>Edit project or activity</summary><form class='portal-form' data-portal-form>" +
+      "<details class='form-panel edit-panel'><summary>Edit project or activity</summary><form class='portal-form' data-portal-form>" +
       "<input type='hidden' name='operation' value='updateproject'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
       "<div class='form-grid'><label>Name<input name='title' maxlength='160' required value='" + safe(item.title || "") + "'></label>" +
       "<label>Role<input name='role' maxlength='160' value='" + safe(item.role || "") + "' placeholder='Founder, team member, volunteer'></label></div>" +
@@ -587,11 +631,12 @@ function evidenceList(items){
   return items.map(function(item){
     return "<article class='item'><div class='record-head'><div><strong>" + safe(item.activity || "Progress evidence") +
       "</strong><div><span class='date-chip'>" + safe(formatDate(item.date)) + "</span></div></div><div>" +
-      reviewBadge(item.status) + " " + reviewBadge(item.coachReview) + "</div></div><div class='details'>" +
+      reviewBadge(item.status) + " " + reviewBadge(item.coachReview) +
+      " <button class='record-edit' type='button' data-open-editor='0' data-editor-title='Edit evidence or win'>Edit</button></div></div><div class='details'>" +
       detail("What I did",item.whatIDid) + detail("Evidence",item.evidence) + linkedDetail("Evidence link",item.proofUrl) +
       detail("Result",item.result) + detail("Reflection",item.reflection) +
       detail("Coach feedback",item.coachFeedback) + "</div>" +
-      "<details class='form-panel'><summary>Edit evidence or win</summary><form class='portal-form' data-portal-form>" +
+      "<details class='form-panel edit-panel'><summary>Edit evidence or win</summary><form class='portal-form' data-portal-form>" +
       "<input type='hidden' name='operation' value='updateevidence'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
       "<div class='form-grid'><label>Date<input name='date' type='date' required value='" + safe(item.date || "") + "'></label>" +
       "<label>Activity<input name='activity' maxlength='160' required value='" + safe(item.activity || "") + "'></label></div>" +
@@ -707,9 +752,93 @@ function addEvidenceForm(){
     "<p class='form-help'>Your submission appears as Pending until Ryan reviews it.</p>" + formActions("Add evidence") + "</form></details>";
 }
 
+const REVIEW_BOXES = [
+  {box:1,title:"Box 1",schedule:"Review daily"},
+  {box:2,title:"Box 2",schedule:"Every 3 days"},
+  {box:3,title:"Box 3",schedule:"Every week"},
+  {box:4,title:"Box 4",schedule:"Every 2 weeks"},
+  {box:5,title:"Mastered",schedule:"Long-term memory"}
+];
+
+function reviewBoard(items){
+  const cards = items || [];
+  return "<div class='leitner-wrap' aria-label='Spaced repetition box board'><div class='leitner-board'>" +
+    REVIEW_BOXES.map(function(config){
+      const boxCards = cards.filter(function(card){ return Number(card.box || 1) === config.box; });
+      return "<section class='leitner-box' data-review-box='" + config.box + "'><div class='leitner-title'><strong>" +
+        safe(config.title) + "</strong><span>" + safe(config.schedule) + "<br>" + boxCards.length + " card" + (boxCards.length === 1 ? "" : "s") + "</span></div>" +
+        (boxCards.length ? boxCards.map(reviewCard).join("") : "<div class='empty'>Drop terms here.</div>") + "</section>";
+    }).join("") + "</div></div>";
+}
+
+function reviewCard(item){
+  const box = Number(item.box || 1);
+  return "<article class='review-card' draggable='true' tabindex='0' data-review-id='" + safe(item.id) + "' data-review-box-current='" + box + "' aria-grabbed='false'>" +
+    "<strong>" + safe(item.term || "Review item") + "</strong><div class='review-meta'>" + safe([item.subject,item.unit].filter(Boolean).join(" • ")) +
+    (item.nextReview ? "<br>Next: " + safe(formatDate(item.nextReview)) : "") + "</div>" +
+    (item.prompt ? "<div class='details' style='margin-top:8px'>" + detail("Prompt",item.prompt) + detail("Answer",item.answer) + "</div>" : "") +
+    "<div class='move-row'>" + (box > 1 ? "<button type='button' data-move-review='" + (box - 1) + "' aria-label='Move back one box'>←</button>" : "") +
+    "<button type='button' data-open-editor='0' data-editor-title='Edit review card'>Edit</button>" +
+    (box < 5 ? "<button type='button' data-move-review='" + (box + 1) + "' aria-label='Move forward one box'>→</button>" : "") + "</div>" +
+    "<details class='form-panel edit-panel'><summary>Edit review card</summary><form class='portal-form' data-portal-form>" +
+    "<input type='hidden' name='operation' value='updatereviewcard'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
+    "<div class='form-grid'><label>Subject<input name='subject' maxlength='80' value='" + safe(item.subject || "") + "'></label>" +
+    "<label>Unit or sub-unit<input name='unit' maxlength='160' value='" + safe(item.unit || "") + "'></label></div>" +
+    "<label>Term or concept<input name='term' maxlength='160' required value='" + safe(item.term || "") + "'></label>" +
+    "<label>Recall prompt<textarea name='prompt' maxlength='600'>" + safe(item.prompt || "") + "</textarea></label>" +
+    "<label>Answer or explanation<textarea name='answer' maxlength='1200'>" + safe(item.answer || "") + "</textarea></label>" +
+    formActions("Save review card") + "</form></details></article>";
+}
+
+function addReviewCardForm(){
+  return "<details class='form-panel'><summary>Add a term or sub-unit</summary><form class='portal-form' data-portal-form>" +
+    "<input type='hidden' name='operation' value='addreviewcard'><input type='hidden' name='box' value='1'>" +
+    "<div class='form-grid'><label>Subject<input name='subject' maxlength='80' placeholder='Biology'></label>" +
+    "<label>Unit or sub-unit<input name='unit' maxlength='160' placeholder='Cell structure'></label></div>" +
+    "<label>Term or concept<input name='term' maxlength='160' required placeholder='Mitochondria'></label>" +
+    "<label>Recall prompt<textarea name='prompt' maxlength='600' placeholder='What should you be able to recall?'></textarea></label>" +
+    "<label>Answer or explanation<textarea name='answer' maxlength='1200' placeholder='Keep this concise enough to self-check.'></textarea></label>" +
+    formActions("Add to Box 1") + "</form></details>";
+}
+
+function calendarSourceList(items){
+  if(!items || !items.length) return "<div class='empty'>No calendar feed linked yet. Link a dedicated academic or extracurricular calendar below.</div>";
+  return "<div class='calendar-grid'>" + items.map(function(item){
+    return "<article class='calendar-source'><div class='record-head'><div><strong>" + safe(item.calendarName || "Linked calendar") +
+      "</strong><div class='muted'>" + safe(item.provider || "Calendar") + " • " + safe(item.category || "Both") + "</div></div>" +
+      reviewBadge(item.status) + "</div>" + detail("Last sync",item.lastSyncStatus || item.lastSyncAt) +
+      (item.lastError ? detail("Sync issue",item.lastError) : "") +
+      (String(item.status).toLowerCase() === "connected" ?
+      "<div class='form-actions' style='margin-top:10px'><form data-portal-form><input type='hidden' name='operation' value='synccalendar'><input type='hidden' name='recordId' value='" + safe(item.id) + "'><button class='record-edit' type='submit'>Refresh now</button></form>" +
+      "<form data-portal-form><input type='hidden' name='operation' value='disconnectcalendar'><input type='hidden' name='recordId' value='" + safe(item.id) + "'><button class='record-edit' type='submit'>Disconnect</button></form></div>" : "") + "</article>";
+  }).join("") + "</div>";
+}
+
+function calendarEventList(items){
+  if(!items || !items.length) return "<div class='empty'>No upcoming imported events.</div>";
+  return items.map(function(item){
+    return "<article class='item'><div class='record-head'><div><strong>" + safe(item.title || "Calendar event") +
+      "</strong><div><span class='date-chip'>" + safe(formatDate(item.date) + " • " + daysLabel(item.date)) +
+      "</span></div></div>" + reviewBadge(item.category) + "</div><div class='details'>" +
+      detail("Calendar",item.sourceName) + detail("Details",item.description) +
+      (item.assessmentId ? detail("Portal action","Added to Summatives & Assessments") : "") + "</div></article>";
+  }).join("");
+}
+
+function linkCalendarForm(){
+  return "<details class='form-panel'><summary>Link a dedicated calendar feed</summary><form class='portal-form' data-portal-form>" +
+    "<input type='hidden' name='operation' value='linkcalendar'>" +
+    "<div class='form-grid'><label>Calendar name<input name='calendarName' maxlength='120' required placeholder='School deadlines'></label>" +
+    "<label>Import category<select name='category'><option>Academics</option><option>Extracurriculars</option><option selected>Both</option></select></label></div>" +
+    "<label>Private iCal feed URL<input name='feedUrl' type='url' maxlength='2000' required placeholder='https://calendar.google.com/calendar/ical/.../basic.ics'></label>" +
+    "<label class='opt'><input name='calendarConsent' type='checkbox' value='yes' required> <span>I confirm this is a dedicated school/activities calendar approved for portal sync, not my personal calendar.</span></label>" +
+    "<p class='form-help'>Supported: Google Calendar, Microsoft Outlook, and Apple Calendar iCal feeds. The feed URL stays private, is never returned to the portal, and is deleted when you disconnect.</p>" +
+    formActions("Link and sync calendar") + "</form></details>";
+}
+
 function quickNav(){
   return "<nav class='quick-nav' aria-label='Portal sections'><a href='#dashboard'>Dashboard</a><a href='#planner'>Study Planner</a>" +
-    "<a href='#tasks'>Tasks</a><a href='#reviews'>Review Queue</a><a href='#assessments'>Summatives</a>" +
+    "<a href='#tasks'>Tasks</a><a href='#leitner'>Review Boxes</a><a href='#reviews'>Review Queue</a><a href='#assessments'>Summatives</a><a href='#calendar'>Calendar</a>" +
     "<a href='#academics'>Error Log</a><a href='#projects'>Projects</a><a href='#evidence'>Evidence</a><a href='#coaching'>Coaching</a></nav>";
 }
 
@@ -719,6 +848,9 @@ function renderError(title,message,help){
 }
 
 function derive(data){
+  data.reviewCards = data.reviewCards || [];
+  data.calendarSources = data.calendarSources || [];
+  data.calendarEvents = data.calendarEvents || [];
   data.reviewQueue = (data.weakPoints || []).filter(function(item){
     const status = String(item.status || "").toLowerCase();
     return item.nextReview && ["mastered","resolved","closed"].indexOf(status) === -1;
@@ -748,9 +880,9 @@ function render(data,demoMode){
     "</p><div class='portal-note'>" + (demoMode ?
     "<strong>Sample portal:</strong> Every item is fictional. You can test the forms without saving anything." :
     "<strong>Private link:</strong> This workspace is intended for the student and parent or guardian. Do not forward it.") +
-    "</div>" + (demoMode ? "<div class='demo-actions'><a class='btn' href='index.html#booking'>Book free beta</a><a class='btn secondary' href='index.html'>Back to website</a></div>" : "") +
+    "</div>" + (demoMode ? "<div class='demo-actions'><button class='btn' type='button' onclick='location.href=\"index.html?diagnosis=1\"'>Start 60-second diagnosis</button><a class='btn secondary' href='index.html'>Back to website</a></div>" : "") +
     "</div>" + quickNav() +
-    "<div class='info-box editing-note'><span class='status'>Editable</span><div><strong>Your working records are yours to maintain.</strong><br>Use Add or Edit in the planner, tasks, summatives, error log, projects, and evidence. Coach ratings, feedback, parent updates, sessions, meetings, and security settings stay coach-maintained.</div></div>" +
+    "<div class='info-box editing-note'><span class='status'>Editable</span><div><strong>Quick edits now open in one focused panel.</strong><br>Add or edit planner blocks, tasks, review cards, summatives, error-log entries, projects, and evidence without expanding long forms inside every record. Coach ratings, feedback, parent updates, sessions, meetings, and security settings stay coach-maintained.</div></div>" +
     "<section class='portal-section' id='dashboard'><div class='section-head'><div><span class='section-kicker'>Dashboard</span><h2>Current focus</h2></div><p>Coach-rated progress, the next assessment, and the next meeting in one view.</p></div>" +
     "<div class='grid four'>" +
     progressCard("Study System",progress.studySystem,"Use of effective methods on real schoolwork.") +
@@ -762,10 +894,16 @@ function render(data,demoMode){
     plannerList(currentData.planner) + "</div>" + addPlannerForm() + "</div></section>" +
     "<section class='portal-section' id='tasks'><div class='section-head'><div><span class='section-kicker'>This week</span><h2>Weekly Tasks &amp; Proof</h2></div><p>Add personal tasks, edit the action and due date, then submit proof without changing Ryan's review.</p></div><div class='card'><div class='list'>" +
     taskList(currentData.tasks) + "</div>" + addTaskForm() + "</div></section>" +
+    "<section class='portal-section' id='leitner'><div class='section-head'><div><span class='section-kicker'>Spaced repetition</span><h2>Review Boxes</h2></div><p>Drag a term or sub-unit forward when recall succeeds; move it back when it needs more practice. Mobile controls work without dragging.</p></div><div class='card'>" +
+    reviewBoard(currentData.reviewCards) + addReviewCardForm() + "<div class='rubric'><strong>Box rhythm:</strong> daily → every 3 days → weekly → every 2 weeks → mastered. Moving a card automatically schedules its next review.</div></div></section>" +
     "<section class='portal-section' id='reviews'><div class='section-head'><div><span class='section-kicker'>Spaced review</span><h2>Review Queue</h2></div><p>Due weak points reappear here until the student retries them and either reschedules or masters them.</p></div><div class='card'><div class='list'>" +
     reviewQueueList(currentData.reviewQueue) + "</div></div></section>" +
     "<section class='portal-section' id='assessments'><div class='section-head'><div><span class='section-kicker'>Deadlines</span><h2>Summatives &amp; Assessments</h2></div><p>Add every summative, test, presentation, or major deadline; edit all details as the school plan changes.</p></div><div class='card'><div class='list'>" +
     assessmentList(currentData.assessments) + "</div>" + addAssessmentForm() + "</div></section>" +
+    "<section class='portal-section' id='calendar'><div class='section-head'><div><span class='section-kicker'>Calendar sync</span><h2>Academic &amp; Extracurricular Calendar</h2></div><p>Import upcoming events from a dedicated Google, Outlook, or Apple calendar. Recognized formatives, summatives, tests, and deadlines also appear above automatically.</p></div>" +
+    "<div class='info-box privacy-callout'><strong>Privacy first:</strong> link a separate school/activities calendar—not a personal calendar. The private feed URL is never shown after saving and is deleted on disconnect.</div>" +
+    "<div class='card' style='margin-top:12px'><h3>Connections</h3>" + calendarSourceList(currentData.calendarSources) + linkCalendarForm() + "</div>" +
+    "<div class='card' style='margin-top:12px'><h3>Upcoming imported events</h3><div class='list'>" + calendarEventList(currentData.calendarEvents) + "</div></div></section>" +
     "<section class='portal-section' id='academics'><div class='section-head'><div><span class='section-kicker'>Academics</span><h2>Weak Points &amp; Error Log</h2></div><p>Attempt → diagnose the cause → fix → retry → schedule the next review.</p></div><div class='card'><div class='list'>" +
     errorLogList(currentData.weakPoints) + "</div>" + addWeakPointForm() + "</div></section>" +
     "<section class='portal-section' id='projects'><div class='section-head'><div><span class='section-kicker'>Profile</span><h2>Projects &amp; Extracurriculars</h2></div><p>Track role, stage, next action, tangible output, contribution, and direction.</p></div><div class='card'><div class='list'>" +
@@ -774,7 +912,7 @@ function render(data,demoMode){
     evidenceList(currentData.evidenceWins) + "</div>" + addEvidenceForm() + "</div></section>" +
     "<section class='portal-section' id='coaching'><div class='section-head'><div><span class='section-kicker'>Coaching</span><h2>Sessions, progress &amp; parent update</h2></div><p>See how the scores changed, what happened in each session, and what comes next.</p></div><div class='columns'>" +
     "<div class='card'><h3>Next Meeting</h3><p class='muted'>" + safe(currentData.nextMeeting || "No upcoming meeting found yet.") +
-    "</p><div class='meeting-help'><strong>Need to delay or reschedule?</strong><br>Email <a href='mailto:ryanwbdl@gmail.com?subject=Delay%20Admit%20Strategy%20meeting'>ryanwbdl@gmail.com</a>. Changing one meeting never cancels the course, portal, tasks, or progress.</div></div>" +
+    "</p><div class='meeting-help'><strong>Need to delay or reschedule?</strong><br>Email <a href='mailto:ryanwbdl@gmail.com?subject=Delay%20Admit%20Strategy%20meeting'>ryanwbdl@gmail.com</a>. Changing one meeting never cancels the Blueprint, portal, tasks, or progress.</div></div>" +
     "<div class='card'><h3>Parent Update</h3><p class='muted'>" + safe(currentData.parentUpdate || "Parent update coming soon.") + "</p></div>" +
     "<div class='card wide'><h3>Progress History</h3><div class='list'>" + sessionHistoryList(currentData.progressHistory) + "</div></div>" +
     "<div class='card wide'><h3>All Session Notes</h3><div class='list'>" + simpleList(currentData.sessionNotes,"No session notes added yet.") + "</div></div></div></section>" +
@@ -897,12 +1035,50 @@ function applyDemoAction(values){
         confidence:values.confidence,status:values.status,notes:values.notes});
     }
   }
+  if(operation === "addreviewcard"){
+    currentData.reviewCards.push({id:actionId(),subject:values.subject,unit:values.unit,term:values.term,
+      prompt:values.prompt,answer:values.answer,box:1,nextReview:qatarToday(),status:"Active"});
+  }
+  if(operation === "updatereviewcard"){
+    const card = currentData.reviewCards.find(function(entry){ return entry.id === values.recordId; });
+    if(card) Object.assign(card,{subject:values.subject,unit:values.unit,term:values.term,prompt:values.prompt,answer:values.answer});
+  }
+  if(operation === "movereviewcard") moveDemoReviewCard(values.recordId,Number(values.box));
+  if(operation === "linkcalendar"){
+    currentData.calendarSources.push({id:actionId(),provider:"Calendar",calendarName:values.calendarName,
+      category:values.category,status:"Connected",lastSyncStatus:"Sample connection only — no URL saved"});
+  }
+  if(operation === "synccalendar"){
+    const source = currentData.calendarSources.find(function(entry){ return entry.id === values.recordId; });
+    if(source) source.lastSyncStatus = "Sample refreshed locally";
+  }
+  if(operation === "disconnectcalendar"){
+    const source = currentData.calendarSources.find(function(entry){ return entry.id === values.recordId; });
+    if(source){ source.status = "Disconnected";source.lastSyncStatus = "Disconnected in sample"; }
+  }
   if(operation === "setreminders") currentData.portalReminders = values.enabled === "true";
   render(derive(currentData),true);
   showStatus("Sample updated locally. No real student data was saved.",true);
 }
 
+function moveDemoReviewCard(recordId,box){
+  const card = currentData.reviewCards.find(function(entry){ return entry.id === recordId; });
+  if(!card) return;
+  const intervals = {1:1,2:3,3:7,4:14,5:0};
+  card.box = Math.max(1,Math.min(5,Number(box || 1)));
+  card.status = card.box === 5 ? "Mastered" : "Active";
+  if(card.box === 5) card.nextReview = "";
+  else{
+    const date = new Date();date.setUTCDate(date.getUTCDate() + intervals[card.box]);
+    card.nextReview = date.toISOString().slice(0,10);
+  }
+}
+
 function submitRealAction(form,values){
+  submitRealValues(values,form.querySelector("button[type='submit']"));
+}
+
+function submitRealValues(values,button){
   if(pendingAction){
     showStatus("Wait for the current portal update to finish.",false);
     return;
@@ -922,7 +1098,6 @@ function submitRealAction(form,values){
     postForm.appendChild(input);
   });
   document.body.appendChild(postForm);
-  const button = form.querySelector("button[type='submit']");
   if(button) button.disabled = true;
   showStatus("Saving securely to the portal...",true);
   const timer = setTimeout(async function(){
@@ -937,7 +1112,7 @@ function submitRealAction(form,values){
   postForm.submit();
 }
 
-document.getElementById("app").addEventListener("submit",function(event){
+document.addEventListener("submit",function(event){
   const form = event.target.closest("form[data-portal-form]");
   if(!form) return;
   event.preventDefault();
@@ -959,7 +1134,28 @@ document.getElementById("app").addEventListener("submit",function(event){
   else submitRealAction(form,values);
 });
 
-document.getElementById("app").addEventListener("click",function(event){
+document.addEventListener("click",function(event){
+  const editorButton = event.target.closest("[data-open-editor]");
+  if(editorButton){
+    const owner = editorButton.closest("article");
+    const index = Number(editorButton.getAttribute("data-open-editor") || 0);
+    const source = owner && owner.querySelectorAll(".edit-panel")[index];
+    const form = source && source.querySelector("form");
+    if(form){
+      const dialog = document.getElementById("portalEditor");
+      document.getElementById("portalEditorTitle").textContent = editorButton.getAttribute("data-editor-title") || "Edit record";
+      const body = document.getElementById("portalEditorBody");
+      body.innerHTML = "";body.appendChild(form.cloneNode(true));
+      dialog.showModal();
+    }
+    return;
+  }
+  const moveButton = event.target.closest("[data-move-review]");
+  if(moveButton){
+    const card = moveButton.closest("[data-review-id]");
+    if(card) submitReviewMove(card.getAttribute("data-review-id"),Number(moveButton.getAttribute("data-move-review")),moveButton);
+    return;
+  }
   const button = event.target.closest("[data-close-form]");
   if(!button) return;
   const panel = button.closest("details.form-panel");
@@ -967,6 +1163,48 @@ document.getElementById("app").addEventListener("click",function(event){
   if(form) form.reset();
   setFormDateDefaults();
   if(panel) panel.open = false;
+  const dialog = button.closest("dialog");
+  if(dialog) dialog.close();
+});
+
+document.addEventListener("click",function(event){
+  const close = event.target.closest("[data-close-editor]");
+  if(close) document.getElementById("portalEditor").close();
+});
+
+function submitReviewMove(recordId,box,button){
+  const values = {operation:"movereviewcard",recordId:recordId,box:String(box)};
+  if(isDemo) applyDemoAction(values);
+  else submitRealValues(values,button);
+}
+
+document.getElementById("app").addEventListener("dragstart",function(event){
+  const card = event.target.closest("[data-review-id]");
+  if(!card) return;
+  card.setAttribute("aria-grabbed","true");
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.setData("text/plain",card.getAttribute("data-review-id"));
+});
+document.getElementById("app").addEventListener("dragend",function(event){
+  const card = event.target.closest("[data-review-id]");
+  if(card) card.setAttribute("aria-grabbed","false");
+  document.querySelectorAll(".leitner-box.drag-over").forEach(function(box){ box.classList.remove("drag-over"); });
+});
+document.getElementById("app").addEventListener("dragover",function(event){
+  const box = event.target.closest("[data-review-box]");
+  if(!box) return;
+  event.preventDefault();event.dataTransfer.dropEffect = "move";box.classList.add("drag-over");
+});
+document.getElementById("app").addEventListener("dragleave",function(event){
+  const box = event.target.closest("[data-review-box]");
+  if(box && !box.contains(event.relatedTarget)) box.classList.remove("drag-over");
+});
+document.getElementById("app").addEventListener("drop",function(event){
+  const box = event.target.closest("[data-review-box]");
+  if(!box) return;
+  event.preventDefault();box.classList.remove("drag-over");
+  const recordId = event.dataTransfer.getData("text/plain");
+  if(recordId) submitReviewMove(recordId,Number(box.getAttribute("data-review-box")),null);
 });
 
 window.addEventListener("message",async function(event){
@@ -983,6 +1221,8 @@ window.addEventListener("message",async function(event){
     showStatus(data.error || "The portal update could not be saved.",false);
     return;
   }
+  const editor = document.getElementById("portalEditor");
+  if(editor.open) editor.close();
   showStatus(data.message || "Portal updated.",true);
   await refreshPortal(false);
 });
