@@ -1251,6 +1251,8 @@ function applyDemoAction(values){
     if(source){ source.status = "Disconnected";source.lastSyncStatus = "Disconnected in sample"; }
   }
   if(operation === "setreminders") currentData.portalReminders = values.enabled === "true";
+  const editor = document.getElementById("portalEditor");
+  if(editor && editor.open) editor.close();
   currentData.todayPlan = localTodayPlan(currentData);
   render(derive(currentData),true);
   showStatus("Sample updated locally. No real student data was saved.",true);
