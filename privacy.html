@@ -20,6 +20,7 @@
   <h2>Information collected</h2>
   <ul>
     <li>Student name, grade, student email, and parent or guardian email.</li>
+    <li>Diagnosis answers, the rule-based starting hypothesis, referral details, consent choices, and the lead stage needed to create or recover portal access.</li>
     <li>Booking details and a brief description of the schoolwork or study problem.</li>
     <li>Workspace records such as plan level, classes, study blocks, review cards, weak points, assessment details, projects, evidence, linked study-material URLs, session summaries, progress ratings, and parent updates.</li>
     <li>If deliberately linked, the private iCal feed URL and imported events from a dedicated academic or extracurricular calendar.</li>
@@ -27,7 +28,7 @@
   </ul>
 
   <h2>How it is used</h2>
-  <p>The information is used to provide the portal and any agreed support, build the rule-based Today plan, arrange meetings, send necessary reminders, sync approved calendar events, provide parent visibility, and improve the system. Marketing messages are optional and require a separate unchecked opt-in.</p>
+  <p>The information is used to provide the portal and any agreed support, build the rule-based Today plan, arrange meetings, send necessary reminders, sync approved calendar events, provide parent visibility, and improve the system. Student email addresses are normalized and matched to prevent duplicate portals. Marketing messages are optional and require a separate unchecked opt-in.</p>
 
   <h2>Calendar connections</h2>
   <p>Only link a dedicated school or activities calendar, not a personal calendar. The current connection uses a private iCal feed from Google Calendar, Microsoft Outlook, or Apple Calendar; it does not request direct access to the student’s calendar account. The private feed URL is never returned to the portal and is deleted when the calendar is disconnected. Possible assessments detected from events require confirmation before they affect the Today plan. Imported event records can be reviewed for deletion through the normal privacy-request process.</p>
@@ -39,7 +40,10 @@
   <p>Portal content is intended to be visible to both the student and the parent or guardian. Notes must remain minimal, professional, and relevant to coaching. Do not submit medical, financial, identification-document, password, or other highly sensitive information.</p>
 
   <h2>Private portal links</h2>
-  <p>A portal link works like a private password. Do not forward it. Access can be revoked or the link can be rotated if it is shared accidentally.</p>
+  <p>A portal link works like a private password. Do not forward it. After a guardian-approved diagnosis signup, the private link is emailed to the approved student and guardian recipients and is not displayed in the browser. If an active portal already matches the normalized student email, that workspace is reused rather than duplicated. A newly submitted guardian address does not automatically replace the guardian identity already stored on an existing portal. Access can be revoked or the link can be rotated if it is shared accidentally.</p>
+
+  <h2>Account access</h2>
+  <p>The live account method is a private passwordless link sent by email. Google sign-in is not active. It will only be offered after a real OAuth client, verified redirect configuration, and appropriately limited permissions are available; Admit Strategy does not display a simulated Google login.</p>
 
   <h2>Storage and retention</h2>
   <p>Data is stored in private Google services used by Admit Strategy. Records are kept only while needed to provide the portal, follow-up, safety, and reasonable recordkeeping. When participation ends, portal access should be revoked and records reviewed for deletion or anonymisation within 90 days unless they are still needed to resolve an issue or the parent or guardian asks for continued retention.</p>
