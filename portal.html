@@ -37,6 +37,7 @@ a{color:var(--success)}
 .hero{padding:30px;margin-bottom:16px}
 .hero h1{font-size:clamp(2.35rem,5vw,4.4rem);line-height:1;letter-spacing:-2px;margin-bottom:12px}
 .hero p{color:var(--muted);line-height:1.7;font-size:1.05rem}
+.hero-line{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.plan-chip{display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;padding:8px 11px;border:1px solid rgba(32,227,178,.35);border-radius:999px;background:rgba(32,227,178,.1);color:var(--success);font-size:.78rem;font-weight:950;text-transform:uppercase;letter-spacing:.06em}
 .quick-nav{display:flex;gap:8px;overflow-x:auto;padding:10px;margin:0 0 20px;position:sticky;top:8px;z-index:5}
 .quick-nav a{flex:0 0 auto;text-decoration:none;color:#e9f4ff;font-weight:800;font-size:.86rem;padding:9px 12px;border-radius:999px;background:rgba(255,255,255,.08)}
 .quick-nav a:hover,.quick-nav a:focus-visible{background:rgba(32,227,178,.18);outline:none}
@@ -144,12 +145,18 @@ a{color:var(--success)}
 .review-card .detail-row{grid-template-columns:1fr;gap:2px}.review-card .detail-value{font-size:.82rem}
 .calendar-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.calendar-source{border:1px solid var(--line);border-radius:16px;padding:14px;background:rgba(255,255,255,.055)}
 .privacy-callout{border-color:rgba(32,227,178,.3);background:rgba(32,227,178,.08)}
+.today-shell{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(260px,.45fr);gap:14px}.today-list{display:grid;gap:9px;margin-top:14px}.today-item{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:13px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.055)}.today-number{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:rgba(124,92,255,.24);color:#fff;font-weight:950}.today-item strong{display:block}.today-time{font-weight:950;color:var(--success);white-space:nowrap}.today-total{font-size:2.6rem;font-weight:950;letter-spacing:-1.5px;color:var(--success)}
+.setup-list{display:grid;gap:9px;margin-top:12px}.setup-step{display:flex;gap:9px;align-items:center;color:#dce8ff}.setup-dot{width:22px;height:22px;display:grid;place-items:center;border-radius:999px;background:rgba(255,255,255,.1);font-size:.72rem;font-weight:950}.setup-step.done .setup-dot{background:rgba(32,227,178,.18);color:var(--success)}
+.class-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 12px}.class-tab{flex:0 0 auto;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.06);color:#dce8ff;padding:8px 12px;font-weight:850}.class-tab.active{border-color:var(--accent2);background:rgba(32,227,178,.14);color:var(--success)}
+.class-grid,.material-grid,.course-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.class-card{border:1px solid var(--line);border-top:4px solid var(--class-color,var(--accent2));border-radius:16px;padding:15px;background:rgba(255,255,255,.055)}.class-card h3{margin-bottom:4px}.intervals{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.intervals span{padding:4px 7px;border-radius:999px;background:rgba(255,255,255,.08);color:var(--muted);font-size:.73rem;font-weight:800}.course-card{border:1px solid var(--line);border-radius:16px;padding:16px;background:rgba(255,255,255,.05)}.course-card strong{display:block;margin-bottom:6px}.course-card span{color:var(--muted);line-height:1.5;font-size:.9rem}
+.detected{margin:10px 0;padding:12px;border-radius:14px;border:1px solid rgba(255,212,108,.34);background:rgba(255,212,108,.08);color:#fff5c9}.detected strong{color:var(--pending)}
+.locked-note{margin-top:10px;padding:12px;border-radius:14px;background:rgba(124,92,255,.1);border:1px solid rgba(124,92,255,.25);color:#ded8ff;line-height:1.5}
 .footer{margin-top:28px;text-align:center;color:var(--muted);font-size:.9rem}
 .hidden-frame{display:none}
 @media(max-width:950px){.grid.four{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:850px){
   body{padding:18px}
-  .grid,.grid.four,.columns{grid-template-columns:1fr}
+  .grid,.grid.four,.columns,.today-shell,.class-grid,.material-grid,.course-grid{grid-template-columns:1fr}
   .top,.section-head,.settings-row{align-items:flex-start;flex-direction:column}
   .section-head p{text-align:left}
   .wide{grid-column:auto}
@@ -166,6 +173,7 @@ a{color:var(--success)}
   .countdown{font-size:1.55rem}
   .quick-nav{margin-left:-4px;margin-right:-4px}
   .calendar-grid{grid-template-columns:1fr}.editor-dialog{max-height:94vh}
+  .hero-line{flex-direction:column}.today-item{grid-template-columns:auto 1fr}.today-time{grid-column:2}
 }
 </style>
 </head>
@@ -195,6 +203,12 @@ const CONFIG = {
   timeout: 45000
 };
 
+function demoDate(days){
+  const date = new Date(qatarToday() + "T12:00:00");
+  date.setDate(date.getDate() + Number(days || 0));
+  return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2,"0") + "-" + String(date.getDate()).padStart(2,"0");
+}
+
 const DEMO_DATA = {
   student: {
     name: "Alex",
@@ -202,28 +216,34 @@ const DEMO_DATA = {
     summary: "Sample data: Alex is building a repeatable study system, correcting specific weak points, and turning broad goals into weekly actions."
   },
   progress: { studySystem: 50, consistency: 25, direction: 50 },
+  plan: "Free",
+  planStatus: "Active",
   portalReminders: true,
   nextMeeting: "Thursday at 4:30 PM Doha time",
   parentUpdate: "Sample update: Alex completed two focused practice blocks, identified a recurring algebra error, and has one overdue planning task to finish before the next session.",
   nextAssessment: {
-    id: "assessment-demo-1", name: "Chemistry quiz", subject: "Chemistry", date: "2026-09-10",
-    type: "Quiz", status: "Preparing", prepTarget: 4, prepCompleted: 2, confidence: "Medium", notes: "Atomic structure and bonding."
+    id: "assessment-demo-1", name: "Chemistry quiz", subject: "Chemistry", date: demoDate(5), time: "10:00",
+    type: "Quiz", status: "Preparing", prepTarget: 4, prepCompleted: 2, confidence: "Medium", difficulty: "High", importance: "High", topics: "Atomic structure and bonding.", notes: "Unit 2."
   },
   assessments: [
     {
-      id: "assessment-demo-1", name: "Chemistry quiz", subject: "Chemistry", date: "2026-09-10",
-      type: "Quiz", status: "Preparing", prepTarget: 4, prepCompleted: 2, confidence: "Medium", notes: "Atomic structure and bonding."
+      id: "assessment-demo-1", name: "Chemistry quiz", subject: "Chemistry", date: demoDate(5), time: "10:00",
+      type: "Quiz", status: "Preparing", prepTarget: 4, prepCompleted: 2, confidence: "Medium", difficulty: "High", importance: "High", topics: "Atomic structure and bonding.", notes: "Unit 2.", sourceType: "Manual", classificationStatus: "Confirmed"
+    },
+    {
+      id: "assessment-demo-2", name: "Physics forces formative", subject: "Physics", date: demoDate(7), time: "09:30",
+      type: "Formative", status: "Upcoming", prepTarget: 3, prepCompleted: 0, confidence: "Medium", difficulty: "Medium", importance: "Normal", topics: "Free-body diagrams and Newton's laws.", sourceType: "Calendar", classificationStatus: "Needs confirmation"
     }
   ],
   planner: [
     {
-      id: "planner-demo-1", date: "2026-09-02", startTime: "16:00", endTime: "17:00",
+      id: "planner-demo-1", date: demoDate(0), startTime: "16:00", endTime: "17:00",
       subject: "Biology", title: "Correct quiz errors", method: "Retrieval + correction",
       goal: "Redo every missed question without notes.", status: "Planned",
       proofRequired: "Corrected quiz or score", coachReview: ""
     },
     {
-      id: "planner-demo-2", date: "2026-09-03", startTime: "16:30", endTime: "17:15",
+      id: "planner-demo-2", date: demoDate(1), startTime: "16:30", endTime: "17:15",
       subject: "Math", title: "Functions practice", method: "Mixed practice",
       goal: "Complete 8 word problems and label the method.", status: "Completed",
       proofNote: "Completed 8 questions; 7 correct.", coachReview: "Approved", coachFeedback: "Good correction work."
@@ -233,13 +253,13 @@ const DEMO_DATA = {
     {
       id: "task-demo-1", title: "Complete two active-recall sessions",
       detail: "Use current science notes, close the book, retrieve from memory, check gaps, and repeat.",
-      status: "In progress", dueDate: "2026-09-03",
+      status: "In progress", dueDate: demoDate(0),
       proofRequired: "Short note or link showing what was recalled and corrected.", coachReview: "Not submitted"
     },
     {
       id: "task-demo-2", title: "Correct the algebra quiz",
       detail: "Redo every missed question and label the exact reason for each error.",
-      status: "Submitted", dueDate: "2026-09-04", proofRequired: "Corrected quiz",
+      status: "Submitted", dueDate: demoDate(1), proofRequired: "Corrected quiz",
       proofNote: "Redid all six errors.", proofUrl: "https://example.com/sample-proof",
       coachReview: "Pending"
     }
@@ -251,14 +271,14 @@ const DEMO_DATA = {
       cause: "Started calculating before identifying the question cue.",
       fix: "Underline the cue, name the method, then solve three similar questions.",
       retry: "Solved two of three correctly without notes.",
-      nextReview: "2026-09-04", lastReviewedAt: "2026-08-28", status: "Improving"
+      nextReview: demoDate(1), lastReviewedAt: demoDate(-5), status: "Improving"
     },
     {
       id: "weak-demo-2", title: "Starting assignments late",
       mistake: "Waited for motivation and lost the planned start time.",
       cause: "The first action was too vague and the phone stayed nearby.",
       fix: "Write the first action, move the phone, and use a ten-minute start.",
-      nextReview: "2026-09-05", status: "Active"
+      nextReview: demoDate(2), status: "Active"
     }
   ],
   reviewQueue: [],
@@ -272,7 +292,7 @@ const DEMO_DATA = {
   ],
   evidenceWins: [
     {
-      id: "evidence-demo-1", date: "2026-08-27", activity: "Biology quiz correction",
+      id: "evidence-demo-1", date: demoDate(-7), activity: "Biology quiz correction",
       whatIDid: "Redid every missed question and explained each correction.",
       evidence: "11 corrected questions and the marked quiz.", result: "Score improved from 63% to 84%.",
       reflection: "Genetics vocabulary still needs one short review.", status: "Verified",
@@ -281,30 +301,40 @@ const DEMO_DATA = {
   ],
   sessionNotes: [
     {
-      id: "session-demo-1", sessionDate: "2026-08-27", title: "Study system practice",
+      id: "session-demo-1", sessionDate: demoDate(-7), title: "Study system practice",
       detail: "Used retrieval and correction on a real biology quiz.", status: "Completed",
       nextActions: "Complete two independent practice blocks.",
       progress: { studySystem: 50, consistency: 25, direction: 50 }
     }
   ],
   progressHistory: [],
+  classes: [
+    {id:"class-demo-1",name:"Biology",teacher:"Ms Morgan",color:"#20e3b2",defaultMinutes:30,intervals:{1:1,2:3,3:7,4:14},status:"Active"},
+    {id:"class-demo-2",name:"Chemistry",teacher:"Mr Patel",color:"#7c5cff",defaultMinutes:25,intervals:{1:1,2:2,3:6,4:12},status:"Active"},
+    {id:"class-demo-3",name:"Math",teacher:"Ms Lee",color:"#ffb86b",defaultMinutes:25,intervals:{1:1,2:3,3:7,4:14},status:"Active"}
+  ],
+  materials: [
+    {id:"material-demo-1",title:"Unit 3 Study Guide",subject:"Biology",fileType:"PDF",url:"https://example.com/sample-study-guide.pdf",notes:"Sample link only.",status:"Active"},
+    {id:"material-demo-2",title:"Quadratics review",subject:"Math",fileType:"DOCX",url:"https://example.com/sample-review.docx",notes:"Sample link only.",status:"Active"}
+  ],
   reviewCards: [
-    {id:"review-demo-1",subject:"Biology",unit:"Cell structure",term:"Mitochondria",prompt:"What is its main function?",answer:"Produces ATP through aerobic respiration.",box:1,nextReview:"2026-09-02",status:"Active"},
-    {id:"review-demo-2",subject:"Chemistry",unit:"Bonding",term:"Ionic bond",prompt:"How does it form?",answer:"Electron transfer creates oppositely charged ions.",box:2,nextReview:"2026-09-05",status:"Active"},
-    {id:"review-demo-3",subject:"Math",unit:"Functions",term:"Domain",prompt:"What values can be inputs?",answer:"The permitted input values of a function.",box:3,nextReview:"2026-09-09",status:"Active"}
+    {id:"review-demo-1",subject:"Biology",unit:"Cell structure",term:"Mitochondria",prompt:"What is its main function?",answer:"Produces ATP through aerobic respiration.",box:1,nextReview:demoDate(0),status:"Active"},
+    {id:"review-demo-2",subject:"Chemistry",unit:"Bonding",term:"Ionic bond",prompt:"How does it form?",answer:"Electron transfer creates oppositely charged ions.",box:2,nextReview:demoDate(2),status:"Active"},
+    {id:"review-demo-3",subject:"Math",unit:"Functions",term:"Domain",prompt:"What values can be inputs?",answer:"The permitted input values of a function.",box:3,nextReview:demoDate(6),status:"Active"}
   ],
   calendarSources: [
-    {id:"calendar-demo-1",provider:"Google Calendar",calendarName:"Sample school deadlines",category:"Both",status:"Connected",lastSyncStatus:"3 upcoming events synced",lastSyncAt:"2026-09-02"}
+    {id:"calendar-demo-1",provider:"Google Calendar",calendarName:"Sample school deadlines",category:"Both",status:"Connected",lastSyncStatus:"3 upcoming events synced",lastSyncAt:demoDate(0)}
   ],
   calendarEvents: [
-    {id:"event-demo-1",title:"Physics forces formative",date:"2026-09-12",description:"Free-body diagrams and Newton's laws.",category:"Academic",sourceName:"Sample school deadlines",assessmentId:"assessment-demo-2",status:"Active"},
-    {id:"event-demo-2",title:"Robotics club competition",date:"2026-09-18",description:"Regional school robotics event.",category:"Extracurricular",sourceName:"Sample school deadlines",status:"Active"}
+    {id:"event-demo-1",title:"Physics forces formative",date:demoDate(7),startTime:"09:30",description:"Free-body diagrams and Newton's laws.",category:"Academic",sourceName:"Sample school deadlines",assessmentId:"assessment-demo-2",status:"Active"},
+    {id:"event-demo-2",title:"Robotics club competition",date:demoDate(13),startTime:"14:00",description:"Regional school robotics event.",category:"Extracurricular",sourceName:"Sample school deadlines",status:"Active"}
   ]
 };
 
 let currentData = null;
 let isDemo = false;
 let pendingAction = null;
+let selectedReviewSubject = "";
 
 function isConnected(){
   return CONFIG.googleScriptUrl &&
@@ -430,10 +460,78 @@ function nextAssessmentCard(assessment){
   const percentage = target > 0 ? Math.min(100,Math.round(complete / target * 100)) : 0;
   return "<div class='card'><div class='assessment-main'><div><h3>Next Summative</h3><strong>" +
     safe(assessment.name) + "</strong><div class='muted'>" + safe(assessment.subject || assessment.type || "") +
-    " • " + safe(formatDate(assessment.date)) + "</div></div><div class='countdown'>" +
+    " • " + safe(formatDate(assessment.date)) + (assessment.time ? " at " + safe(assessment.time) : "") + "</div></div><div class='countdown'>" +
     safe(daysLabel(assessment.date)) + "</div></div><div class='prep-line'><span>Preparation</span><span>" +
     complete + "/" + target + " actions</span></div><div class='bar'><div style='width:" + percentage +
-    "%'></div></div>" + detail("Confidence",assessment.confidence) + "</div>";
+    "%'></div></div>" + detail("Confidence",assessment.confidence) + detail("Difficulty",assessment.difficulty) + "</div>";
+}
+
+function subjectNames(data){
+  const names = [];
+  function add(value){
+    value = String(value || "").trim();
+    if(value && names.map(function(item){ return item.toLowerCase(); }).indexOf(value.toLowerCase()) === -1) names.push(value);
+  }
+  (data.classes || []).forEach(function(item){ add(item.name); });
+  [data.reviewCards,data.assessments,data.planner,data.materials].forEach(function(list){
+    (list || []).forEach(function(item){ add(item.subject); });
+  });
+  return names.sort(function(a,b){ return a.localeCompare(b); });
+}
+
+function classDatalist(data){
+  return "<datalist id='portal-subjects'>" + subjectNames(data).map(function(name){ return "<option value='" + safe(name) + "'></option>"; }).join("") + "</datalist>";
+}
+
+function localTodayPlan(data){
+  const today = qatarToday();
+  const items = [];
+  const classes = data.classes || [];
+  function minutes(subject,fallback){
+    const found = classes.find(function(item){ return String(item.name || "").toLowerCase() === String(subject || "").toLowerCase(); });
+    return Number(found && found.defaultMinutes || fallback || 25);
+  }
+  (data.planner || []).forEach(function(item){
+    if(item.date !== today || ["completed","skipped"].indexOf(String(item.status || "").toLowerCase()) >= 0) return;
+    const start = String(item.startTime || "").split(":").map(Number);
+    const end = String(item.endTime || "").split(":").map(Number);
+    const duration = start.length === 2 && end.length === 2 ? (end[0] * 60 + end[1]) - (start[0] * 60 + start[1]) : 0;
+    items.push({id:item.id,type:"Scheduled block",subject:item.subject || "Study",title:item.title,minutes:duration > 0 ? duration : minutes(item.subject,25),reason:item.startTime ? "Scheduled for " + item.startTime : "Scheduled today",priority:500});
+  });
+  (data.reviewCards || []).forEach(function(card){
+    if(String(card.status || "").toLowerCase() === "mastered" || (card.nextReview && card.nextReview > today)) return;
+    const byBox = {1:20,2:15,3:10,4:10};
+    items.push({id:card.id,type:"Box review",subject:card.subject || "Review",title:card.term,minutes:Math.min(minutes(card.subject,25),byBox[Number(card.box)] || 10),reason:"Box " + Number(card.box || 1) + " review due",priority:380});
+  });
+  (data.assessments || []).forEach(function(item){
+    const days = dayDifference(item.date);
+    if(days === null || days < 0 || days > 21 || ["completed","cancelled"].indexOf(String(item.status || "").toLowerCase()) >= 0 || String(item.classificationStatus || "Confirmed").toLowerCase() === "needs confirmation") return;
+    const remaining = Math.max(1,Number(item.prepTarget || 0) - Number(item.prepCompleted || 0));
+    const difficulty = {Low:0,Medium:16,High:32}[item.difficulty] || 16;
+    const importance = {Normal:0,High:18,Critical:36}[item.importance] || 0;
+    items.push({id:item.id,type:"Assessment preparation",subject:item.subject || "Assessment",title:item.name,minutes:minutes(item.subject,25),reason:(days === 0 ? "Due today" : "Due in " + days + " day" + (days === 1 ? "" : "s")) + " · " + remaining + " prep action" + (remaining === 1 ? "" : "s") + " remaining",priority:250 + Math.max(0,126-days*9) + difficulty + importance});
+  });
+  items.sort(function(a,b){ return b.priority-a.priority; });
+  const selected = items.slice(0,7).map(function(item){ const copy=Object.assign({},item);delete copy.priority;return copy; });
+  return {date:today,totalMinutes:selected.reduce(function(sum,item){ return sum+Number(item.minutes||0); },0),items:selected,method:"Rule-based priority using deadlines, difficulty, importance, scheduled blocks, and review dates."};
+}
+
+function todayPlanPanel(plan){
+  const items = plan && plan.items || [];
+  const list = items.length ? items.map(function(item,index){
+    return "<article class='today-item'><span class='today-number'>" + (index + 1) + "</span><div><strong>" + safe(item.subject || item.type) + " — " + safe(item.title || "Study") + "</strong><span class='muted'>" + safe(item.reason || item.type || "Priority for today") + "</span></div><span class='today-time'>" + safe(item.minutes || 0) + " min</span></article>";
+  }).join("") : "<div class='empty'>Nothing urgent is due today. Add a class, assessment, review topic, or study block to build the plan.</div>";
+  return "<div class='today-shell'><div class='card'><div class='record-head'><div><span class='section-kicker'>Today</span><h2>What should I study?</h2></div><span class='date-chip'>" + safe(formatDate(plan && plan.date || qatarToday())) + "</span></div><div class='today-list'>" + list + "</div><p class='form-help' style='margin-top:12px'>" + safe(plan && plan.method || "Prioritized from today's schedule, review dates, and upcoming assessments.") + "</p></div><aside class='card'><span class='section-kicker'>Total focus</span><div class='today-total'>" + safe(plan && plan.totalMinutes || 0) + " min</div><p class='muted'>A realistic starting point, not an AI-generated promise.</p><div class='locked-note'><strong>Plus preview</strong><br>Automatic rescheduling when the calendar changes is planned for Plus. It is not active yet.</div></aside></div>";
+}
+
+function setupPanel(data){
+  const steps = [
+    {done:(data.classes || []).length > 0,label:"Create the first class"},
+    {done:(data.calendarSources || []).some(function(item){ return String(item.status || "").toLowerCase() === "connected"; }),label:"Connect a dedicated academic calendar"},
+    {done:(data.assessments || []).length > 0,label:"Add or confirm the next assessment"}
+  ];
+  const complete = steps.filter(function(item){ return item.done; }).length;
+  return "<div class='card'><div class='record-head'><div><span class='section-kicker'>Setup</span><h3>Core system " + complete + "/3 ready</h3></div>" + reviewBadge(complete === 3 ? "Ready" : "Set up") + "</div><div class='setup-list'>" + steps.map(function(item,index){ return "<div class='setup-step " + (item.done ? "done" : "") + "'><span class='setup-dot'>" + (item.done ? "✓" : index + 1) + "</span><span>" + safe(item.label) + "</span></div>"; }).join("") + "</div></div>";
 }
 
 function reviewBadge(value){
@@ -490,7 +588,7 @@ function plannerList(items){
         "<details class='form-panel edit-panel'><summary>Edit study block</summary><form class='portal-form' data-portal-form>" +
         "<input type='hidden' name='operation' value='updateplanner'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
         "<div class='form-grid'><label>Date<input name='date' type='date' required value='" + safe(item.date || "") + "'></label>" +
-        "<label>Subject<input name='subject' maxlength='80' value='" + safe(item.subject || "") + "'></label></div>" +
+        "<label>Class or subject<input name='subject' list='portal-subjects' maxlength='80' value='" + safe(item.subject || "") + "'></label></div>" +
         "<div class='form-grid'><label>Start time<input name='startTime' type='time' required value='" + safe(item.startTime || "") + "'></label>" +
         "<label>End time<input name='endTime' type='time' required value='" + safe(item.endTime || "") + "'></label></div>" +
         "<label>Title<input name='title' maxlength='160' required value='" + safe(item.title || "") + "'></label>" +
@@ -578,24 +676,29 @@ function assessmentList(items){
     const target = Number(item.prepTarget || 0);
     const complete = Number(item.prepCompleted || 0);
     const percentage = target > 0 ? Math.min(100,Math.round(complete / target * 100)) : 0;
+    const needsConfirmation = String(item.classificationStatus || "Confirmed").toLowerCase() === "needs confirmation";
+    const classification = needsConfirmation ? "<div class='detected'><strong>Possible assessment detected</strong><br>Please confirm this calendar event before it affects today’s plan.<div class='form-actions' style='margin-top:10px'><form data-portal-form><input type='hidden' name='operation' value='classifyassessment'><input type='hidden' name='recordId' value='" + safe(item.id) + "'><input type='hidden' name='decision' value='Confirmed'><button class='record-edit' type='submit'>Yes, this is a test</button></form><form data-portal-form><input type='hidden' name='operation' value='classifyassessment'><input type='hidden' name='recordId' value='" + safe(item.id) + "'><input type='hidden' name='decision' value='Dismissed'><button class='record-edit' type='submit'>No, remove it</button></form></div></div>" : "";
     return "<article class='item'><div class='record-head'><div><strong>" + safe(item.name || "Assessment") +
-      "</strong><div><span class='date-chip'>" + safe(formatDate(item.date) + " • " + daysLabel(item.date)) +
+      "</strong><div><span class='date-chip'>" + safe(formatDate(item.date) + (item.time ? " at " + item.time : "") + " • " + daysLabel(item.date)) +
       "</span></div></div><div class='record-actions'>" + reviewBadge(item.status) +
       "<button class='record-edit' type='button' data-open-editor='0' data-editor-title='Edit summative'>Edit</button></div></div><div class='details'>" +
-      detail("Subject",item.subject) + detail("Type",item.type) + detail("Confidence",item.confidence) +
-      detail("Notes",item.notes) + "</div><div class='prep-line'><span>Preparation</span><span>" +
+      classification + detail("Subject",item.subject) + detail("Type",item.type) + detail("Topics",item.topics) + detail("Difficulty",item.difficulty) + detail("Importance",item.importance) + detail("Confidence",item.confidence) +
+      detail("Source",item.sourceType) + detail("Notes",item.notes) + "</div><div class='prep-line'><span>Preparation</span><span>" +
       complete + "/" + target + " actions</span></div><div class='bar'><div style='width:" + percentage +
       "%'></div></div><details class='form-panel edit-panel'><summary>Edit summative or assessment</summary><form class='portal-form' data-portal-form>" +
       "<input type='hidden' name='operation' value='updateassessment'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
       "<div class='form-grid'><label>Name<input name='name' maxlength='160' required value='" + safe(item.name || "") + "'></label>" +
-      "<label>Subject<input name='subject' maxlength='80' value='" + safe(item.subject || "") + "'></label></div>" +
+      "<label>Class or subject<input name='subject' list='portal-subjects' maxlength='80' value='" + safe(item.subject || "") + "'></label></div>" +
       "<div class='form-grid'><label>Date<input name='date' type='date' required value='" + safe(item.date || "") + "'></label>" +
-      "<label>Type<select name='type'>" + optionListWithCurrent(ASSESSMENT_TYPES,item.type) + "</select></label></div>" +
+      "<label>Time (optional)<input name='time' type='time' value='" + safe(item.time || "") + "'></label></div>" +
+      "<div class='form-grid'><label>Type<select name='type'>" + optionListWithCurrent(ASSESSMENT_TYPES,item.type) + "</select></label>" +
+      "<label>Importance<select name='importance'>" + optionList(["Normal","High","Critical"],item.importance || "Normal") + "</select></label></div>" +
       "<div class='form-grid'><label>Planned prep actions<input name='prepTarget' type='number' min='0' max='99' value='" + safe(target) + "'></label>" +
       "<label>Prep actions completed<input name='prepCompleted' type='number' min='0' max='99' value='" + safe(complete) + "' required></label></div>" +
       "<div class='form-grid'><label>Confidence<select name='confidence'>" + optionListWithCurrent(["Low","Medium","High"],item.confidence) + "</select></label>" +
-      "<label>Status<select name='status' required>" + optionList(["Upcoming","Preparing","Ready","Completed","Cancelled"],allowedValue(["Upcoming","Preparing","Ready","Completed","Cancelled"],item.status,"Upcoming")) + "</select></label></div>" +
-      "<label>Topics or notes<textarea name='notes' maxlength='800'>" + safe(item.notes || "") + "</textarea></label>" +
+      "<label>Difficulty<select name='difficulty'>" + optionList(["Low","Medium","High"],item.difficulty || "Medium") + "</select></label></div>" +
+      "<label>Topics covered<textarea name='topics' maxlength='1200' placeholder='Genetics, meiosis, Punnett squares'>" + safe(item.topics || "") + "</textarea></label>" +
+      "<div class='form-grid'><label>Status<select name='status' required>" + optionList(["Upcoming","Preparing","Ready","Completed","Cancelled"],allowedValue(["Upcoming","Preparing","Ready","Completed","Cancelled"],item.status,"Upcoming")) + "</select></label><label>Notes<textarea name='notes' maxlength='800'>" + safe(item.notes || "") + "</textarea></label></div>" +
       formActions("Save summative") + "</form></details></article>";
   }).join("");
 }
@@ -691,7 +794,7 @@ function addTaskForm(){
 function addPlannerForm(){
   return "<details class='form-panel'><summary>Add a study block</summary><form class='portal-form' data-portal-form>" +
     "<input type='hidden' name='operation' value='addplanner'><div class='form-grid'>" +
-    "<label>Date<input name='date' type='date' required data-default-today></label><label>Subject<input name='subject' maxlength='80' placeholder='Biology'></label></div>" +
+    "<label>Date<input name='date' type='date' required data-default-today></label><label>Class or subject<input name='subject' list='portal-subjects' maxlength='80' placeholder='Biology'></label></div>" +
     "<div class='form-grid'><label>Start time<input name='startTime' type='time' required></label><label>End time<input name='endTime' type='time' required></label></div>" +
     "<label>Clear study block title<input name='title' maxlength='160' required placeholder='Correct quiz errors'></label>" +
     "<div class='form-grid'><label>Method<select name='method'><option>Active recall</option><option>Practice questions</option><option>Retrieval + correction</option><option>Teach-back</option><option>Mixed practice</option><option>Project work</option><option>Other</option></select></label>" +
@@ -704,12 +807,16 @@ function addAssessmentForm(){
   return "<details class='form-panel'><summary>Add a summative or assessment</summary><form class='portal-form' data-portal-form>" +
     "<input type='hidden' name='operation' value='addassessment'><div class='form-grid'>" +
     "<label>Name<input name='name' maxlength='160' required placeholder='Chemistry bonding summative'></label>" +
-    "<label>Subject<input name='subject' maxlength='80' placeholder='Chemistry'></label></div>" +
+    "<label>Class or subject<input name='subject' list='portal-subjects' maxlength='80' placeholder='Chemistry'></label></div>" +
     "<div class='form-grid'><label>Date<input name='date' type='date' required data-default-today></label>" +
-    "<label>Type<select name='type'>" + optionList(ASSESSMENT_TYPES,"Summative") + "</select></label></div>" +
+    "<label>Time (optional)<input name='time' type='time'></label></div>" +
+    "<div class='form-grid'><label>Type<select name='type'>" + optionList(ASSESSMENT_TYPES,"Summative") + "</select></label>" +
+    "<label>Importance<select name='importance'><option>Normal</option><option>High</option><option>Critical</option></select></label></div>" +
     "<div class='form-grid'><label>Planned prep actions<input name='prepTarget' type='number' min='0' max='99' value='3'></label>" +
     "<label>Confidence<select name='confidence'><option>Low</option><option selected>Medium</option><option>High</option></select></label></div>" +
-    "<label>Topics or notes<textarea name='notes' maxlength='800' placeholder='What is covered and what needs attention?'></textarea></label>" +
+    "<label>Topics covered<textarea name='topics' maxlength='1200' placeholder='What is covered?'></textarea></label>" +
+    "<div class='form-grid'><label>Difficulty<select name='difficulty'><option>Low</option><option selected>Medium</option><option>High</option></select></label>" +
+    "<label>Notes<textarea name='notes' maxlength='800' placeholder='Teacher guidance or preparation notes'></textarea></label></div>" +
     formActions("Add summative") + "</form></details>";
 }
 
@@ -752,6 +859,29 @@ function addEvidenceForm(){
     "<p class='form-help'>Your submission appears as Pending until Ryan reviews it.</p>" + formActions("Add evidence") + "</form></details>";
 }
 
+function classList(items){
+  if(!items || !items.length) return "<div class='empty'>Create a class to give its topics an independent Box system and review rhythm.</div>";
+  return "<div class='class-grid'>" + items.map(function(item){
+    const intervals = item.intervals || {1:1,2:3,3:7,4:14};
+    return "<article class='class-card' style='--class-color:" + safe(item.color || "#6ee7d2") + "'><div class='record-head'><div><h3>" + safe(item.name) + "</h3><span class='muted'>" + safe(item.teacher || "Teacher not added") + "</span></div><button class='record-edit' type='button' data-open-editor='0' data-editor-title='Edit class'>Edit</button></div><div class='intervals'><span>Default " + safe(item.defaultMinutes || 25) + " min</span><span>B1 " + safe(intervals[1] || 1) + "d</span><span>B2 " + safe(intervals[2] || 3) + "d</span><span>B3 " + safe(intervals[3] || 7) + "d</span><span>B4 " + safe(intervals[4] || 14) + "d</span></div><details class='form-panel edit-panel'><summary>Edit class</summary><form class='portal-form' data-portal-form><input type='hidden' name='operation' value='updateclass'><input type='hidden' name='recordId' value='" + safe(item.id) + "'><div class='form-grid'><label>Class or subject name<input name='name' maxlength='80' required value='" + safe(item.name || "") + "'></label><label>Teacher (optional)<input name='teacher' maxlength='120' value='" + safe(item.teacher || "") + "'></label></div><div class='form-grid'><label>Accent color<input name='color' type='color' value='" + safe(item.color || "#6ee7d2") + "'></label><label>Default study block<input name='defaultMinutes' type='number' min='10' max='120' value='" + safe(item.defaultMinutes || 25) + "'></label></div><div class='form-grid'><label>Box 1 interval (days)<input name='box1Days' type='number' min='1' max='30' value='" + safe(intervals[1] || 1) + "'></label><label>Box 2 interval (days)<input name='box2Days' type='number' min='1' max='60' value='" + safe(intervals[2] || 3) + "'></label></div><div class='form-grid'><label>Box 3 interval (days)<input name='box3Days' type='number' min='1' max='120' value='" + safe(intervals[3] || 7) + "'></label><label>Box 4 interval (days)<input name='box4Days' type='number' min='1' max='365' value='" + safe(intervals[4] || 14) + "'></label></div><p class='form-help'>These intervals apply the next time a topic moves within this class.</p>" + formActions("Save class") + "</form></details></article>";
+  }).join("") + "</div>";
+}
+
+function addClassForm(){
+  return "<details class='form-panel'><summary>Add a class or subject</summary><form class='portal-form' data-portal-form><input type='hidden' name='operation' value='addclass'><div class='form-grid'><label>Class or subject name<input name='name' maxlength='80' required placeholder='Biology'></label><label>Teacher (optional)<input name='teacher' maxlength='120' placeholder='Ms Morgan'></label></div><div class='form-grid'><label>Accent color<input name='color' type='color' value='#20e3b2'></label><label>Default study block<input name='defaultMinutes' type='number' min='10' max='120' value='25'></label></div><details class='form-panel'><summary>Customize review intervals</summary><div class='portal-form'><div class='form-grid'><label>Box 1 days<input name='box1Days' type='number' min='1' max='30' value='1'></label><label>Box 2 days<input name='box2Days' type='number' min='1' max='60' value='3'></label></div><div class='form-grid'><label>Box 3 days<input name='box3Days' type='number' min='1' max='120' value='7'></label><label>Box 4 days<input name='box4Days' type='number' min='1' max='365' value='14'></label></div></div></details>" + formActions("Add class") + "</form></details>";
+}
+
+function materialList(items){
+  if(!items || !items.length) return "<div class='empty'>No study materials linked yet.</div>";
+  return "<div class='material-grid'>" + items.map(function(item){
+    return "<article class='item'><div class='record-head'><div><strong>" + safe(item.title || "Study material") + "</strong><div class='muted'>" + safe([item.subject,item.fileType].filter(Boolean).join(" • ")) + "</div></div><button class='record-edit' type='button' data-open-editor='0' data-editor-title='Edit study material'>Edit</button></div>" + linkedDetail("Open",item.url) + detail("Notes",item.notes) + "<details class='form-panel edit-panel'><summary>Edit material</summary><form class='portal-form' data-portal-form><input type='hidden' name='operation' value='updatematerial'><input type='hidden' name='recordId' value='" + safe(item.id) + "'><div class='form-grid'><label>Title<input name='title' maxlength='160' required value='" + safe(item.title || "") + "'></label><label>Class or subject<input name='subject' list='portal-subjects' maxlength='80' value='" + safe(item.subject || "") + "'></label></div><div class='form-grid'><label>Type<select name='fileType'>" + optionListWithCurrent(["PDF","DOCX","PPTX","Image","TXT","Link"],item.fileType || "Link") + "</select></label><label>Secure https link<input name='url' type='url' maxlength='1000' required value='" + safe(item.url || "") + "'></label></div><label>Notes<textarea name='notes' maxlength='800'>" + safe(item.notes || "") + "</textarea></label>" + formActions("Save material") + "</form></details></article>";
+  }).join("") + "</div>";
+}
+
+function addMaterialForm(){
+  return "<details class='form-panel'><summary>Add a study material link</summary><form class='portal-form' data-portal-form><input type='hidden' name='operation' value='addmaterial'><div class='form-grid'><label>Title<input name='title' maxlength='160' required placeholder='Unit 3 study guide'></label><label>Class or subject<input name='subject' list='portal-subjects' maxlength='80' placeholder='Biology'></label></div><div class='form-grid'><label>Type<select name='fileType'><option>PDF</option><option>DOCX</option><option>PPTX</option><option>Image</option><option>TXT</option><option>Link</option></select></label><label>Secure https link<input name='url' type='url' maxlength='1000' required placeholder='https://drive.google.com/...'></label></div><label>Notes<textarea name='notes' maxlength='800' placeholder='What is this useful for?'></textarea></label><p class='form-help'>Use a school-approved sharing link. Direct uploads stay off until private storage and consent are ready; no file is processed by AI.</p>" + formActions("Link material") + "</form></details>";
+}
+
 const REVIEW_BOXES = [
   {box:1,title:"Box 1",schedule:"Review daily"},
   {box:2,title:"Box 2",schedule:"Every 3 days"},
@@ -760,13 +890,24 @@ const REVIEW_BOXES = [
   {box:5,title:"Mastered",schedule:"Long-term memory"}
 ];
 
-function reviewBoard(items){
-  const cards = items || [];
-  return "<div class='leitner-wrap' aria-label='Spaced repetition box board'><div class='leitner-board'>" +
+function reviewBoard(items,classes){
+  const allCards = items || [];
+  const subjects = subjectNames({classes:classes || [],reviewCards:allCards});
+  const selectedMatch = subjects.find(function(subject){ return subject.toLowerCase() === String(selectedReviewSubject || "").toLowerCase(); });
+  selectedReviewSubject = selectedMatch || subjects[0] || "Unassigned";
+  const cards = allCards.filter(function(card){ return String(card.subject || "Unassigned").toLowerCase() === selectedReviewSubject.toLowerCase(); });
+  const selectedClass = (classes || []).find(function(item){ return String(item.name || "").toLowerCase() === selectedReviewSubject.toLowerCase(); });
+  const intervals = selectedClass && selectedClass.intervals || {1:1,2:3,3:7,4:14};
+  const tabs = subjects.length ? "<div class='class-tabs' aria-label='Choose a class Box system'>" + subjects.map(function(subject){
+    const count = allCards.filter(function(card){ return String(card.subject || "Unassigned").toLowerCase() === subject.toLowerCase(); }).length;
+    return "<button class='class-tab " + (subject === selectedReviewSubject ? "active" : "") + "' type='button' data-review-subject='" + safe(subject) + "'>" + safe(subject) + " · " + count + "</button>";
+  }).join("") + "</div>" : "";
+  return tabs + "<div class='leitner-wrap' aria-label='" + safe(selectedReviewSubject) + " spaced repetition box board'><div class='leitner-board'>" +
     REVIEW_BOXES.map(function(config){
       const boxCards = cards.filter(function(card){ return Number(card.box || 1) === config.box; });
+      const schedule = config.box === 5 ? "Long-term memory" : "Every " + safe(intervals[config.box] || ({1:1,2:3,3:7,4:14}[config.box])) + " day" + (Number(intervals[config.box] || 1) === 1 ? "" : "s");
       return "<section class='leitner-box' data-review-box='" + config.box + "'><div class='leitner-title'><strong>" +
-        safe(config.title) + "</strong><span>" + safe(config.schedule) + "<br>" + boxCards.length + " card" + (boxCards.length === 1 ? "" : "s") + "</span></div>" +
+        safe(config.title) + "</strong><span>" + schedule + "<br>" + boxCards.length + " topic" + (boxCards.length === 1 ? "" : "s") + "</span></div>" +
         (boxCards.length ? boxCards.map(reviewCard).join("") : "<div class='empty'>Drop terms here.</div>") + "</section>";
     }).join("") + "</div></div>";
 }
@@ -782,7 +923,7 @@ function reviewCard(item){
     (box < 5 ? "<button type='button' data-move-review='" + (box + 1) + "' aria-label='Move forward one box'>→</button>" : "") + "</div>" +
     "<details class='form-panel edit-panel'><summary>Edit review card</summary><form class='portal-form' data-portal-form>" +
     "<input type='hidden' name='operation' value='updatereviewcard'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
-    "<div class='form-grid'><label>Subject<input name='subject' maxlength='80' value='" + safe(item.subject || "") + "'></label>" +
+    "<div class='form-grid'><label>Class or subject<input name='subject' list='portal-subjects' maxlength='80' value='" + safe(item.subject || "") + "'></label>" +
     "<label>Unit or sub-unit<input name='unit' maxlength='160' value='" + safe(item.unit || "") + "'></label></div>" +
     "<label>Term or concept<input name='term' maxlength='160' required value='" + safe(item.term || "") + "'></label>" +
     "<label>Recall prompt<textarea name='prompt' maxlength='600'>" + safe(item.prompt || "") + "</textarea></label>" +
@@ -793,7 +934,7 @@ function reviewCard(item){
 function addReviewCardForm(){
   return "<details class='form-panel'><summary>Add a term or sub-unit</summary><form class='portal-form' data-portal-form>" +
     "<input type='hidden' name='operation' value='addreviewcard'><input type='hidden' name='box' value='1'>" +
-    "<div class='form-grid'><label>Subject<input name='subject' maxlength='80' placeholder='Biology'></label>" +
+    "<div class='form-grid'><label>Class or subject<input name='subject' list='portal-subjects' maxlength='80' value='" + safe(selectedReviewSubject === "Unassigned" ? "" : selectedReviewSubject) + "' placeholder='Biology'></label>" +
     "<label>Unit or sub-unit<input name='unit' maxlength='160' placeholder='Cell structure'></label></div>" +
     "<label>Term or concept<input name='term' maxlength='160' required placeholder='Mitochondria'></label>" +
     "<label>Recall prompt<textarea name='prompt' maxlength='600' placeholder='What should you be able to recall?'></textarea></label>" +
@@ -818,10 +959,10 @@ function calendarEventList(items){
   if(!items || !items.length) return "<div class='empty'>No upcoming imported events.</div>";
   return items.map(function(item){
     return "<article class='item'><div class='record-head'><div><strong>" + safe(item.title || "Calendar event") +
-      "</strong><div><span class='date-chip'>" + safe(formatDate(item.date) + " • " + daysLabel(item.date)) +
+      "</strong><div><span class='date-chip'>" + safe(formatDate(item.date) + (item.startTime ? " at " + item.startTime : "") + " • " + daysLabel(item.date)) +
       "</span></div></div>" + reviewBadge(item.category) + "</div><div class='details'>" +
       detail("Calendar",item.sourceName) + detail("Details",item.description) +
-      (item.assessmentId ? detail("Portal action","Added to Summatives & Assessments") : "") + "</div></article>";
+      (item.assessmentId ? detail("Portal action","Possible assessment added for confirmation") : "") + "</div></article>";
   }).join("");
 }
 
@@ -837,9 +978,21 @@ function linkCalendarForm(){
 }
 
 function quickNav(){
-  return "<nav class='quick-nav' aria-label='Portal sections'><a href='#dashboard'>Dashboard</a><a href='#planner'>Study Planner</a>" +
-    "<a href='#tasks'>Tasks</a><a href='#leitner'>Review Boxes</a><a href='#reviews'>Review Queue</a><a href='#assessments'>Summatives</a><a href='#calendar'>Calendar</a>" +
-    "<a href='#academics'>Error Log</a><a href='#projects'>Projects</a><a href='#evidence'>Evidence</a><a href='#coaching'>Coaching</a></nav>";
+  return "<nav class='quick-nav' aria-label='Portal sections'><a href='#today'>Today</a><a href='#calendar'>Calendar</a><a href='#classes'>Classes</a><a href='#planner'>Study</a>" +
+    "<a href='#leitner'>Box Systems</a><a href='#assessments'>Tests</a><a href='#materials'>Files</a><a href='#courses'>Courses</a><a href='#dashboard'>Progress</a>" +
+    "<a href='#projects'>Activities</a><a href='#coaching'>Meetings</a><a href='#settings'>Settings</a></nav>";
+}
+
+function coursesPreview(){
+  const courses = [
+    ["Study effectively","Active recall, correction loops, and choosing the right method."],
+    ["Spaced repetition","Build and adjust a Box system that matches each class."],
+    ["Test preparation","Turn a test date and topic list into concrete preparation actions."],
+    ["Time management","Protect realistic study blocks around school and activities."],
+    ["Academic planning","Connect weekly execution to term goals and progress."],
+    ["Extracurricular strategy","Turn activities into sustained contribution and tangible outputs."]
+  ];
+  return "<div class='course-grid'>" + courses.map(function(item){ return "<article class='course-card'><strong>" + safe(item[0]) + "</strong><span>" + safe(item[1]) + "</span></article>"; }).join("") + "</div><div class='locked-note'><strong>Plus course library — coming soon</strong><br>These modules are a product preview, not completed lessons. Free students keep all core planning and Box tools; Plus will add the guided learning library when the content is ready.</div>";
 }
 
 function renderError(title,message,help){
@@ -849,6 +1002,8 @@ function renderError(title,message,help){
 
 function derive(data){
   data.reviewCards = data.reviewCards || [];
+  data.classes = data.classes || [];
+  data.materials = data.materials || [];
   data.calendarSources = data.calendarSources || [];
   data.calendarEvents = data.calendarEvents || [];
   data.reviewQueue = (data.weakPoints || []).filter(function(item){
@@ -858,7 +1013,8 @@ function derive(data){
   data.assessments = data.assessments || [];
   data.nextAssessment = data.assessments.filter(function(item){
     const status = String(item.status || "").toLowerCase();
-    return item.date >= qatarToday() && ["completed","cancelled"].indexOf(status) === -1;
+    const classification = String(item.classificationStatus || "Confirmed").toLowerCase();
+    return item.date >= qatarToday() && ["completed","cancelled"].indexOf(status) === -1 && classification !== "needs confirmation" && classification !== "dismissed";
   }).sort(function(a,b){ return String(a.date).localeCompare(String(b.date)); })[0] || null;
   data.progressHistory = (data.progressHistory && data.progressHistory.length ? data.progressHistory : data.sessionNotes || []).filter(function(item){
     const progress = item.progress || {};
@@ -866,6 +1022,9 @@ function derive(data){
       progress.consistency !== null && progress.consistency !== undefined ||
       progress.direction !== null && progress.direction !== undefined;
   });
+  data.plan = data.plan || "Free";
+  data.planStatus = data.planStatus || "Active";
+  data.todayPlan = data.todayPlan && Array.isArray(data.todayPlan.items) ? data.todayPlan : localTodayPlan(data);
   return data;
 }
 
@@ -875,14 +1034,15 @@ function render(data,demoMode){
   const reminderAction = currentData.portalReminders ? "false" : "true";
   const reminderLabel = currentData.portalReminders ? "Turn portal reminders off" : "Turn portal reminders on";
   document.getElementById("app").innerHTML =
-    "<div class='hero'><h1>Welcome, " + safe(currentData.student.name || "student") + ".</h1><p>" +
+    "<div class='hero'><div class='hero-line'><div><h1>Welcome, " + safe(currentData.student.name || "student") + ".</h1><p>" +
     safe(currentData.student.summary || "Plan the week, act on weak points, submit proof, and track progress.") +
-    "</p><div class='portal-note'>" + (demoMode ?
+    "</p></div><span class='plan-chip'>" + safe(currentData.plan) + " plan</span></div><div class='portal-note'>" + (demoMode ?
     "<strong>Sample portal:</strong> Every item is fictional. You can test the forms without saving anything." :
     "<strong>Private link:</strong> This workspace is intended for the student and parent or guardian. Do not forward it.") +
     "</div>" + (demoMode ? "<div class='demo-actions'><button class='btn' type='button' onclick='location.href=\"index.html?diagnosis=1\"'>Start 60-second diagnosis</button><a class='btn secondary' href='index.html'>Back to website</a></div>" : "") +
-    "</div>" + quickNav() +
-    "<div class='info-box editing-note'><span class='status'>Editable</span><div><strong>Quick edits now open in one focused panel.</strong><br>Add or edit planner blocks, tasks, review cards, summatives, error-log entries, projects, and evidence without expanding long forms inside every record. Coach ratings, feedback, parent updates, sessions, meetings, and security settings stay coach-maintained.</div></div>" +
+    "</div>" + quickNav() + classDatalist(currentData) +
+    "<div class='info-box editing-note'><span class='status'>Editable</span><div><strong>Quick edits open in one focused panel.</strong><br>Classes, study blocks, tasks, Box topics, tests, material links, error-log entries, projects, and evidence stay easy to maintain. Coach ratings, private feedback, parent updates, sessions, and security settings remain protected.</div></div>" +
+    "<section class='portal-section' id='today'><div class='section-head'><div><span class='section-kicker'>Daily command center</span><h2>Today’s Study Plan</h2></div><p>Start here. The plan combines scheduled study, due Box reviews, and confirmed upcoming assessments.</p></div>" + todayPlanPanel(currentData.todayPlan) + "<div style='margin-top:14px'>" + setupPanel(currentData) + "</div></section>" +
     "<section class='portal-section' id='dashboard'><div class='section-head'><div><span class='section-kicker'>Dashboard</span><h2>Current focus</h2></div><p>Coach-rated progress, the next assessment, and the next meeting in one view.</p></div>" +
     "<div class='grid four'>" +
     progressCard("Study System",progress.studySystem,"Use of effective methods on real schoolwork.") +
@@ -890,12 +1050,13 @@ function render(data,demoMode){
     progressCard("Direction",progress.direction,"Clarity of priorities and next actions.") +
     nextAssessmentCard(currentData.nextAssessment) + "</div>" +
     "<div class='rubric'><strong>How scores work:</strong> coach-rated at 0, 25, 50, 75, or 100 — not started, emerging, developing, consistent, or independent.</div></section>" +
+    "<section class='portal-section' id='classes'><div class='section-head'><div><span class='section-kicker'>Organize</span><h2>Classes</h2></div><p>Each class has its own Box system, study-block length, and configurable review intervals.</p></div><div class='card'>" + classList(currentData.classes) + addClassForm() + "</div></section>" +
     "<section class='portal-section' id='planner'><div class='section-head'><div><span class='section-kicker'>Plan</span><h2>Study Planner</h2></div><p>Block real work into the week with a method, finish line, and optional proof requirement.</p></div><div class='card'><div class='list'>" +
     plannerList(currentData.planner) + "</div>" + addPlannerForm() + "</div></section>" +
     "<section class='portal-section' id='tasks'><div class='section-head'><div><span class='section-kicker'>This week</span><h2>Weekly Tasks &amp; Proof</h2></div><p>Add personal tasks, edit the action and due date, then submit proof without changing Ryan's review.</p></div><div class='card'><div class='list'>" +
     taskList(currentData.tasks) + "</div>" + addTaskForm() + "</div></section>" +
-    "<section class='portal-section' id='leitner'><div class='section-head'><div><span class='section-kicker'>Spaced repetition</span><h2>Review Boxes</h2></div><p>Drag a term or sub-unit forward when recall succeeds; move it back when it needs more practice. Mobile controls work without dragging.</p></div><div class='card'>" +
-    reviewBoard(currentData.reviewCards) + addReviewCardForm() + "<div class='rubric'><strong>Box rhythm:</strong> daily → every 3 days → weekly → every 2 weeks → mastered. Moving a card automatically schedules its next review.</div></div></section>" +
+    "<section class='portal-section' id='leitner'><div class='section-head'><div><span class='section-kicker'>Spaced repetition</span><h2>Box Systems by Class</h2></div><p>Choose a class, then drag a term or sub-unit forward when recall succeeds or backward when it needs more work.</p></div><div class='card'>" +
+    reviewBoard(currentData.reviewCards,currentData.classes) + addReviewCardForm() + "<div class='rubric'><strong>Independent by class:</strong> every subject keeps its own topics and review intervals. Moving a topic automatically schedules its next review.</div></div></section>" +
     "<section class='portal-section' id='reviews'><div class='section-head'><div><span class='section-kicker'>Spaced review</span><h2>Review Queue</h2></div><p>Due weak points reappear here until the student retries them and either reschedules or masters them.</p></div><div class='card'><div class='list'>" +
     reviewQueueList(currentData.reviewQueue) + "</div></div></section>" +
     "<section class='portal-section' id='assessments'><div class='section-head'><div><span class='section-kicker'>Deadlines</span><h2>Summatives &amp; Assessments</h2></div><p>Add every summative, test, presentation, or major deadline; edit all details as the school plan changes.</p></div><div class='card'><div class='list'>" +
@@ -904,6 +1065,8 @@ function render(data,demoMode){
     "<div class='info-box privacy-callout'><strong>Privacy first:</strong> link a separate school/activities calendar—not a personal calendar. The private feed URL is never shown after saving and is deleted on disconnect.</div>" +
     "<div class='card' style='margin-top:12px'><h3>Connections</h3>" + calendarSourceList(currentData.calendarSources) + linkCalendarForm() + "</div>" +
     "<div class='card' style='margin-top:12px'><h3>Upcoming imported events</h3><div class='list'>" + calendarEventList(currentData.calendarEvents) + "</div></div></section>" +
+    "<section class='portal-section' id='materials'><div class='section-head'><div><span class='section-kicker'>Study library</span><h2>Files &amp; Materials</h2></div><p>Organize secure school-approved links by class now. Direct private uploads will only launch after storage and consent are ready.</p></div><div class='card'>" + materialList(currentData.materials) + addMaterialForm() + "<div class='locked-note'><strong>No fake AI processing:</strong> linked files are organized only. Admit Strategy does not claim to summarize or extract topics from them.</div></div></section>" +
+    "<section class='portal-section' id='courses'><div class='section-head'><div><span class='section-kicker'>Plus preview</span><h2>Courses</h2></div><p>Learn why the study systems work while the portal helps execute them.</p></div><div class='card'>" + coursesPreview() + "</div></section>" +
     "<section class='portal-section' id='academics'><div class='section-head'><div><span class='section-kicker'>Academics</span><h2>Weak Points &amp; Error Log</h2></div><p>Attempt → diagnose the cause → fix → retry → schedule the next review.</p></div><div class='card'><div class='list'>" +
     errorLogList(currentData.weakPoints) + "</div>" + addWeakPointForm() + "</div></section>" +
     "<section class='portal-section' id='projects'><div class='section-head'><div><span class='section-kicker'>Profile</span><h2>Projects &amp; Extracurriculars</h2></div><p>Track role, stage, next action, tangible output, contribution, and direction.</p></div><div class='card'><div class='list'>" +
@@ -1024,7 +1187,9 @@ function applyDemoAction(values){
   if(operation === "addassessment"){
     currentData.assessments.push({
       id:actionId(),name:values.name,subject:values.subject,date:values.date,type:values.type,status:"Upcoming",
-      prepTarget:Number(values.prepTarget || 0),prepCompleted:0,confidence:values.confidence,notes:values.notes
+      prepTarget:Number(values.prepTarget || 0),prepCompleted:0,confidence:values.confidence,notes:values.notes,
+      time:values.time,topics:values.topics,difficulty:values.difficulty,importance:values.importance,
+      sourceType:"Manual",classificationStatus:"Confirmed"
     });
   }
   if(operation === "updateassessment"){
@@ -1032,8 +1197,37 @@ function applyDemoAction(values){
     if(assessment){
       Object.assign(assessment,{name:values.name,subject:values.subject,date:values.date,type:values.type,
         prepTarget:Number(values.prepTarget || 0),prepCompleted:Number(values.prepCompleted || 0),
-        confidence:values.confidence,status:values.status,notes:values.notes});
+        confidence:values.confidence,status:values.status,notes:values.notes,time:values.time,topics:values.topics,
+        difficulty:values.difficulty,importance:values.importance,classificationStatus:"Confirmed"});
     }
+  }
+  if(operation === "classifyassessment"){
+    const assessment = currentData.assessments.find(function(entry){ return entry.id === values.recordId; });
+    if(assessment){ assessment.classificationStatus = values.decision;assessment.status = values.decision === "Confirmed" ? "Upcoming" : "Cancelled"; }
+  }
+  if(operation === "addclass"){
+    currentData.classes.push({id:actionId(),name:values.name,teacher:values.teacher,color:values.color,
+      defaultMinutes:Number(values.defaultMinutes || 25),intervals:{1:Number(values.box1Days || 1),2:Number(values.box2Days || 3),3:Number(values.box3Days || 7),4:Number(values.box4Days || 14)},status:"Active"});
+  }
+  if(operation === "updateclass"){
+    const item = currentData.classes.find(function(entry){ return entry.id === values.recordId; });
+    if(item){
+      const previousName = String(item.name || "");
+      Object.assign(item,{name:values.name,teacher:values.teacher,color:values.color,defaultMinutes:Number(values.defaultMinutes || 25),intervals:{1:Number(values.box1Days || 1),2:Number(values.box2Days || 3),3:Number(values.box3Days || 7),4:Number(values.box4Days || 14)}});
+      if(previousName && previousName.toLowerCase() !== String(values.name || "").toLowerCase()){
+        [currentData.planner,currentData.assessments,currentData.reviewCards,currentData.materials].forEach(function(list){
+          (list || []).forEach(function(record){ if(String(record.subject || "").toLowerCase() === previousName.toLowerCase()) record.subject = values.name; });
+        });
+        if(String(selectedReviewSubject || "").toLowerCase() === previousName.toLowerCase()) selectedReviewSubject = values.name;
+      }
+    }
+  }
+  if(operation === "addmaterial"){
+    currentData.materials.push({id:actionId(),title:values.title,subject:values.subject,fileType:values.fileType,url:values.url,notes:values.notes,status:"Active"});
+  }
+  if(operation === "updatematerial"){
+    const item = currentData.materials.find(function(entry){ return entry.id === values.recordId; });
+    if(item) Object.assign(item,{title:values.title,subject:values.subject,fileType:values.fileType,url:values.url,notes:values.notes});
   }
   if(operation === "addreviewcard"){
     currentData.reviewCards.push({id:actionId(),subject:values.subject,unit:values.unit,term:values.term,
@@ -1057,6 +1251,7 @@ function applyDemoAction(values){
     if(source){ source.status = "Disconnected";source.lastSyncStatus = "Disconnected in sample"; }
   }
   if(operation === "setreminders") currentData.portalReminders = values.enabled === "true";
+  currentData.todayPlan = localTodayPlan(currentData);
   render(derive(currentData),true);
   showStatus("Sample updated locally. No real student data was saved.",true);
 }
@@ -1064,7 +1259,8 @@ function applyDemoAction(values){
 function moveDemoReviewCard(recordId,box){
   const card = currentData.reviewCards.find(function(entry){ return entry.id === recordId; });
   if(!card) return;
-  const intervals = {1:1,2:3,3:7,4:14,5:0};
+  const classItem = (currentData.classes || []).find(function(item){ return String(item.name || "").toLowerCase() === String(card.subject || "").toLowerCase(); });
+  const intervals = Object.assign({1:1,2:3,3:7,4:14,5:0},classItem && classItem.intervals || {});
   card.box = Math.max(1,Math.min(5,Number(box || 1)));
   card.status = card.box === 5 ? "Mastered" : "Active";
   if(card.box === 5) card.nextReview = "";
@@ -1130,11 +1326,23 @@ document.addEventListener("submit",function(event){
     showStatus("Add proof details or an https evidence link.",false);
     return;
   }
+  if((values.operation === "addmaterial" || values.operation === "updatematerial") && !/^https:\/\//i.test(String(values.url || ""))){
+    showStatus("Study material links must begin with https://",false);
+    return;
+  }
   if(isDemo) applyDemoAction(values);
   else submitRealAction(form,values);
 });
 
 document.addEventListener("click",function(event){
+  const subjectButton = event.target.closest("[data-review-subject]");
+  if(subjectButton){
+    selectedReviewSubject = subjectButton.getAttribute("data-review-subject") || "";
+    render(currentData,isDemo);
+    const section = document.getElementById("leitner");
+    if(section) section.scrollIntoView({behavior:"smooth",block:"start"});
+    return;
+  }
   const editorButton = event.target.closest("[data-open-editor]");
   if(editorButton){
     const owner = editorButton.closest("article");
