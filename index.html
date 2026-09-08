@@ -4,10 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="referrer" content="no-referrer" />
+  <script src="assets/config.js"></script>
   <title>Admit Strategy</title>
   <meta name="description" content="A private academic operating system for planning schoolwork, spaced repetition, assessments, projects, evidence, and progress." />
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <style>
+[hidden]{display:none!important}
+    :focus-visible{outline:3px solid #20e3b2;outline-offset:4px}@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
     :root{--bg:#050816;--panel:rgba(255,255,255,.075);--panel2:rgba(255,255,255,.12);--text:#f7fbff;--muted:#aab7cf;--line:rgba(255,255,255,.14);--accent:#7c5cff;--accent2:#20e3b2;--warm:#fff4b8;--success:#89f7b5;--danger:#ff8b8b}
     *{box-sizing:border-box;margin:0;padding:0;scroll-behavior:smooth;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
     body{background:var(--bg);color:var(--text);overflow-x:hidden}
@@ -39,12 +43,12 @@
     .chat-capture{display:grid;gap:9px;padding:13px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.055)}.chat-capture label{margin:0;color:#edf4ff;font-size:.86rem}.chat-capture input[type="text"],.chat-capture input[type="email"]{padding:11px 12px;border-radius:12px;font-size:.93rem}.chat-consent{display:flex!important;gap:8px;align-items:flex-start;color:#cbd6ec!important;line-height:1.38}.chat-consent input{width:auto;margin-top:3px}.chat-submit{border:0;border-radius:999px;background:linear-gradient(135deg,#fff,#dff7ff);color:#050816;font-weight:900;padding:12px 14px;cursor:pointer}.chat-submit:disabled{opacity:.6;cursor:wait}.chat-error{min-height:1.2em;color:var(--danger);font-size:.84rem}
     .chat-actions{display:grid;gap:8px}.chat-cta,.chat-restart{border:0;border-radius:999px;padding:12px 14px;font-weight:900;cursor:pointer}.chat-cta{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white}.chat-restart{background:rgba(255,255,255,.09);color:white;border:1px solid var(--line)}
     .hidden-frame{display:none}
-    @media(max-width:900px){nav .links{display:flex;align-items:center}nav .links a:not(.nav-cta){display:none}nav .nav-cta{margin-left:0}.hero-grid,.split,.booking-grid,.founder-card,.pricing,.contrast-grid{grid-template-columns:1fr}.cards,.faq-grid,.portal-grid{grid-template-columns:1fr}.slots{grid-template-columns:repeat(2,1fr)}h1{letter-spacing:-2px}section{padding:80px 18px}.timeline:before,.timeline-progress{left:18px}.step,.step.left,.step.right{width:100%;left:0;text-align:left;padding-left:52px;padding-right:0}.left .dot,.right .dot{left:8px;right:auto}.founder-badge{min-height:190px}.chat{right:15px;bottom:15px}}
+    @media(max-width:900px){nav .links{display:flex;align-items:center}nav .links a:not(.nav-cta):not(.account-link){display:none}nav .nav-cta{margin-left:0}.hero-grid,.split,.booking-grid,.founder-card,.pricing,.contrast-grid{grid-template-columns:1fr}.cards,.faq-grid,.portal-grid{grid-template-columns:1fr}.slots{grid-template-columns:repeat(2,1fr)}h1{letter-spacing:-2px}section{padding:80px 18px}.timeline:before,.timeline-progress{left:18px}.step,.step.left,.step.right{width:100%;left:0;text-align:left;padding-left:52px;padding-right:0}.left .dot,.right .dot{left:8px;right:auto}.founder-badge{min-height:190px}.chat{right:15px;bottom:15px}}
     @media(max-width:520px){.hero-actions .btn{width:100%}.chat{left:10px;right:10px;bottom:10px;width:auto;height:min(650px,calc(100vh - 20px));max-height:none}.chat-options{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
-  <nav><div class="brand"><div class="logo">A</div> Admit Strategy</div><div class="links"><a href="#how">How it works</a><a href="#program">Product</a><a href="#journey">System</a><a href="#portal">Portal</a><a href="#value">Pricing</a><a href="#faq">FAQ</a><a href="?diagnosis=1" class="nav-cta">Start diagnosis</a></div></nav>
+  <nav><div class="brand"><div class="logo">A</div> Admit Strategy</div><div class="links"><a href="#how">How it works</a><a href="#program">Product</a><a href="#journey">System</a><a href="#portal">Portal</a><a href="#value">Pricing</a><a href="#faq">FAQ</a><a href="portal.html" class="account-link">Log in</a><a href="?diagnosis=1" class="nav-cta">Get Started</a></div></nav>
   <section class="hero"><div class="wrap hero-grid"><div><div class="eyebrow"><span class="pulse"></span> Free academic workspace · Plus automation coming soon</div><h1><span class="gradient-text">Run your academic life</span><br>from one system.</h1><p class="lead">Admit Strategy turns classes, schoolwork, tests, projects, and goals into a practical plan students can execute today. It is the private academic operating system between school advice and daily action.</p><div class="hero-actions"><button class="btn primary" onclick="toggleChat(true)">Start the 60-Second Diagnosis</button><a class="btn secondary" href="#portal">See the Student Workspace</a></div></div><div class="hero-panel"><div class="stat-grid"><div class="stat"><strong>Today</strong><span>A clear plan from study blocks, due reviews, and confirmed assessments.</span></div><div class="stat"><strong>Classes</strong><span>Independent subjects, review intervals, summatives, and materials.</span></div><div class="stat"><strong>Boxes</strong><span>Drag terms and sub-units through a spaced-repetition system.</span></div><div class="stat"><strong>Progress</strong><span>Track projects, evidence, weak points, sessions, and next actions.</span></div></div><div class="quote" id="motivationLine">“The goal is not random motivation. The goal is repeatable execution.”</div></div></div></section>
   <section style="padding-top:0"><div class="wrap"><div class="mailbox"><h3>Parent-approved. Private student data. Delete your data anytime.</h3><p>Each real portal uses a private access link. A parent or guardian can request access, correction, or deletion directly from Ryan.</p></div></div></section>
 
@@ -147,12 +151,14 @@
       }
     }
     function confirmBooking(){
+      if(window.ADMIT_CONFIG?.backend==="supabase"){location.assign("portal.html?book=1");return;}
       if(bookingPending)return;
       const f=document.getElementById("bookingForm");
       if(!f.reportValidity())return;
       const b={name:f.name.value.trim(),email:f.email.value.trim(),parentEmail:f.parentEmail.value.trim(),date:f.date.value,time:selectedTime,grade:f.grade.value,notes:f.notes.value.trim()};
       if(!b.time){alert("Choose an available time.");return}
       if(!validEmail(b.email)||!validEmail(b.parentEmail)){alert("Enter valid student and parent or guardian emails.");return}
+      if(b.email.toLowerCase()===b.parentEmail.toLowerCase()){alert("Student and parent or guardian emails must be different.");return}
       if(isUnavailable(b.time,b.date)||unavailableTimes.includes(b.time)||bookedTimes.includes(b.time)){alert("That time is unavailable. Please choose another time.");return}
       const chosen=makeLocalDate(b.date,b.time);
       const maxDate=new Date();maxDate.setDate(maxDate.getDate()+CONFIG.maxBookingDays+1);
@@ -192,10 +198,13 @@
         text.textContent="Your booking is still being verified automatically. If the email arrives first, it is already saved—do not submit again.";
       },20000);
     }
+    function isTrustedBackendOrigin(origin){
+      return origin==="https://script.google.com"||/^https:\/\/[^/]+\.googleusercontent\.com$/.test(String(origin||""));
+    }
     function handleBookingResponse(event){
-      const trusted=event.origin==="https://script.google.com"||event.origin.endsWith(".googleusercontent.com");
+      const responseFrame=document.querySelector("iframe[name='bookingFrame']");
       const data=event.data||{};
-      if(!trusted||data.source!=="admit-strategy-booking"||data.requestId!==bookingRequestId)return;
+      if(!isTrustedBackendOrigin(event.origin)||!responseFrame||event.source!==responseFrame.contentWindow||data.source!=="admit-strategy-booking"||data.requestId!==bookingRequestId)return;
       if(data.ok){
         finishBookingConfirmation(data.warning||"");
       }else{
@@ -391,7 +400,7 @@
       const summary=document.createElement("span");
       summary.textContent=lead.diagnosisSummary;
       const actions=document.createElement("ol");
-      [horizonActions[lead.assessmentHorizon],capacityActions[lead.weeklyCapacity],"Create the Free portal below and add the first real class, assessment, and action."].forEach(text=>{
+      [horizonActions[lead.assessmentHorizon],capacityActions[lead.weeklyCapacity],"Save your diagnosis below, then book your free first meeting."].forEach(text=>{
         const item=document.createElement("li");
         item.textContent=text;
         actions.appendChild(item);
@@ -404,11 +413,28 @@
       explanation.textContent="This is a transparent starting hypothesis based on the six answers—not AI, a formal educational assessment, or a grade guarantee. Free provides the complete manual workspace; Plus automation is planned but is not for sale yet.";
       document.getElementById("chatBody").appendChild(explanation);
 
+      if(window.ADMIT_CONFIG?.backend==="supabase"){renderAccountCapture();return;}
       const parentRequired=lead.userType==="student";
       if(parentRequired){
         addMsg("Ask a parent or guardian to complete and approve this final step. The private portal link will be emailed; it will never be displayed publicly here.");
       }
       renderLeadCapture(parentRequired);
+    }
+
+    function renderAccountCapture(){
+      const form=document.createElement("form");form.className="chat-capture";form.id="chatCaptureForm";
+      form.innerHTML='<div class="chat-note"><strong>Save your diagnosis</strong><br>Next, sign in with the student’s account. We’ll reuse an existing workspace. A guardian approves academic editing from their own account.</div>'+
+        '<label>Student name<input name="name" maxlength="120" autocomplete="name" required></label>'+
+        '<label>Student email<input name="email" type="email" maxlength="254" autocomplete="email" required></label>'+
+        '<label>Parent or guardian email<input name="guardian" type="email" maxlength="254" autocomplete="off" required></label>'+
+        '<label class="chat-consent"><input name="service" type="checkbox" required><span>I accept the <a href="privacy.html">privacy notice</a> and necessary account and booking messages.</span></label>'+
+        '<label class="chat-consent"><input name="marketing" type="checkbox"><span>Also send study tips and occasional marketing updates. Optional; unsubscribe anytime.</span></label>'+
+        '<p class="chat-note">Your answers and details stay in this browser for up to 24 hours while you sign in, then are removed after saving.</p>'+
+        '<button class="chat-submit" type="submit">Continue to your account</button><p class="chat-error" role="alert"></p>';
+      form.onsubmit=event=>{event.preventDefault();if(!form.reportValidity())return;
+        Object.assign(lead,{name:form.elements.name.value,email:form.elements.email.value,parentEmail:form.elements.guardian.value,serviceContactConsent:form.elements.service.checked?"yes":"no",campaignOptIn:form.elements.marketing.checked?"yes":"no"});
+        try{if(!window.AdmitMarketing)throw new Error("Account setup is still loading. Please try again.");window.AdmitMarketing.continueDiagnosis(lead);}catch(error){form.querySelector("[role=alert]").textContent=error.message;}
+      };document.getElementById("chatBody").append(form);scrollChat();
     }
 
     function renderLeadCapture(parentRequired){
@@ -544,9 +570,9 @@
     }
 
     function handleLeadResponse(event){
-      const trusted=event.origin==="https://script.google.com"||event.origin.endsWith(".googleusercontent.com");
+      const responseFrame=document.querySelector("iframe[name='leadFrame']");
       const data=event.data||{};
-      if(!trusted||data.source!=="admit-strategy-signup"||!leadSignupPending)return;
+      if(!isTrustedBackendOrigin(event.origin)||!responseFrame||event.source!==responseFrame.contentWindow||data.source!=="admit-strategy-signup"||!leadSignupPending)return;
       clearTimeout(leadResponseTimer);
       leadSignupPending=false;
       const form=document.getElementById("chatCaptureForm");
@@ -570,22 +596,27 @@
       wrap.className="chat-actions";
       const done=document.createElement("div");
       done.className="chat-result";
-      done.textContent="Request received. Check the student and guardian inboxes for the private Free portal link. If this email already had an active portal, the same workspace was reused. For privacy, account existence is not shown on this page.";
+      done.textContent="Your diagnosis is ready. Book your free first meeting to turn it into a practical plan. Your details are already filled in. Check your inbox for access to your private workspace.";
       const book=document.createElement("button");
       book.type="button";
       book.className="chat-cta";
-      book.textContent="Open the fictional portal demo";
-      book.addEventListener("click",()=>{location.href="portal.html?demo=1"});
+      book.textContent="Book your free first meeting";
+      book.addEventListener("click",()=>{prefillBooking();goToBooking()});
       const restart=document.createElement("button");
       restart.type="button";
       restart.className="chat-restart";
       restart.textContent="Start over";
       restart.addEventListener("click",()=>{chatStep=0;chatStart()});
-      wrap.append(done,book,restart);
+      const portal=document.createElement("a");
+      portal.className="chat-restart";
+      portal.href="portal.html";
+      portal.textContent="Open your portal";
+      wrap.append(done,book,portal,restart);
       return wrap;
     }
 
     function goToBooking(){
+      if(window.ADMIT_CONFIG?.backend==="supabase"){location.assign("portal.html?book=1");return;}
       toggleChat(false);
       document.getElementById("booking").scrollIntoView({behavior:"smooth"});
       setTimeout(()=>document.getElementById("studentName").focus(),500);
@@ -597,5 +628,6 @@
     window.addEventListener("message",event=>{handleBookingResponse(event);handleLeadResponse(event)});
     window.onload=()=>{document.getElementById("year").textContent=new Date().getFullYear();document.getElementById("motivationLine").textContent=lines[Math.floor(Math.random()*lines.length)];const today=new Date(),maxDate=new Date(today);maxDate.setDate(today.getDate()+CONFIG.maxBookingDays);const dateInput=document.getElementById("meetingDate");dateInput.min=`${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;dateInput.max=`${maxDate.getFullYear()}-${pad(maxDate.getMonth()+1)}-${pad(maxDate.getDate())}`;const box=document.getElementById("backendBox"),status=document.getElementById("backendStatus"),details=document.getElementById("backendDetails");if(isBackendConnected()){box.classList.add("connected");status.textContent="Connected.";details.textContent=" Live availability, confirmed bookings, portal links, and two meeting reminders are enabled."}else{status.textContent="Not connected yet.";details.textContent=" Automatic booking is unavailable; use the Gmail backup and wait for manual confirmation."}renderSlots();updateTimelineProgress();if(new URLSearchParams(location.search).get("diagnosis")==="1")toggleChat(true);};
   </script>
+  <script type="module" src="assets/marketing.js"></script>
 </body>
 </html>
