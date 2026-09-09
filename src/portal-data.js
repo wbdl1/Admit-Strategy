@@ -18,7 +18,7 @@ export function normalizeRecord(table,row,classes=[]){
   }
   if(table==="study_materials")Object.assign(record,{url:row.external_url||"",fileId:row.file_id,status:row.archived_at?"Archived":"Active"});
   if(table==="evidence")Object.assign(record,{whatIDid:row.what_i_did,evidence:row.proof_text,coachReview:row.status==="draft"?"Draft":"Pending"});
-  if(table==="sessions")Object.assign(record,{detail:row.shared_summary,status:"Completed"});
+  if(table==="sessions")Object.assign(record,{detail:[row.shared_summary,row.next_actions?"Next actions: "+row.next_actions:""].filter(Boolean).join("\n\n"),status:"Completed"});
   if(table==="calendar_sources")Object.assign(record,{calendarName:row.name,provider:label(row.kind),lastSyncAt:row.last_import_at,lastSyncStatus:row.last_error_code?"Reconnect this calendar":""});
   if(table==="calendar_events")Object.assign(record,{date:row.start_date||row.starts_at?.slice(0,10),endDate:row.end_date,description:row.description});
   return record;
@@ -75,7 +75,7 @@ export class PortalData {
     if(this.loaded.has(view))return;
     if(this.loading.has(view))return this.loading.get(view);
     const promise=(async()=>{
-      const tables={classes:["study_materials","weak_points","evidence"],assessments:["calendar_sources","calendar_events"],calendar:["calendar_sources","calendar_events"],materials:["study_materials"],progress:["weak_points","projects","evidence","sessions"]}[view]||[];
+      const tables={classes:["study_materials","weak_points","evidence"],assessments:[],calendar:[],materials:["study_materials"],progress:["weak_points","projects","evidence","sessions"]}[view]||[];
       await Promise.all(tables.map(t=>this.read(t)));
       if(view==="progress"){
         const [scores,reviews,parents,bookings]=await Promise.all([
@@ -115,6 +115,7 @@ export class PortalData {
     const record={};for(const [source,target] of Object.entries(fields))if(v[source]!==undefined){
       let value=v[source];
       if(["status","kind","confidence","difficulty","importance"].includes(target))value=status(value)||null;
+      if(target==="kind"&&value==="project_deadline")value="deadline";
       if(["due_date","due_time","start_time","end_time","next_review","proof_url"].includes(target))value=value||null;
       if(["default_minutes","box1_days","box2_days","box3_days","box4_days","prep_target","prep_completed"].includes(target))value=Number(value);
       record[target]=value;

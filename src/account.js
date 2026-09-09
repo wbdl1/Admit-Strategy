@@ -133,8 +133,14 @@ export class AccountExperience {
     this.gate.append(action("Log out",()=>this.logout(),true));
   }
   async openStudent(student){
+    const generation=this.workspaceGeneration=(this.workspaceGeneration||0)+1,actor=this.user.id;
     this.show("<h1>Opening Today…</h1><p>Loading your next assessment and actions.</p>");
-    const data=await this.portal.open(student);this.loadedUser=this.user.id;
+    // A new adapter binds in-flight work to its original student. Sharing one
+    // mutable adapter across coach/guardian workspaces can retarget a retry.
+    const adapter=new PortalData(this.client,{onAuthRequired:()=>this.login()});
+    const data=await adapter.open(student);
+    if(generation!==this.workspaceGeneration||actor!==this.user?.id)return;
+    this.portal=adapter;this.loadedUser=this.user.id;
     this.ownStudentId=student.profile_id===this.account.profile_id?student.id:null;
     this.portal.canEdit=this.roles.some(r=>["coach","admin"].includes(r)) || (student.profile_id===this.account.profile_id && student.status==="active");
     this.onPortal(data,this.portal);this.gate.hidden=true;this.root.hidden=false;this.toolbar.hidden=false;
@@ -150,6 +156,7 @@ export class AccountExperience {
     }
     this.onAccountChange(this);
     performance.measure("admit-today-useful",{start:0,end:performance.now()});
+    this.root.dataset.todayUsefulMs=String(Math.round(performance.now()));
     if(!this.diagnosis)this.recordWorkspaceEvent("portal_activated");
     if(!this.diagnosis&&new URL(location.href).searchParams.get("book")==="1"){
       const clean=new URL(location.href);clean.searchParams.delete("book");history.replaceState(history.state,"",clean);this.booking();
@@ -158,6 +165,7 @@ export class AccountExperience {
   async logout(){
     if((this.hasPendingChanges()||this.coach?.unsaved.length||document.querySelector("form[data-dirty]"))&&!window.confirm("You have unsaved or unconfirmed changes. Stay here to finish saving, or log out and discard local input?"))return;
     const {error}=await this.client.auth.signOut();if(error){this.message("Could not log out. Please try again.",true);return;}
+    this.workspaceGeneration=(this.workspaceGeneration||0)+1;
     this.coach?.dispose();this.coach=null;
     this.loadedUser=null;this.user=null;this.portal.studentId=null;this.portal.data=null;this.root.replaceChildren();this.toolbar.replaceChildren();this.login();
   }

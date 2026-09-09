@@ -97,7 +97,7 @@ a{color:var(--success)}
 .form-panel summary{list-style:none;padding:13px 14px;font-weight:850;color:#dffff6;cursor:pointer}
 .form-panel summary::-webkit-details-marker{display:none}
 .form-panel summary:after{content:"+";float:right;color:var(--success);font-size:1.15rem}
-.form-panel[open] summary:after{content:"–"}
+.form-panel[open] > summary:after{content:"–"}
 .portal-form{display:grid;gap:11px;padding:0 14px 14px}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
 .portal-form label{display:grid;gap:6px;color:#dce8ff;font-size:.83rem;font-weight:800}
@@ -165,6 +165,11 @@ a{color:var(--success)}
   .quick-nav{top:4px}
 }
 @media(max-width:620px){
+  .quick-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:6px;overflow:visible}
+  .quick-nav button{min-height:44px;padding:9px 3px;font-size:.76rem;min-width:0}
+  .record-edit,.move-row button,.view-toggle button,.class-tab{min-height:44px}
+  .account-toolbar{gap:6px;margin-top:10px}
+  .account-toolbar .btn{font-size:.78rem;padding:10px 12px;min-height:44px}
   body{padding:12px}
   .hero,.card,.error,.quick-nav{border-radius:22px}
   .hero{padding:23px}
@@ -180,6 +185,14 @@ a{color:var(--success)}
 }
 
 .file-drop{border:2px dashed var(--line);border-radius:14px;padding:16px;margin:16px 0}.file-drop.drag-over{border-color:var(--accent);background:rgba(32,227,178,.08)}.file-drop input[type=file]{width:100%;min-height:44px;margin-top:10px}.file-job{padding:12px;border-bottom:1px solid var(--line)}.file-job progress{display:block;width:100%;margin-top:8px}.file-jobs:empty{display:none}[data-file-workspace] .record-actions{flex-wrap:wrap;gap:8px;margin-top:10px}
+.calendar-form fieldset{border:0;padding:0;margin:0;min-width:0}.calendar-preview{grid-column:1/-1;max-height:320px;overflow:auto;overflow-wrap:anywhere}.calendar-editor:not(:empty){margin-top:12px}.calendar-form label,.calendar-form p{overflow-wrap:anywhere}.calendar-form input[type=checkbox]{width:auto;min-width:24px;min-height:24px;justify-self:start}.calendar-form [role=status]{grid-column:1/-1}
+.portal-form input[type=date],.portal-form input[type=time]{color-scheme:dark;min-width:0}
+.canonical-workspace .hero{padding:14px 18px;margin-bottom:12px}
+.canonical-workspace .hero h1{font-size:clamp(1.25rem,3vw,1.7rem);letter-spacing:-.4px}
+.canonical-workspace .hero .portal-note,.canonical-workspace .hero p,.canonical-workspace .editing-note{display:none}
+.canonical-workspace .hero .demo-actions{margin-top:8px}
+.canonical-workspace .hero .demo-actions .btn{padding:8px 12px;min-height:44px;font-size:.8rem}
+.canonical-workspace .hero-line{gap:8px}
 </style>
 </head>
 <body>
@@ -188,7 +201,7 @@ a{color:var(--success)}
     <div class="brand">Admit Strategy Portal</div>
     <div class="pill" id="portalMode">Private student-and-parent workspace</div>
   </div>
-  <div class="save-status" id="saveStatus" role="status" aria-live="polite"></div>
+  <div class="save-status" id="saveStatus" role="status" aria-live="polite" aria-atomic="true"></div>
   <div id="app">
     <div class="hero">
       <h1>Loading portal...</h1>
@@ -346,6 +359,7 @@ let saveQueue = null;
 let accountExperience = null;
 let canonicalPortal = null;
 let fileExperience = null;
+let calendarExperience = null;
 let selectedReviewSubject = "";
 let activePortalView = "today";
 let activeClassTab = "overview";
@@ -534,7 +548,7 @@ function localTodayPlan(data){
   });
   items.sort(function(a,b){ return b.priority-a.priority; });
   const selected = items.slice(0,3).map(function(item){ const copy=Object.assign({},item);delete copy.priority;return copy; });
-  return {date:today,totalMinutes:selected.reduce(function(sum,item){ return sum+Number(item.minutes||0); },0),items:selected,method:"Rule-based priority using deadlines, difficulty, importance, scheduled blocks, and review dates."};
+  return {date:today,totalMinutes:selected.reduce(function(sum,item){ return sum+Number(item.minutes||0); },0),items:selected,method:"Start with your next deadline, then work through today’s reviews and planned actions."};
 }
 
 function todayPlanPanel(plan){
@@ -1106,9 +1120,10 @@ function classWorkspace(data){
     "<div class='class-panel' data-class-panel='strategy'" + (activeClassTab === "strategy" ? "" : " hidden") + "><div class='card'><h3>Study blocks</h3><div class='list'>" + plannerList(planner) + "</div>" + addPlannerForm() + "<div class='rubric'><strong>Box rhythm:</strong> topics move through this class’s own review intervals. Use the compact queue for daily review and Board View for reorganizing.</div></div></div>";
 }
 
-function viewMarkup(view){
+function viewMarkup(view,context){
   const progress = currentData.progress || {};
-  if(view === "assessments") return "<section class='portal-section'><h2>Upcoming Assessments</h2><p class='muted'>Every class, in date order.</p><div class='card'>" + assessmentList(currentData.assessments.filter(function(a){return !["completed","cancelled"].includes(String(a.status).toLowerCase());}).sort(function(a,b){return String(a.date+a.time).localeCompare(String(b.date+b.time));})) + addAssessmentForm() + "</div><details class='form-panel'><summary>Calendar</summary>" + viewMarkup("calendar") + "</details></section>";
+  if(view === "calendar" && canonicalPortal) return "<section class='portal-section'><div id='canonical-calendar-" + (context || view) + "' data-calendar-workspace></div></section>";
+  if(view === "assessments") return "<section class='portal-section'><h2>Upcoming Assessments</h2><p class='muted'>Every class, in date order.</p><div class='card'>" + assessmentList(currentData.assessments.filter(function(a){return !["completed","cancelled"].includes(String(a.status).toLowerCase());}).sort(function(a,b){return String(a.date+a.time).localeCompare(String(b.date+b.time));})) + addAssessmentForm() + "</div><details class='form-panel'><summary>Calendar</summary>" + viewMarkup("calendar","assessments") + "</details></section>";
   if(view === "today") return "<section class='portal-section'><div class='section-head'><div><span class='section-kicker'>Daily command center</span><h2>Today</h2></div><p>Your scheduled work, due reviews, assessments, and weekly actions in one place.</p></div>" + nextAssessmentCard(currentData.nextAssessment) + todayPlanPanel(currentData.todayPlan) + "<div class='card'><h3>Reviews due</h3>" + compactReviewQueue(currentData.reviewCards.filter(function(c){return c.box<5 && (!c.nextReview || c.nextReview<=qatarToday());}),null) + "</div><div class='card' style='margin-top:14px'><h3>Proof to submit</h3><div class='list'>" + taskList(currentData.tasks) + "</div>" + addTaskForm() + "</div><details class='form-panel'><summary>More this week</summary>" + setupPanel(currentData) + "</details></section>";
   if(view === "classes") return "<section class='portal-section'><div class='section-head'><div><span class='section-kicker'>Subject workspaces</span><h2>Classes</h2></div><p>Open one class for its topics, tests, materials, and study strategy.</p></div><div id='classWorkspace'>" + classWorkspace(currentData) + "</div></section>";
   if(view === "calendar") return "<section class='portal-section'><div class='section-head'><div><span class='section-kicker'>Calendar sync</span><h2>Academic &amp; Extracurricular Calendar</h2></div><p>Import upcoming events from a dedicated school or activities calendar.</p></div><div class='info-box privacy-callout'><strong>Privacy first:</strong> link a separate school/activities calendar—not a personal calendar. The private feed URL is never shown after saving and is deleted on disconnect.</div><div class='card' style='margin-top:12px'><h3>Connections</h3>" + calendarSourceList(currentData.calendarSources) + linkCalendarForm() + "</div><div class='card' style='margin-top:12px'><h3>Upcoming imported events</h3><div class='list'>" + calendarEventList(currentData.calendarEvents) + "</div></div></section>";
@@ -1120,8 +1135,9 @@ function viewMarkup(view){
 }
 
 function render(data,demoMode){
+  document.getElementById("app").classList.toggle("canonical-workspace",Boolean(canonicalPortal));
   currentData = derive(data);
-  document.getElementById("app").innerHTML = "<div class='hero'><div class='hero-line'><div><h1>Welcome, " + safe(currentData.student.name || "student") + ".</h1><p>" + safe(currentData.student.summary || "Plan the week, act on weak points, submit proof, and track progress.") + "</p></div><span class='plan-chip'>" + safe(currentData.plan) + " plan</span></div><div class='portal-note'>" + (demoMode ? "<strong>Sample portal:</strong> Every item is fictional. You can test the forms without saving anything." : (canonicalPortal ? "<strong>Private account:</strong> Access is limited to you and your authorized guardian and coach." : "<strong>Private link:</strong> This workspace is intended for the student and parent or guardian. Do not forward it.")) + "</div>" + (demoMode ? "<div class='demo-actions'><button class='btn' type='button' onclick='location.href=\"index.html?diagnosis=1\"'>Start 60-second diagnosis</button><a class='btn secondary' href='index.html'>Back to website</a></div>" : "") + "<div class='demo-actions'><button class='btn secondary' data-app-view='settings'>Account &amp; preferences</button></div></div>" + quickNav() + "<div id='portalSubjects'>" + classDatalist(currentData) + "</div><div class='info-box editing-note'><span class='status'>" + (canonicalPortal?.canEdit===false ? "View only" : "Editable") + "</span><div><strong>Fast, focused editing.</strong><br>Saves update only the section you changed and never move you around the portal.</div></div>" + ["today","classes","assessments","calendar","materials","progress","settings"].map(function(view){ return "<div class='portal-view' id='view-" + view + "' data-app-section='" + view + "'" + (activePortalView === view ? "" : " hidden") + ">" + (activePortalView === view ? viewMarkup(view) : "") + "</div>"; }).join("");
+  document.getElementById("app").innerHTML = "<div class='hero'><div class='hero-line'><div><h1>Welcome, " + safe(currentData.student.name || "student") + ".</h1><p>" + safe(currentData.student.summary || "Plan the week, act on weak points, submit proof, and track progress.") + "</p></div><span class='plan-chip'>" + safe(currentData.plan) + " plan</span></div><div class='portal-note'>" + (demoMode ? "<strong>Sample portal:</strong> Every item is fictional. You can test the forms without saving anything." : (canonicalPortal ? "<strong>Private account:</strong> Access is limited to you and your authorized guardian and coach." : "<strong>Private link:</strong> This workspace is intended for the student and parent or guardian. Do not forward it.")) + "</div>" + (demoMode ? "<div class='demo-actions'><button class='btn' type='button' onclick='location.href=\"index.html?diagnosis=1\"'>Start 60-second diagnosis</button><a class='btn secondary' href='index.html'>Back to website</a></div>" : "") + "<div class='demo-actions'><button class='btn secondary' data-app-view='settings'>Account &amp; preferences</button></div></div>" + quickNav() + "<div id='portalSubjects'>" + classDatalist(currentData) + "</div><div class='info-box editing-note'><span class='status'>" + (canonicalPortal?.canEdit===false ? "View only" : "Editable") + "</span><div><strong>One workspace for your schoolwork.</strong><br>Your classes, assessments, actions and coach feedback stay together.</div></div>" + ["today","classes","assessments","calendar","materials","progress","settings"].map(function(view){ return "<div class='portal-view' id='view-" + view + "' data-app-section='" + view + "'" + (activePortalView === view ? "" : " hidden") + ">" + (activePortalView === view ? viewMarkup(view) : "") + "</div>"; }).join("");
   setFormDateDefaults();
   primeClassInputs();
 }
@@ -1244,6 +1260,7 @@ async function loadCanonicalView(view){
 function applyAccountPermissions(){
   if(!canonicalPortal)return;
   fileExperience?.mountAll();
+  calendarExperience?.mountAll();
   document.querySelectorAll("#app form[data-portal-form] button,#app [data-move-review]").forEach(function(button){
     if(canonicalPortal.canEdit===false)button.disabled=true;
   });
@@ -1451,8 +1468,11 @@ function sendLegacyMutation(values,id){
 }
 function ensureSaveQueue(){
   if(saveQueue) return saveQueue;
+  const adapter=canonicalPortal;
+  const scope=adapter?window.Admit.bindWorkspaceMutation(adapter,{currentAdapter:function(){return canonicalPortal;},currentActor:function(){return accountExperience?.user?.id;},actorId:accountExperience?.user?.id}):null;
+  const currentScope=function(){return !scope || scope.active();};
   saveQueue=new window.Admit.MutationQueue({
-    send:function(values,id){return canonicalPortal?canonicalPortal.send(values,id):sendLegacyMutation(values,id);},
+    send:function(values,id){return scope?scope.send(values,id):sendLegacyMutation(values,id);},
     optimistic:function(job){
       const collection=collectionFor(job.values.operation);
       const item=collection && (currentData[collection]||[]).find(function(row){return row.id===job.values.recordId;});
@@ -1460,6 +1480,7 @@ function ensureSaveQueue(){
       if(!/calendar/.test(job.values.operation)) applyDemoAction(Object.assign({},job.values,{__recordId:job.id}),{quiet:true,keepEditor:true});
     },
     confirm:function(job,response){
+      if(!currentScope())return;
       const collection=collectionFor(job.values.operation);
       const changed=response.changed;
       const item=collection && (currentData[collection]||[]).find(function(row){return row.id===(job.values.recordId||job.id);});
@@ -1476,6 +1497,7 @@ function ensureSaveQueue(){
       if(/calendar/.test(job.values.operation)) reconcilePortal(job.values.operation);
     },
     onState:function(job){
+      if(!currentScope())return;
       const ui=mutationUI.get(job.id);
       if(ui && ui.button){ui.button.disabled=["queued","saving","retrying"].includes(job.state);ui.button.textContent=ui.button.disabled?"Saving…":ui.label;}
       if(job.state==="failed" && job.error.rejected===true && !job.reverted && !saveQueue.laterPending(job).length){
@@ -1669,7 +1691,7 @@ window.addEventListener("message",function(event){
   else pending.reject(Object.assign(new Error(data.error||"The change could not be confirmed."),{retryable:data.retryable===true,rejected:data.rejected===true}));
 });
 window.addEventListener("beforeunload",function(event){
-  if((saveQueue && saveQueue.unsaved.length) || fileExperience?.uploads.unsaved.length || accountExperience?.coach?.unsaved.length || document.querySelector("form[data-dirty]")) {event.preventDefault();event.returnValue="";}
+  if((saveQueue && saveQueue.unsaved.length) || fileExperience?.uploads.unsaved.length || calendarExperience?.unsaved.length || accountExperience?.coach?.unsaved.length || document.querySelector("form[data-dirty]")) {event.preventDefault();event.returnValue="";}
 });
 
 async function reconcilePortal(operation){
@@ -1712,7 +1734,8 @@ async function load(){
     return;
   }
   if(window.ADMIT_CONFIG?.backend==="supabase"){
-    accountExperience=new window.Admit.AccountExperience({config:window.ADMIT_CONFIG,hasPendingChanges:function(){return Boolean(saveQueue?.unsaved.length || fileExperience?.uploads.unsaved.length);},root:document.getElementById("app"),onPortal:function(data,adapter){
+    accountExperience=new window.Admit.AccountExperience({config:window.ADMIT_CONFIG,hasPendingChanges:function(){return Boolean(saveQueue?.unsaved.length || fileExperience?.uploads.unsaved.length || calendarExperience?.unsaved.length);},root:document.getElementById("app"),onPortal:function(data,adapter){
+      calendarExperience?.dispose();calendarExperience=new window.Admit.CalendarWorkspace({portal:adapter,config:window.ADMIT_CONFIG,onChange:function(){if(canonicalPortal===adapter){currentData=adapter.data;renderAffectedViews("addassessment");}}});
       canonicalPortal=adapter;fileExperience=new window.Admit.FilesWorkspace({portal:adapter,config:window.ADMIT_CONFIG,onChange:function(){if(canonicalPortal===adapter)currentData=derive(adapter.data);}});saveQueue=null;mutationUI.clear();activePortalView="today";selectedReviewSubject="";portalViewScroll={};
       adapter.isPending=function(id){return saveQueue?.unsaved.some(function(job){return job.values.recordId===id || job.id===id;});};
       document.getElementById("portalMode").textContent="Private account workspace";

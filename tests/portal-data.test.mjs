@@ -21,6 +21,11 @@ test("confirmed task and planner proof survives a portal reload",()=>{
     assert.equal(row.proofNote,"Six diagrams");assert.equal(row.coachReview,"Approved");assert.equal(row.coachFeedback,"Clear correction");
   }
 });
+test("calendar deadline labels map to a supported type and shared recap retains next actions",()=>{
+  const portal=new PortalData({});assert.equal(portal.values('assessments',{type:'Project deadline'}).kind,'deadline');
+  const record=normalizeRecord('sessions',{id:'session',shared_summary:'Practice diagrams',next_actions:'Submit two corrected diagrams'});
+  assert.equal(record.detail,'Practice diagrams\n\nNext actions: Submit two corrected diagrams');
+});
 test("network timeout is bounded and preserves a caller's cancellation",async()=>{
   const transport=(_input,{signal})=>new Promise((_resolve,reject)=>signal.addEventListener("abort",()=>reject(signal.reason),{once:true}));
   await assert.rejects(boundedFetch(transport,10)("https://example.invalid"),/timed out/);
