@@ -5,13 +5,12 @@ import {readDiagnosisDraft,clearDiagnosisDraft,diagnosisRequest} from "./diagnos
 
 const safe=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
 const action=(label,fn,secondary=false)=>{const b=document.createElement("button");b.type="button";b.className="btn"+(secondary?" secondary":"");b.textContent=label;b.onclick=fn;return b;};
-const day=()=>new Intl.DateTimeFormat("en-CA",{year:"numeric",month:"2-digit",day:"2-digit",timeZone:"Asia/Qatar"}).format(new Date());
-const time=value=>new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Qatar"}).format(new Date(value))+" (Qatar time)";
 
 export class AccountExperience {
-  constructor({config,root,onPortal,onAccountChange=()=>{},hasPendingChanges=()=>false}){
+  constructor({config,root,onPortal,onAccountChange=()=>{},onMeetingChange=()=>{},hasPendingChanges=()=>false}){
     this.config=config;this.root=root;this.onPortal=onPortal;this.onAccountChange=onAccountChange;
     this.hasPendingChanges=hasPendingChanges;
+    this.onMeetingChange=onMeetingChange;
     this.diagnosisId=new URL(location.href).searchParams.get("diagnosis");
     try{this.diagnosis=readDiagnosisDraft(localStorage,this.diagnosisId);}catch{this.diagnosis=null;}
     this.client=createClient(config.supabaseUrl,config.publishableKey,{global:{fetch:boundedFetch()},auth:{flowType:"pkce",persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
@@ -145,7 +144,7 @@ export class AccountExperience {
     this.portal.canEdit=this.roles.some(r=>["coach","admin"].includes(r)) || (student.profile_id===this.account.profile_id && student.status==="active");
     this.onPortal(data,this.portal);this.gate.hidden=true;this.root.hidden=false;this.toolbar.hidden=false;
     this.toolbar.replaceChildren(action("Log out",()=>this.logout(),true));
-    if(student.profile_id===this.account.profile_id||this.roles.some(r=>["coach","admin"].includes(r)))this.toolbar.prepend(action("Book your free first meeting",()=>this.booking()));
+    if(student.profile_id===this.account.profile_id||this.roles.some(r=>["coach","admin"].includes(r)))this.toolbar.prepend(action("Meetings",()=>this.booking()));
     if(this.roles.includes("guardian"))this.toolbar.prepend(action("Family workspaces",()=>{this.loadedUser=null;this.refresh();},true));
     if(this.roles.some(r=>["coach","admin"].includes(r))){
       this.toolbar.prepend(action("Coach Admin",()=>this.adminHome(),true));
@@ -163,9 +162,11 @@ export class AccountExperience {
     }
   }
   async logout(){
+    if(this.meetings&&!this.meetings.canLeave())return;
     if((this.hasPendingChanges()||this.coach?.unsaved.length||document.querySelector("form[data-dirty]"))&&!window.confirm("You have unsaved or unconfirmed changes. Stay here to finish saving, or log out and discard local input?"))return;
     const {error}=await this.client.auth.signOut();if(error){this.message("Could not log out. Please try again.",true);return;}
     this.workspaceGeneration=(this.workspaceGeneration||0)+1;
+    this.meetings?.dispose();this.meetings=null;
     this.coach?.dispose();this.coach=null;
     this.loadedUser=null;this.user=null;this.portal.studentId=null;this.portal.data=null;this.root.replaceChildren();this.toolbar.replaceChildren();this.login();
   }
@@ -173,26 +174,21 @@ export class AccountExperience {
     if(this.portal.studentId&&this.portal.studentId===this.ownStudentId)this.portal.rpc("record_workspace_event",{p_student_id:this.portal.studentId,p_event:name,p_request_key:crypto.randomUUID()}).catch(()=>{});
   }
   showWorkspace(){this.gate.hidden=true;this.root.hidden=false;this.toolbar.hidden=false;this.recordWorkspaceEvent("portal_activated");}
-  booking(){
-    if(!this.portal.studentId)return;
+  async booking(){
+    const studentId=this.portal.studentId,actor=this.user?.id;if(!studentId)return;
     this.recordWorkspaceEvent("meeting_booking_started");
-    const dialog=document.createElement("dialog");dialog.className="editor-dialog";dialog.setAttribute("aria-labelledby","booking-title");
-    dialog.innerHTML="<div class='editor-head'><h2 id='booking-title'>Book your free first meeting</h2><button class='editor-close' type='button' aria-label='Close booking'>×</button></div><div class='editor-body'><p>A 60-minute meeting with Ryan. All times below are Qatar time.</p><p><strong>Student:</strong> "+safe(this.portal.data?.student.name)+"</p><label>Meeting date<input type='date' min='"+day()+"' value='"+day()+"'></label><div data-slots class='demo-actions'></div><p data-booking-status role='status' aria-live='polite'></p></div>";
-    document.body.append(dialog);dialog.querySelector(".editor-close").onclick=()=>dialog.close();dialog.onclose=()=>dialog.remove();dialog.showModal();
-    const date=dialog.querySelector("input"),slots=dialog.querySelector("[data-slots]"),message=dialog.querySelector("[data-booking-status]");
-    let generation=0;const load=async()=>{const current=++generation;slots.replaceChildren();message.textContent="Loading available meetings…";
-      try{const available=await this.portal.rpc("booking_slots",{p_date:date.value});if(current!==generation)return;
-        message.textContent=available.length?"Choose a meeting time.":"No meetings are available on this date. Choose another date or contact Ryan.";
-        for(const slot of available){const requestKey=crypto.randomUUID();const button=action(time(slot.starts_at),async()=>{
-          slots.querySelectorAll("button").forEach(b=>b.disabled=true);date.disabled=true;message.textContent="Confirming your meeting…";
-          try{const result=await this.portal.rpc("book_meeting",{p_student_id:this.portal.studentId,p_coach_id:slot.coach_profile_id,p_starts_at:slot.starts_at,p_request_key:requestKey});
-            slots.replaceChildren();message.textContent="Booked: "+time(result.booking.starts_at)+". "+result.booking.location+". Bring your next assessment and current schoolwork.";
-            slots.append(action("Open your portal",()=>{dialog.close();this.showWorkspace();}));
-            const help=document.createElement("p");help.innerHTML="To cancel or reschedule, contact <a href='mailto:ryanwbdl@gmail.com'>Ryan</a>.";slots.append(help);
-          }catch(error){message.textContent=error.message;button.disabled=false;button.textContent="Retry this meeting time";if(error.rejected){date.disabled=false;slots.querySelectorAll("button").forEach(b=>b.disabled=false);}}
-        });slots.append(button);}
-      }catch(error){if(current!==generation)return;message.textContent=error.message;slots.append(action("Retry available times",load,true));}
-    };date.onchange=load;load();
+    const {openMeetings}=await import("./meetings.js");
+    if(this.user?.id===actor&&this.portal.studentId===studentId)openMeetings(this,{studentId,coaching:this.roles.some(r=>["coach","admin"].includes(r))});
+  }
+  async meetingChanged(record){
+    const adapter=this.portal,actor=this.user?.id;if(adapter.studentId!==record.student_id)return;
+    const current=()=>adapter===this.portal&&adapter.data&&adapter.studentId===record.student_id&&this.user?.id===actor;
+    try{
+      const rows=await adapter.result(this.client.from("bookings").select("starts_at").eq("student_id",record.student_id).is("archived_at",null).eq("status","booked").gte("starts_at",new Date().toISOString()).order("starts_at").limit(1));
+      if(!current())return;
+      adapter.data.nextMeeting=rows[0]?new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Qatar"}).format(new Date(rows[0].starts_at))+" (Qatar time)":"";
+      this.onMeetingChange(adapter.data,adapter);
+    }catch{if(current()){adapter.data.nextMeeting="Open Meetings to check the latest time.";this.onMeetingChange(adapter.data,adapter);}}
   }
   async adminHome(){
     this.loadedUser=null;

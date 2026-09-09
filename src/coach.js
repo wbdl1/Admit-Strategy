@@ -1,3 +1,4 @@
+import {Meetings} from "./meetings.js";
 import {MutationQueue} from "./mutation-queue.js";
 const escape=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
 const label=value=>String(value??"").replaceAll("_"," ");
@@ -24,8 +25,9 @@ export class CoachAdmin {
   }
   dispose(){this.disposed=true;this.sync.remove();}
   get unsaved(){return this.queue.unsaved;}
-  canNavigate(){return !this.unsaved.length&&!this.account.gate.querySelector("form[data-dirty]")||window.confirm("There are unsaved coaching changes. Leave this view? Unconfirmed saves remain in the queue.");}
+  canNavigate(){if(this.account.meetings&&!this.account.meetings.canLeave())return false;return !this.unsaved.length&&!this.account.gate.querySelector("form[data-dirty]")||window.confirm("There are unsaved coaching changes. Leave this view? Unconfirmed saves remain in the queue.");}
   shell(title,description){
+    this.account.meetings?.dispose();this.account.meetings=null;
     this.account.show("<h1>"+escape(title)+"</h1><p>"+escape(description)+"</p><nav class='demo-actions' aria-label='Coach sections'></nav><div data-coach-content></div>");
     this.nav=this.account.gate.querySelector("nav");this.content=this.account.gate.querySelector("[data-coach-content]");
     this.account.gate.append(button("Log out",()=>this.account.logout()));
@@ -38,6 +40,7 @@ export class CoachAdmin {
       const b=button(title,()=>this.home(key));b.setAttribute("aria-current",key===section?"page":"false");this.nav.append(b);
     }
     if(section==="students"){this.search();return;}
+    if(section==="bookings"){this.account.meetings=new Meetings(this.account,this.content);this.account.message("");return;}
     await this.loadHome(section);
   }
   async search(){
@@ -95,11 +98,12 @@ export class CoachAdmin {
     if(!this.canNavigate())return;
     this.student=student;this.shell(student.profiles.display_name,"Coaching record · Grade "+(student.grade||"—")+" · "+label(student.status));
     this.nav.append(button("All students",()=>this.home()),button("Open student workspace",()=>this.account.openStudent(student),false));
-    const sections={overview:"Overview",profile:"Profile",evidence:"Evidence",sessions:"Sessions",coach_notes:"Private notes",progress_scores:"Progress",parent_updates:"Parent updates",communications:"Communications"};
+    const sections={overview:"Overview",profile:"Profile",bookings:"Meetings",evidence:"Evidence",sessions:"Sessions",coach_notes:"Private notes",progress_scores:"Progress",parent_updates:"Parent updates",communications:"Communications"};
     for(const [key,title] of Object.entries(sections)){const b=button(title,()=>this.studentHome(this.student,key));b.setAttribute("aria-current",key===section?"page":"false");this.nav.append(b);}
     const generation=++this.generation;this.account.message("Loading coaching record…");
     try{
-      if(section==="profile")await this.profileForm();
+      if(section==="bookings")this.account.meetings=new Meetings(this.account,this.content,{studentId:student.id,coaching:true});
+      else if(section==="profile")await this.profileForm();
       else if(section==="overview"){
         this.note("Use Open student workspace for Today, classes, assessments, tasks, planner, materials, reviews, weak points and projects. Edits are shared with the student.");
         const [diagnoses,bookings]=await Promise.all([

@@ -35,7 +35,7 @@ export class PortalData {
     if(http===401||code==="PGRST301")this.onAuthRequired();
     const retryable=!http||http===401||http===429||http>=500;
     const rejected=!retryable;
-    const message=code==="P0409"?"This record changed. Your draft is kept; review the latest version before saving again.":http===401?"Sign in again to finish saving.":retryable?"The connection was interrupted. Your changes are kept here.":result.error.message||"This change could not be saved.";
+    const message=code==="P0409"?(result.error.message||"This record changed. Review the latest version before saving again."):http===401?"Sign in again to finish saving.":retryable?"The connection was interrupted. Your changes are kept here.":result.error.message||"This change could not be saved.";
     throw Object.assign(new Error(message),{code,retryable,rejected,traceId:crypto.randomUUID()});
   }
   rpc(name,args){return this.result(this.client.rpc(name,args));}
