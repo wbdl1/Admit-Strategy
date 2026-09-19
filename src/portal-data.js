@@ -1,9 +1,11 @@
-const collections={classes:"classes",assessments:"assessments",tasks:"tasks",study_blocks:"planner",study_materials:"materials",review_cards:"reviewCards",weak_points:"weakPoints",projects:"projects",evidence:"evidenceWins",sessions:"sessionNotes",calendar_sources:"calendarSources",calendar_events:"calendarEvents"};
+import {createdPage,splitPage} from "./page-cursor.js";
+const collections={classes:"classes",assessments:"assessments",tasks:"tasks",study_blocks:"planner",study_materials:"materials",review_cards:"reviewCards",weak_points:"weakPoints",projects:"projects",evidence:"evidenceWins",sessions:"sessionNotes",progress_scores:"progressHistory",calendar_sources:"calendarSources",calendar_events:"calendarEvents"};
 const operationTables={class:"classes",assessment:"assessments",task:"tasks",planner:"study_blocks",material:"study_materials",reviewcard:"review_cards",weakpoint:"weak_points",project:"projects",evidence:"evidence"};
 const camel=s=>s.replace(/_([a-z])/g,(_,c)=>c.toUpperCase());
 const label=s=>String(s||"").replaceAll("_"," ").replace(/^./,c=>c.toUpperCase());
 const status=s=>String(s||"").trim().toLowerCase().replaceAll(" ","_");
 const today=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Qatar",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+export const currentEvidenceReview=proof=>proof.evidence_reviews?.find(review=>!review.archived_at&&Number(review.evidence_version)===Number(proof.row_version));
 
 export function normalizeRecord(table,row,classes=[]){
   const record=Object.fromEntries(Object.entries(row).map(([key,value])=>[camel(key),value]));
@@ -13,12 +15,16 @@ export function normalizeRecord(table,row,classes=[]){
   if(table==="assessments")Object.assign(record,{date:row.due_date,time:row.due_time?.slice(0,5)||"",type:label(row.kind),classificationStatus:label(row.classification_status),confidence:label(row.confidence),importance:label(row.importance),difficulty:label(row.difficulty),sourceType:"Manual"});
   if(table==="study_blocks")Object.assign(record,{startTime:row.start_time?.slice(0,5)||"",endTime:row.end_time?.slice(0,5)||"",timeHint:row.time_hint||""});
   if(["tasks","study_blocks"].includes(table)&&row.evidence?.length){
-    const proof=row.evidence[0],review=proof.evidence_reviews?.[0];
+    const proof=row.evidence[0],review=currentEvidenceReview(proof);
     Object.assign(record,{proofNote:proof.proof_text,proofUrl:proof.proof_url,coachReview:review?label(review.status):"Pending",coachFeedback:review?.feedback||""});
   }
   if(table==="study_materials")Object.assign(record,{url:row.external_url||"",fileId:row.file_id,status:row.archived_at?"Archived":"Active"});
-  if(table==="evidence")Object.assign(record,{whatIDid:row.what_i_did,evidence:row.proof_text,coachReview:row.status==="draft"?"Draft":"Pending"});
+  if(table==="evidence"){
+    const review=currentEvidenceReview(row);
+    Object.assign(record,{whatIDid:row.what_i_did,evidence:row.proof_text,coachReview:row.status==="draft"?"Draft":review?label(review.status):"Pending",coachFeedback:review?.feedback||""});
+  }
   if(table==="sessions")Object.assign(record,{detail:[row.shared_summary,row.next_actions?"Next actions: "+row.next_actions:""].filter(Boolean).join("\n\n"),status:"Completed"});
+  if(table==="progress_scores")Object.assign(record,{title:label(row.metric),sessionDate:row.scored_at.slice(0,10),progress:{[camel(row.metric)]:row.score}});
   if(table==="calendar_sources")Object.assign(record,{calendarName:row.name,provider:label(row.kind),lastSyncAt:row.last_import_at,lastSyncStatus:row.last_error_code?"Reconnect this calendar":""});
   if(table==="calendar_events")Object.assign(record,{date:row.start_date||row.starts_at?.slice(0,10),endDate:row.end_date,description:row.description});
   return record;
@@ -46,7 +52,7 @@ export class PortalData {
     await this.read("classes",{limit:100});
     await Promise.all([
       this.read("assessments",{order:"due_date",limit:60,filter:q=>q.eq("status","upcoming").eq("classification_status","confirmed").gte("due_date",today())}),
-      this.read("tasks",{order:"due_date",limit:60,filter:q=>q.in("status",["not_started","in_progress","submitted"])}),
+      this.read("tasks",{order:"due_date",limit:60,filter:q=>q.or('status.in.(not_started,in_progress,submitted),and(status.eq.completed,proof_required.neq."")')}),
       this.read("review_cards",{order:"next_review",limit:60,filter:q=>q.lt("box",5)}),
       this.read("study_blocks",{order:"date",limit:60,filter:q=>q.gte("date",today())})
     ]);
@@ -64,12 +70,27 @@ export class PortalData {
     }
     return rows.map(row=>normalizeRecord(table,row,this.data.classes));
   }
-  async read(table,{order="created_at",limit=100,filter=q=>q,ascending=true}={}){
+  query(table){
+    if(!Object.hasOwn(collections,table))throw new Error("Unknown workspace collection");
     const withProof=["tasks","study_blocks"].includes(table);
-    let query=this.client.from(table).select(withProof?"*,evidence(id,proof_text,proof_url,created_at,evidence_reviews(status,feedback,created_at))":"*").eq("student_id",this.studentId).is("archived_at",null).order(order,{ascending,nullsFirst:false}).order("id").limit(limit);
+    let query=this.client.from(table).select(withProof?"*,evidence(id,row_version,proof_text,proof_url,created_at,evidence_reviews(status,feedback,created_at,evidence_version))":table==='evidence'?'*,evidence_reviews(*)':"*").eq("student_id",this.studentId).is("archived_at",null);
     if(withProof)query=query.is("evidence.archived_at",null).eq("evidence.status","submitted").order("created_at",{referencedTable:"evidence",ascending:false}).limit(1,{referencedTable:"evidence"}).is("evidence.evidence_reviews.archived_at",null).order("created_at",{referencedTable:"evidence.evidence_reviews",ascending:false}).limit(1,{referencedTable:"evidence.evidence_reviews"});
+    return query;
+  }
+  async read(table,{order="created_at",limit=100,filter=q=>q,ascending=true}={}){
+    const query=this.query(table).order(order,{ascending,nullsFirst:false}).order("id").limit(limit);
     const rows=await this.result(filter(query));
     this.ingest(table,rows);return rows;
+  }
+  async readPage(table,cursor=null){
+    const page=splitPage(await this.result(createdPage(this.query(table),cursor)));
+    const missing=[...new Set(page.records.map(row=>row.class_id).filter(id=>id&&!this.data.classes.some(c=>c.id===id)))];
+    if(missing.length)this.ingest("classes",await this.result(this.query("classes").in("id",missing).limit(25)));
+    this.ingest(table,page.records);
+    return {...page,records:page.records.map(row=>this.data[collections[table]].find(record=>record.id===row.id))};
+  }
+  historyRecords(table,ids){
+    return ids.map(id=>this.data[collections[table]]?.find(record=>record.id===id)).filter(Boolean);
   }
   async loadView(view){
     if(this.loaded.has(view))return;
@@ -78,15 +99,13 @@ export class PortalData {
       const tables={classes:["study_materials","weak_points","evidence"],assessments:[],calendar:[],materials:["study_materials"],progress:["weak_points","projects","evidence","sessions"]}[view]||[];
       await Promise.all(tables.map(t=>this.read(t)));
       if(view==="progress"){
-        const [scores,reviews,parents,bookings]=await Promise.all([
+        const [scores,parents,bookings]=await Promise.all([
           this.result(this.client.from("progress_scores").select("*").eq("student_id",this.studentId).is("archived_at",null).order("scored_at",{ascending:false}).limit(100)),
-          this.result(this.client.from("evidence_reviews").select("*").eq("student_id",this.studentId).is("archived_at",null).limit(100)),
           this.result(this.client.from("parent_updates").select("body").eq("student_id",this.studentId).in("status",["approved","sent"]).is("archived_at",null).order("created_at",{ascending:false}).limit(1)),
           this.result(this.client.from("bookings").select("starts_at").eq("student_id",this.studentId).eq("status","booked").gte("starts_at",new Date().toISOString()).order("starts_at").limit(1))
         ]);
-        this.data.progressHistory=scores.map(s=>({id:s.id,title:label(s.metric),sessionDate:s.scored_at.slice(0,10),progress:{[camel(s.metric)]:s.score}}));
+        this.ingest("progress_scores",scores);
         for(const score of scores)if(this.data.progress[camel(score.metric)]==null)this.data.progress[camel(score.metric)]=score.score;
-        for(const review of reviews){const evidence=this.data.evidenceWins.find(e=>e.id===review.evidence_id);if(evidence)Object.assign(evidence,{coachReview:label(review.status),coachFeedback:review.feedback});}
         this.data.parentUpdate=parents[0]?.body||"";
         this.data.nextMeeting=bookings[0]?new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Qatar"}).format(new Date(bookings[0].starts_at))+" (Qatar time)":"";
       }

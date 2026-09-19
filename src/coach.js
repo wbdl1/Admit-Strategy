@@ -1,5 +1,6 @@
 import {Meetings} from "./meetings.js";
 import {MutationQueue} from "./mutation-queue.js";
+import {createdPage,splitPage} from "./page-cursor.js";
 const escape=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
 const label=value=>String(value??"").replaceAll("_"," ");
 const button=(text,fn,secondary=true)=>{const b=document.createElement("button");b.type="button";b.className="btn"+(secondary?" secondary":"");b.textContent=text;b.onclick=fn;return b;};
@@ -60,17 +61,22 @@ export class CoachAdmin {
   async loadHome(section){
     const generation=++this.generation;this.account.message("Loading…");
     try{
+      if(section==='evidence'){
+        this.content.replaceChildren();
+        await this.pages(cursor=>this.account.portal.rpc('coach_pending_evidence',{p_after_created_at:cursor?.created_at||null,p_after_id:cursor?.id||null}),(row,parent)=>{
+          const card=this.card(row.activity,parent);this.text(card,shortDate(row.created_at));card.append(button('Open student',()=>this.openStudentId(row.student_id)));
+        },{empty:'No evidence awaiting review.'});
+        if(generation===this.generation)this.account.message('Evidence review queue loaded.');return;
+      }
       let rows;
       if(section==="claims")rows=await this.account.portal.rpc("admin_pending_account_claims",{});
       else {
-        const table={leads:"leads",bookings:"bookings",evidence:"evidence",communications:"communication_events",failures:"communication_events"}[section];
-        let query=this.client.from(table).select(section==="evidence"?"*,evidence_reviews(*)":section==="communications"||section==="failures"?"*,communication_templates(subject)":"*").is("archived_at",null).limit(25);
+        const table={leads:"leads",bookings:"bookings",communications:"communication_events",failures:"communication_events"}[section];
+        let query=this.client.from(table).select(section==="communications"||section==="failures"?"*,communication_templates(subject)":"*").is("archived_at",null).limit(25);
         if(section==="bookings")query=query.eq("status","booked").gte("starts_at",new Date().toISOString()).order("starts_at");
         else query=query.order("created_at",{ascending:false});
-        if(section==="evidence")query=query.eq("status","submitted");
         if(section==="failures")query=query.in("status",["failed","uncertain","bounced"]);
         rows=await this.account.portal.result(query);
-        if(section==="evidence")rows=rows.filter(e=>!e.evidence_reviews?.some(r=>!r.archived_at&&["approved","changes_requested"].includes(r.status)));
       }
       if(generation!==this.generation)return;this.content.replaceChildren();
       if(section==="communications"||section==="failures")this.note("Delivery states below come from the queue. Local development captures emails; a production sender is not yet enabled.");
@@ -97,7 +103,7 @@ export class CoachAdmin {
   async studentHome(student,section="overview"){
     if(!this.canNavigate())return;
     this.student=student;this.shell(student.profiles.display_name,"Coaching record · Grade "+(student.grade||"—")+" · "+label(student.status));
-    this.nav.append(button("All students",()=>this.home()),button("Open student workspace",()=>this.account.openStudent(student),false));
+    this.nav.append(button("All students",()=>this.home()),button("Open student workspace",()=>this.account.openStudent(student),false),button("Account and access",()=>this.account.accountAccess(student.id)));
     const sections={overview:"Overview",profile:"Profile",bookings:"Meetings",evidence:"Evidence",sessions:"Sessions",coach_notes:"Private notes",progress_scores:"Progress",parent_updates:"Parent updates",communications:"Communications"};
     for(const [key,title] of Object.entries(sections)){const b=button(title,()=>this.studentHome(this.student,key));b.setAttribute("aria-current",key===section?"page":"false");this.nav.append(b);}
     const generation=++this.generation;this.account.message("Loading coaching record…");
@@ -122,9 +128,27 @@ export class CoachAdmin {
       if(generation===this.generation)this.account.message("Coaching record loaded.");
     }catch(error){if(generation!==this.generation)return;this.account.message(error.message,true);this.content.append(button("Retry loading",()=>this.studentHome(student,section)));}
   }
+  async pages(load,render,{parent=this.content,empty="No records yet."}={}){
+    const generation=this.generation,region=document.createElement('div'),status=document.createElement('p');
+    status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+    let cursor=null,busy=false;const seen=new Set();
+    const more=button('Load more',()=>next());parent.append(region,status,more);
+    const active=()=>!this.disposed&&generation===this.generation&&region.isConnected;
+    const next=async()=>{
+      if(busy||!active())return;busy=true;more.disabled=true;status.textContent='Loading records…';
+      try{
+        const page=splitPage(await load(cursor));if(!active())return;
+        for(const row of page.records)if(!seen.has(row.id)){render(row,region);seen.add(row.id);}
+        cursor=page.cursor;more.hidden=!cursor;more.textContent='Load more';
+        status.textContent=seen.size?(cursor?seen.size+' records shown. More are available.':'All '+seen.size+' records loaded.'):empty;
+      }catch(error){if(active()){status.textContent='Could not load these records. '+error.message;more.hidden=false;more.textContent='Retry loading';}}
+      finally{busy=false;if(active())more.disabled=false;}
+    };
+    await next();
+  }
   note(text){const p=document.createElement("p");p.className="form-help";p.textContent=text;this.content.append(p);}
   text(parent,value){const p=document.createElement("p");p.textContent=value||"—";p.style.whiteSpace="pre-wrap";parent.append(p);}
-  card(title){const card=document.createElement("article");card.className="card";card.innerHTML="<h2>"+escape(title)+"</h2>";this.content.append(card);return card;}
+  card(title,parent=this.content){const card=document.createElement("article");card.className="card";card.innerHTML="<h2>"+escape(title)+"</h2>";parent.append(card);return card;}
   form(parent,fields,record={},submit){
     const form=document.createElement("form");form.className="portal-form";
     for(const [key,title,type,max] of fields){
@@ -172,22 +196,19 @@ export class CoachAdmin {
     }catch(error){ui.status.append(document.createTextNode("Could not load the latest version: "+error.message));}
   }
   async records(table){
-    const definition=definitions[table],studentId=this.student.id,generation=this.generation;
-    const rows=await this.account.portal.result(this.client.from(table).select("*").eq("student_id",studentId).is("archived_at",null).order("created_at",{ascending:false}).limit(25));
-    if(generation!==this.generation||this.student?.id!==studentId)return;
+    const definition=definitions[table],studentId=this.student.id;
     if(table==="coach_notes")this.note("These notes are private to authorized coaches. They are never copied into a student recap or parent email.");
     if(table==="parent_updates")this.note("Drafts are private. Approved updates become visible in the authorized student and family workspace. Saving does not send email.");
-    const render=record=>{
-      const card=this.card(record.id?label(record[definition.name]).slice(0,100):"Add "+definition.title.toLowerCase());
+    const render=(record,parent)=>{
+      const card=this.card(record.id?label(record[definition.name]).slice(0,100):"Add "+definition.title.toLowerCase(),parent);
       const preview=card.querySelector("h2");let current=record;
       this.form(card,definition.fields,current,(values,form,status)=>{
         if(table==="progress_scores")values.score=Number(values.score);
         if(table==="sessions"&&!values.session_date)values.session_date=null;
-        if(table==="parent_updates")values.approved_at=values.status==="approved"?new Date().toISOString():null;
         const recordId=current.id||crypto.randomUUID();
         this.save({args:{p_table:table,p_student_id:studentId,p_record_id:recordId,p_values:values,p_expected_version:current.row_version??null},title:label(values[definition.name]).slice(0,100),form,status,preview,confirm:saved=>{current=saved;}});
       });
-    };render({});rows.forEach(render);if(rows.length===25)this.note("Showing the newest 25 entries.");
+    };render({});await this.pages(cursor=>this.account.portal.result(createdPage(this.client.from(table).select('*').eq('student_id',studentId).is('archived_at',null),cursor)),render);
   }
   async profileForm(){
     const student=this.student,studentId=student.id,generation=this.generation;let current=await this.account.portal.rpc("coach_student_profile",{p_student_id:studentId});
@@ -201,16 +222,15 @@ export class CoachAdmin {
     });
   }
   async evidence(){
-    const studentId=this.student.id,generation=this.generation;
-    const rows=await this.account.portal.result(this.client.from("evidence").select("*,evidence_reviews(*)").eq("student_id",studentId).eq("status","submitted").is("archived_at",null).order("created_at",{ascending:false}).limit(25));
-    if(generation!==this.generation||this.student?.id!==studentId)return;if(!rows.length)this.note("No submitted evidence yet.");
-    for(const row of rows){
-      const card=this.card(row.activity),preview=card.querySelector("h2");this.text(card,row.what_i_did);this.text(card,row.proof_text);
+    const studentId=this.student.id;
+    await this.pages(cursor=>this.account.portal.result(createdPage(this.client.from('evidence').select('*,evidence_reviews(*)').eq('student_id',studentId).eq('status','submitted').is('archived_at',null),cursor)),(row,parent)=>{
+      const card=this.card(row.activity,parent),preview=card.querySelector("h2");this.text(card,row.what_i_did);this.text(card,row.proof_text);
       if(row.proof_url&&/^https:\/\//.test(row.proof_url)){const link=document.createElement("a");link.href=row.proof_url;link.textContent="Open submitted proof";link.target="_blank";link.rel="noopener noreferrer";card.append(link);}
-      let review=row.evidence_reviews?.find(r=>!r.archived_at)||{};
+      let review=row.evidence_reviews?.[0]||{};
+      if(review.id&&(review.archived_at||Number(review.evidence_version)!==Number(row.row_version)))this.text(card,'This proof needs a new review. The previous decision applied to an earlier version.');
       this.form(card,[["status","Review decision",["approved","changes_requested"]],["feedback","Feedback the student can see","textarea",2000]],review,(values,form,status)=>{
-        this.save({args:{p_table:"evidence_reviews",p_student_id:studentId,p_record_id:review.id||crypto.randomUUID(),p_values:{...values,evidence_id:row.id},p_expected_version:review.row_version??null},title:row.activity+" · "+label(values.status),form,status,preview,confirm:saved=>{review=saved;}});
+        this.save({args:{p_table:"evidence_reviews",p_student_id:studentId,p_record_id:review.id||crypto.randomUUID(),p_values:{...values,evidence_id:row.id,evidence_version:row.row_version,archived_at:null},p_expected_version:review.row_version??null},title:row.activity+" · "+label(values.status),form,status,preview,confirm:saved=>{review=saved;}});
       });
-    }
+    },{empty:'No submitted evidence yet.'});
   }
 }

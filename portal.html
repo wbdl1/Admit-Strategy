@@ -111,7 +111,7 @@ a{color:var(--success)}
 .portal-form .opt{display:flex;grid-template-columns:auto 1fr;gap:9px;align-items:flex-start;font-weight:650;line-height:1.5}.portal-form .opt input{width:auto;margin-top:3px}
 .btn{
   display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:999px;
-  padding:11px 15px;font-weight:900;text-decoration:none;background:linear-gradient(135deg,#fff,#dff7ff);color:#050816
+  padding:11px 15px;min-height:44px;font-weight:900;text-decoration:none;background:linear-gradient(135deg,#fff,#dff7ff);color:#050816
 }
 .btn.secondary{background:rgba(255,255,255,.09);color:#fff;border:1px solid var(--line)}
 .btn.ghost{background:transparent;color:#dce8ff;border:1px solid var(--line)}
@@ -134,7 +134,7 @@ a{color:var(--success)}
 .editor-dialog{width:min(720px,calc(100% - 24px));max-height:88vh;margin:auto;border:1px solid var(--line);border-radius:24px;background:#0b1024;color:#fff;padding:0;box-shadow:0 30px 100px rgba(0,0,0,.7)}
 .editor-dialog::backdrop{background:rgba(2,4,12,.78);backdrop-filter:blur(5px)}
 .editor-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:17px 18px;background:#0b1024;border-bottom:1px solid var(--line)}
-.editor-head h2{font-size:1.2rem}.editor-close{border:1px solid var(--line);background:rgba(255,255,255,.08);color:#fff;border-radius:999px;width:36px;height:36px;font-size:1.25rem}
+.editor-head h2{font-size:1.2rem}.editor-close{border:1px solid var(--line);background:rgba(255,255,255,.08);color:#fff;border-radius:999px;width:44px;height:44px;min-width:44px;font-size:1.25rem}
 .editor-body{overflow:auto}.editor-body .portal-form{padding:18px}
 .meeting-dialog-body{padding:18px}
 .meetings-workspace>nav{margin-bottom:14px}
@@ -201,6 +201,7 @@ a{color:var(--success)}
 .canonical-workspace .hero .demo-actions{margin-top:8px}
 .canonical-workspace .hero .demo-actions .btn{padding:8px 12px;min-height:44px;font-size:.8rem}
 .canonical-workspace .hero-line{gap:8px}
+.account-access-dialog .editor-body{padding:18px}.account-access-dialog fieldset{border:0;padding:0;margin:0;min-width:0}.account-access-dialog .editor-body>p{margin:0 0 14px}.account-access-dialog form{margin-bottom:14px}
 </style>
 </head>
 <body>
@@ -368,6 +369,7 @@ let accountExperience = null;
 let canonicalPortal = null;
 let fileExperience = null;
 let calendarExperience = null;
+let historyExperience = null;
 let selectedReviewSubject = "";
 let activePortalView = "today";
 let activeClassTab = "overview";
@@ -541,6 +543,12 @@ function localTodayPlan(data){
     const duration = start.length === 2 && end.length === 2 ? (end[0] * 60 + end[1]) - (start[0] * 60 + start[1]) : 0;
     items.push({id:item.id,type:"Scheduled block",subject:item.subject || "Study",title:item.title,minutes:duration > 0 ? duration : minutes(item.subject,25),reason:item.startTime ? "Scheduled for " + item.startTime : "Scheduled today",priority:500});
   });
+  (data.tasks || []).forEach(function(task){
+    if(["completed","submitted","archived"].includes(String(task.status || "").toLowerCase())) return;
+    const days = task.dueDate ? dayDifference(task.dueDate) : null;
+    if(days !== null && days > 7) return;
+    items.push({id:task.id,type:"Action",subject:task.subject || "Action",title:task.title,minutes:minutes(task.subject,25),reason:days === null ? "Your next action" : days < 0 ? "Overdue action" : days === 0 ? "Due today" : "Due in " + days + " days",priority:days !== null && days <= 0 ? 450 : 240});
+  });
   (data.reviewCards || []).forEach(function(card){
     if(String(card.status || "").toLowerCase() === "mastered" || (card.nextReview && card.nextReview > today)) return;
     const byBox = {1:20,2:15,3:10,4:10};
@@ -570,7 +578,7 @@ function todayPlanPanel(plan){
 function setupPanel(data){
   const steps = [
     {done:(data.classes || []).length > 0,label:"Create the first class"},
-    {done:(data.calendarSources || []).some(function(item){ return String(item.status || "").toLowerCase() === "connected"; }),label:"Connect a dedicated academic calendar"},
+    {done:canonicalPortal?(data.planner || []).length>0:(data.calendarSources || []).some(function(item){ return String(item.status || "").toLowerCase() === "connected"; }),label:canonicalPortal?"Plan your first study block":"Connect a dedicated academic calendar"},
     {done:(data.assessments || []).length > 0,label:"Add or confirm the next assessment"}
   ];
   const complete = steps.filter(function(item){ return item.done; }).length;
@@ -600,6 +608,7 @@ function taskList(items){
       "<label>Action<textarea name='detail' maxlength='1200' placeholder='What needs to be done?'>" + safe(item.detail || "") + "</textarea></label>" +
       "<div class='form-grid'><label>Due date<input name='dueDate' type='date' value='" + safe(item.dueDate || "") + "'></label>" +
       "<label>Proof expected<input name='proofRequired' maxlength='500' value='" + safe(item.proofRequired || "") + "'></label></div>" +
+      (canonicalPortal ? "<label>Status<select name='status'>" + optionList(["Not started","In progress","Submitted","Completed"],item.status) + "</select></label>" : "") +
       "<p class='form-help'>Coach review, feedback, and submitted proof remain protected.</p>" + formActions("Save task") + "</form></details>" +
       "<details class='form-panel edit-panel'><summary>Submit or replace evidence</summary><form class='portal-form' data-portal-form>" +
       "<input type='hidden' name='operation' value='submittaskproof'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
@@ -917,8 +926,8 @@ function addClassForm(){
     "</div></details>" + formActions("Add") + "</form></details>";
 }
 
-function materialList(items,classId){
-  const uploads=canonicalPortal ? "<div id='files-" + safe(classId || "all") + "' data-file-workspace data-file-class='" + safe(classId || "") + "'></div>" : "";
+function materialList(items,classId,history){
+  const uploads=canonicalPortal && !history ? "<div id='files-" + safe(classId || "all") + "' data-file-workspace data-file-class='" + safe(classId || "") + "'></div>" : "";
   if(canonicalPortal) items=(items || []).filter(function(item){return !item.fileId;});
   if(!items || !items.length) return uploads + (canonicalPortal ? "" : "<div class='empty'>No study materials linked yet.</div>");
   return uploads + "<div class='material-grid'>" + items.map(function(item){
@@ -1128,15 +1137,21 @@ function classWorkspace(data){
     "<div class='class-panel' data-class-panel='strategy'" + (activeClassTab === "strategy" ? "" : " hidden") + "><div class='card'><h3>Study blocks</h3><div class='list'>" + plannerList(planner) + "</div>" + addPlannerForm() + "<div class='rubric'><strong>Box rhythm:</strong> topics move through this class’s own review intervals. Use the compact queue for daily review and Board View for reorganizing.</div></div></div>";
 }
 
+function historyRecordMarkup(table,records){
+  const views={classes:classList,tasks:taskList,assessments:assessmentList,study_blocks:plannerList,review_cards:function(items){return items.map(reviewCard).join("");},study_materials:function(items){return items.map(function(item){return item.fileId?"<div id='history-file-"+safe(item.id)+"' data-file-workspace data-file-material='"+safe(item.id)+"'></div>":materialList([item],null,true);}).join("");},weak_points:errorLogList,projects:projectList,evidence:evidenceList,sessions:function(items){return simpleList(items,"No sessions yet.");},progress_scores:sessionHistoryList};
+  return views[table](records);
+}
+
 function viewMarkup(view,context){
   const progress = currentData.progress || {};
   if(view === "calendar" && canonicalPortal) return "<section class='portal-section'><div id='canonical-calendar-" + (context || view) + "' data-calendar-workspace></div></section>";
   if(view === "assessments") return "<section class='portal-section'><h2>Upcoming Assessments</h2><p class='muted'>Every class, in date order.</p><div class='card'>" + assessmentList(currentData.assessments.filter(function(a){return !["completed","cancelled"].includes(String(a.status).toLowerCase());}).sort(function(a,b){return String(a.date+a.time).localeCompare(String(b.date+b.time));})) + addAssessmentForm() + "</div><details class='form-panel'><summary>Calendar</summary>" + viewMarkup("calendar","assessments") + "</details></section>";
-  if(view === "today") return "<section class='portal-section'><div class='section-head'><div><span class='section-kicker'>Daily command center</span><h2>Today</h2></div><p>Your scheduled work, due reviews, assessments, and weekly actions in one place.</p></div>" + nextAssessmentCard(currentData.nextAssessment) + todayPlanPanel(currentData.todayPlan) + "<div class='card'><h3>Reviews due</h3>" + compactReviewQueue(currentData.reviewCards.filter(function(c){return c.box<5 && (!c.nextReview || c.nextReview<=qatarToday());}),null) + "</div><div class='card' style='margin-top:14px'><h3>Proof to submit</h3><div class='list'>" + taskList(currentData.tasks) + "</div>" + addTaskForm() + "</div><details class='form-panel'><summary>More this week</summary>" + setupPanel(currentData) + "</details></section>";
+  if(view === "today") return "<section class='portal-section'><div class='section-head'><div><span class='section-kicker'>Daily command center</span><h2>Today</h2></div><p>Your scheduled work, due reviews, assessments, and weekly actions in one place.</p></div>" + nextAssessmentCard(currentData.nextAssessment) + todayPlanPanel(currentData.todayPlan) + "<div class='card'><h3>Reviews due</h3>" + compactReviewQueue(currentData.reviewCards.filter(function(c){return c.box<5 && (!c.nextReview || c.nextReview<=qatarToday());}),null) + "</div><div class='card' style='margin-top:14px'><h3>Proof to submit</h3><div class='list'>" + taskList(canonicalPortal?currentData.tasks.filter(function(task){return String(task.status).toLowerCase()!=="archived" && (String(task.status).toLowerCase()!=="completed" || task.proofRequired && !task.proofNote);}):currentData.tasks) + "</div>" + addTaskForm() + "</div><details class='form-panel'><summary>More this week</summary>" + setupPanel(currentData) + "</details></section>";
   if(view === "classes") return "<section class='portal-section'><div class='section-head'><div><span class='section-kicker'>Subject workspaces</span><h2>Classes</h2></div><p>Open one class for its topics, tests, materials, and study strategy.</p></div><div id='classWorkspace'>" + classWorkspace(currentData) + "</div></section>";
   if(view === "calendar") return "<section class='portal-section'><div class='section-head'><div><span class='section-kicker'>Calendar sync</span><h2>Academic &amp; Extracurricular Calendar</h2></div><p>Import upcoming events from a dedicated school or activities calendar.</p></div><div class='info-box privacy-callout'><strong>Privacy first:</strong> link a separate school/activities calendar—not a personal calendar. The private feed URL is never shown after saving and is deleted on disconnect.</div><div class='card' style='margin-top:12px'><h3>Connections</h3>" + calendarSourceList(currentData.calendarSources) + linkCalendarForm() + "</div><div class='card' style='margin-top:12px'><h3>Upcoming imported events</h3><div class='list'>" + calendarEventList(currentData.calendarEvents) + "</div></div></section>";
   if(view === "materials") return "<section class='portal-section'><div class='section-head'><div><span class='section-kicker'>Study library</span><h2>Materials</h2></div><p>All secure school-approved links, organized by class.</p></div><div class='card'>" + materialList(currentData.materials) + addMaterialForm() + "<div class='locked-note'><strong>Private by design:</strong> linked files are organized only and are not processed by AI.</div></div></section>";
-  if(view === "progress") return "<section class='portal-section'><div class='section-head'><div><span class='section-kicker'>Progress</span><h2>Growth, proof &amp; coaching</h2></div><p>See coach-rated progress, weak points, projects, evidence, and sessions.</p></div><div class='grid four'>" + progressCard("Study System",progress.studySystem,"Use of effective methods on real schoolwork.") + progressCard("Consistency",progress.consistency,"Completion of agreed sessions and actions.") + progressCard("Direction",progress.direction,"Clarity of priorities and next actions.") + nextAssessmentCard(currentData.nextAssessment) + "</div><div class='card' style='margin-top:14px'><h3>Weak Points &amp; Error Log</h3><div class='list'>" + errorLogList(currentData.weakPoints) + "</div>" + addWeakPointForm() + "</div><div class='card' style='margin-top:14px'><h3>Projects &amp; Extracurriculars</h3><div class='list'>" + projectList(currentData.projects) + "</div>" + addProjectForm() + "</div><div class='card' style='margin-top:14px'><h3>Evidence &amp; Wins</h3><div class='list'>" + evidenceList(currentData.evidenceWins) + "</div>" + addEvidenceForm() + "</div><div class='columns' style='margin-top:14px'><div class='card'><h3>Next Meeting</h3><p class='muted' data-next-meeting>" + safe(currentData.nextMeeting || "No upcoming meeting found yet.") + "</p><div class='meeting-help'>" + (canonicalPortal ? "<button type='button' class='btn secondary' onclick='accountExperience.booking()'>Manage meetings</button>" : "<strong>Need to delay or reschedule?</strong><br>Email <a href='mailto:ryanwbdl@gmail.com?subject=Delay%20Admit%20Strategy%20meeting'>ryanwbdl@gmail.com</a>.") + "</div></div><div class='card'><h3>Parent Update</h3><p class='muted'>" + safe(currentData.parentUpdate || "Parent update coming soon.") + "</p></div><div class='card wide'><h3>Progress History</h3><div class='list'>" + sessionHistoryList(currentData.progressHistory) + "</div></div><div class='card wide'><h3>All Session Notes</h3><div class='list'>" + simpleList(currentData.sessionNotes,"No session notes added yet.") + "</div></div></div></section>";
+  if(view === "progress") return "<section class='portal-section'><div class='section-head'><div><span class='section-kicker'>Progress</span><h2>Growth, proof &amp; coaching</h2></div><p>See coach-rated progress, weak points, projects, evidence, and sessions.</p></div><div class='grid four'>" + progressCard("Study System",progress.studySystem,"Use of effective methods on real schoolwork.") + progressCard("Consistency",progress.consistency,"Completion of agreed sessions and actions.") + progressCard("Direction",progress.direction,"Clarity of priorities and next actions.") + nextAssessmentCard(currentData.nextAssessment) + "</div>" + (canonicalPortal ? "<div id='canonical-work-history' data-work-history class='card' style='margin-top:14px'></div>" : "") + "<div class='card' style='margin-top:14px'><h3>Weak Points &amp; Error Log</h3><div class='list'>" + errorLogList(currentData.weakPoints) + "</div>" + addWeakPointForm() + "</div><div class='card' style='margin-top:14px'><h3>Projects &amp; Extracurriculars</h3><div class='list'>" + projectList(currentData.projects) + "</div>" + addProjectForm() + "</div><div class='card' style='margin-top:14px'><h3>Evidence &amp; Wins</h3><div class='list'>" + evidenceList(currentData.evidenceWins) + "</div>" + addEvidenceForm() + "</div><div class='columns' style='margin-top:14px'><div class='card'><h3>Next Meeting</h3><p class='muted' data-next-meeting>" + safe(currentData.nextMeeting || "No upcoming meeting found yet.") + "</p><div class='meeting-help'>" + (canonicalPortal ? "<button type='button' class='btn secondary' onclick='accountExperience.booking()'>Manage meetings</button>" : "<strong>Need to delay or reschedule?</strong><br>Email <a href='mailto:ryanwbdl@gmail.com?subject=Delay%20Admit%20Strategy%20meeting'>ryanwbdl@gmail.com</a>.") + "</div></div><div class='card'><h3>Parent Update</h3><p class='muted'>" + safe(currentData.parentUpdate || "Parent update coming soon.") + "</p></div><div class='card wide'><h3>Progress History</h3><div class='list'>" + sessionHistoryList(currentData.progressHistory) + "</div></div><div class='card wide'><h3>All Session Notes</h3><div class='list'>" + simpleList(currentData.sessionNotes,"No session notes added yet.") + "</div></div></div></section>";
+  if(canonicalPortal) return "<section class='portal-section'><div class='section-head'><div><span class='section-kicker'>Account</span><h2>Your plan &amp; preferences</h2></div><p>A useful workspace, with no subscription required.</p></div><div class='card'><h3>Free — Organize yourself</h3><p>Classes, upcoming assessments, Today, manual study planning, Box reviews, evidence and basic progress are included.</p></div><div class='card' style='margin-top:14px'><h3>Plus — Automate yourself</h3><p>Coming later, at a target price of $11.99/month USD. Planned study-planning automation and calendar-aware adjustments will help keep your week on track.</p><p class='muted'>Plus is not available to buy yet. Your Free tools remain available. Human coaching and Blueprint are separate services; Plus does not include guaranteed meetings.</p></div><div class='card' style='margin-top:14px'><h3>Communication preferences</h3><p class='muted'>Automated study tips and reminders are not active yet. Your diagnosis consent is recorded; contact Ryan to review or withdraw it.</p></div><div class='info-box privacy-callout'><strong>Parent-approved. Private student data.</strong><br>Use the privacy page or contact Ryan to request access, correction or deletion.</div></section>";
   const reminderAction = currentData.portalReminders ? "false" : "true";
   const reminderLabel = currentData.portalReminders ? "Turn portal reminders off" : "Turn portal reminders on";
   return "<section class='portal-section'><div class='section-head'><div><span class='section-kicker'>Settings</span><h2>Portal preferences</h2></div><p>Control service reminders and review privacy guidance.</p></div><div class='card settings-row'><div><strong>Reminders are " + (currentData.portalReminders ? "on" : "off") + ".</strong><p class='muted'>Meeting reminders remain separate at 24 hours and 1 hour.</p></div><form data-portal-form><input type='hidden' name='operation' value='setreminders'><input type='hidden' name='enabled' value='" + reminderAction + "'><button class='btn secondary' type='submit'>" + reminderLabel + "</button></form></div><div class='info-box privacy-callout'><strong>Parent-approved. Private student data. Delete your data anytime.</strong><br>Use the privacy page or contact Ryan to request access or deletion.</div></section>";
@@ -1269,6 +1284,8 @@ function applyAccountPermissions(){
   if(!canonicalPortal)return;
   fileExperience?.mountAll();
   calendarExperience?.mountAll();
+  historyExperience?.mountAll();
+  historyExperience?.refreshAll();
   document.querySelectorAll("#app form[data-portal-form] button,#app [data-move-review]").forEach(function(button){
     if(canonicalPortal.canEdit===false)button.disabled=true;
   });
@@ -1310,7 +1327,7 @@ function applyDemoAction(values,options){
   }
   if(operation === "updatetask"){
     const task = currentData.tasks.find(function(entry){ return entry.id === values.recordId; });
-    if(task) Object.assign(task,{title:values.title,detail:values.detail,dueDate:values.dueDate,proofRequired:values.proofRequired});
+    if(task) Object.assign(task,{title:values.title,detail:values.detail,dueDate:values.dueDate,proofRequired:values.proofRequired},values.status?{status:values.status}:{});
   }
   if(operation === "submittaskproof"){
     const task = currentData.tasks.find(function(entry){ return entry.id === values.recordId; });
@@ -1744,6 +1761,7 @@ async function load(){
   if(window.ADMIT_CONFIG?.backend==="supabase"){
     accountExperience=new window.Admit.AccountExperience({config:window.ADMIT_CONFIG,onMeetingChange:function(data,adapter){if(canonicalPortal!==adapter)return;currentData.nextMeeting=data.nextMeeting;const node=document.querySelector("[data-next-meeting]");if(node)node.textContent=data.nextMeeting||"No upcoming meeting found yet.";},hasPendingChanges:function(){return Boolean(saveQueue?.unsaved.length || fileExperience?.uploads.unsaved.length || calendarExperience?.unsaved.length);},root:document.getElementById("app"),onPortal:function(data,adapter){
       calendarExperience?.dispose();calendarExperience=new window.Admit.CalendarWorkspace({portal:adapter,config:window.ADMIT_CONFIG,onChange:function(){if(canonicalPortal===adapter){currentData=adapter.data;renderAffectedViews("addassessment");}}});
+      historyExperience?.dispose();historyExperience=new window.Admit.WorkHistory({portal:adapter,render:historyRecordMarkup,patch:window.Admit.patch,onRows:function(){if(canonicalPortal===adapter){currentData=derive(adapter.data);renderAffectedViews("addassessment");}}});
       canonicalPortal=adapter;fileExperience=new window.Admit.FilesWorkspace({portal:adapter,config:window.ADMIT_CONFIG,onChange:function(){if(canonicalPortal===adapter)currentData=derive(adapter.data);}});saveQueue=null;mutationUI.clear();activePortalView="today";selectedReviewSubject="";portalViewScroll={};
       adapter.isPending=function(id){return saveQueue?.unsaved.some(function(job){return job.values.recordId===id || job.id===id;});};
       document.getElementById("portalMode").textContent="Private account workspace";

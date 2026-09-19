@@ -17,7 +17,7 @@ test("planner sends the whole proof and keeps the same payload after an uncertai
 });
 test("confirmed task and planner proof survives a portal reload",()=>{
   for(const table of ["tasks","study_blocks"]){
-    const row=normalizeRecord(table,{id:"item",row_version:2,evidence:[{proof_text:"Six diagrams",proof_url:"https://example.invalid/proof",evidence_reviews:[{status:"approved",feedback:"Clear correction"}]}]});
+    const row=normalizeRecord(table,{id:"item",row_version:2,evidence:[{row_version:2,proof_text:"Six diagrams",proof_url:"https://example.invalid/proof",evidence_reviews:[{status:"approved",feedback:"Clear correction",evidence_version:2}]}]});
     assert.equal(row.proofNote,"Six diagrams");assert.equal(row.coachReview,"Approved");assert.equal(row.coachFeedback,"Clear correction");
   }
 });

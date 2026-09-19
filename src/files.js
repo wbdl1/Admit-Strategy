@@ -73,7 +73,7 @@ export class FilesWorkspace {
   }
   mount(root){
     const classId=root.dataset.fileClass||null,heading=element("h3","Files"),list=element("div",null,"list"),jobs=element("div",null,"file-jobs"),status=element("p",null,"form-help");status.setAttribute("role","status");
-    root.append(heading,list);const widget={root,classId,list,jobs,status};this.widgets.set(root,widget);
+    root.append(heading,list);const widget={root,classId,materialId:root.dataset.fileMaterial||null,list,jobs,status};this.widgets.set(root,widget);
     if(this.portal.canEdit){
       const drop=element("div",null,"file-drop"),label=element("label","Upload schoolwork"),picker=element("input");picker.type="file";picker.accept=accept;label.append(picker);
       drop.append(label,element("p","Choose a file or drop it here. Up to 20 MB. PDF, Word, PowerPoint, images or text.","form-help"));
@@ -89,7 +89,7 @@ export class FilesWorkspace {
   }
   refreshAll(){for(const widget of this.widgets.values())if(widget.root.isConnected)this.refresh(widget);}
   refresh(widget){
-    const records=this.portal.data.materials.filter(m=>m.fileId&&m.status!=="Archived"&&(!widget.classId||m.classId===widget.classId));
+    const records=this.portal.data.materials.filter(m=>m.fileId&&m.status!=="Archived"&&(!widget.classId||m.classId===widget.classId)&&(!widget.materialId||m.id===widget.materialId));
     const wanted=new Set(records.map(r=>r.id));
     for(const row of widget.list.querySelectorAll("[data-file-row]"))if(!wanted.has(row.dataset.fileRow))row.remove();
     const empty=widget.list.querySelector("[data-file-empty]");if(records.length)empty?.remove();else if(!empty){const note=element("p","No files uploaded yet.","empty");note.dataset.fileEmpty="";widget.list.append(note);}

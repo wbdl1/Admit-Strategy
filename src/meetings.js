@@ -1,4 +1,5 @@
 import {MutationQueue} from './mutation-queue.js';
+import {celebrate} from './celebration.js';
 const el=(tag,text,className)=>{const node=document.createElement(tag);if(text)node.textContent=text;if(className)node.className=className;return node;};
 const button=(text,fn)=>{const b=el('button',text,'btn secondary');b.type='button';b.onclick=fn;return b;};
 const date=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Qatar',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
@@ -14,7 +15,9 @@ export class Meetings {
       if(this.disposed||this.actorId!==account.user?.id)throw Object.assign(new Error('Sign in with the original account to finish this change.'),{rejected:true,retryable:false});
       return this.adapter.rpc(job.rpc,{...job.args,p_request_key:id});
     },optimistic:job=>{const ui=this.ui.get(job.id);this.freeze(ui.form,true);ui.summary.textContent=ui.title+' — Saving…';},
-    confirm:(job,response)=>{const ui=this.ui.get(job.id),record=response.record||response.booking;ui.confirm(record);this.account.meetingChanged(record);},onState:job=>this.state(job)});
+    confirm:(job,response)=>{const ui=this.ui.get(job.id),record=response.record||response.booking;ui.confirm(record);this.account.meetingChanged(record);
+      if(['book_meeting','book_coaching_meeting'].includes(job.values.rpc)&&!response.reused)celebrate('booking:'+record.id);
+    },onState:job=>this.state(job)});
     this.unload=e=>{if(this.queue.unsaved.length||host.querySelector('form[data-dirty]')){e.preventDefault();e.returnValue='';}};
     window.addEventListener('beforeunload',this.unload);
     const nav=el('nav',null,'demo-actions');nav.setAttribute('aria-label','Meeting views');

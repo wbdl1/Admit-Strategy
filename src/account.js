@@ -1,3 +1,4 @@
+import {celebrate} from "./celebration.js";
 import {createClient} from "@supabase/supabase-js";
 import {PortalData} from "./portal-data.js";
 import {boundedFetch} from "./network.js";
@@ -22,12 +23,12 @@ export class AccountExperience {
     });
   }
   async start(){
-    const url=new URL(location.href),callback=url.searchParams.has("code")||url.hash.includes("error=");
+    const url=new URL(location.href),callback=url.searchParams.has("code")||url.searchParams.has("error")||url.hash.includes("error=");
     await this.client.auth.initialize();
     await this.refresh();
     if(callback){
       // Never leave a consumed or expired code in a bookmark or shared URL.
-      const clean=new URL(location.href);clean.searchParams.delete("code");clean.searchParams.delete("sb_flow_id");clean.hash="";
+      const clean=new URL(location.href);for(const key of ["code","sb_flow_id","error","error_code","error_description","sb"])clean.searchParams.delete(key);clean.hash="";
       history.replaceState(history.state,"",clean);
       if(!this.user)this.message("This sign-in link has expired or cannot be used in this browser. Request a new link below and open it in the same browser.",true);
     }
@@ -71,6 +72,9 @@ export class AccountExperience {
       this.show("<h1>Use the student’s account</h1><p>This diagnosis belongs to the student email you entered. Sign out of the current account, then sign in with that email to keep each student’s records separate.</p>");
       this.gate.append(action("Log out and continue",()=>this.logout()),action("Return to website",()=>location.assign("index.html"),true));return;
     }
+    // Supabase can announce SIGNED_IN again when a tab regains focus.
+    // Keep the current coaching form and its drafts for the same verified actor.
+    if(this.user?.id===user.id && this.coach?.content?.isConnected && !this.gate.hidden && !this.diagnosis)return;
     if(this.loadedUser===user.id && this.portal.studentId&&!this.diagnosis){this.gate.hidden=true;this.root.hidden=false;this.toolbar.hidden=false;return;}
     if(this.loadedUser&&this.loadedUser!==user.id){this.root.replaceChildren();this.portal=new PortalData(this.client,{onAuthRequired:()=>this.login()});}
     this.show("<h1>Opening your workspace…</h1><p>Checking your account and permissions.</p>");
@@ -93,7 +97,9 @@ export class AccountExperience {
   async finishDiagnosis(){
     this.show("<h1>Saving your diagnosis…</h1><p>Finding or creating your student workspace.</p>");
     try{
+      const requestId=this.diagnosis.id;
       const result=await this.portal.rpc("complete_diagnosis",diagnosisRequest(this.diagnosis,this.user.email));
+      if(result?.ok!==true||!result.student_id)throw new Error("The saved diagnosis could not be confirmed. Retry the same request.");
       const student=await this.portal.result(this.client.from("students").select("id,profile_id,grade,summary,status,profiles!inner(display_name)").eq("id",result.student_id).single());
       this.roles=Array.from(new Set([...this.roles,"student"]));
       await this.openStudent(student);
@@ -103,6 +109,7 @@ export class AccountExperience {
       const clean=new URL(location.href);clean.searchParams.delete("diagnosis");clean.searchParams.delete("book");clean.searchParams.delete("code");history.replaceState(history.state,"",clean);
       this.show("<h1>Your diagnosis is saved</h1><p>"+safe(summary)+"</p><p>"+(result.reused?"Your existing workspace is ready.":"Your student workspace is ready.")+" Book your free first meeting to choose the next practical steps.</p>"+(student.status==="pending_guardian"?"<p>Your guardian can log in using the email you supplied to approve academic editing. You can book the meeting now.</p>":""));
       this.gate.append(action("Book your free first meeting",()=>this.booking()),action("Open your portal",()=>this.showWorkspace(),true));
+      celebrate("diagnosis:"+requestId);
     }catch(error){
       this.show("<h1>Your diagnosis is kept</h1><p>We could not confirm that it was saved. Retry to check the same request safely.</p>");this.message(error.message,true);
       this.gate.append(action("Retry saving diagnosis",event=>this.run(event.currentTarget,()=>this.finishDiagnosis())),action("Log out",()=>this.logout(),true));
@@ -112,14 +119,14 @@ export class AccountExperience {
     let draft={};try{draft=JSON.parse(sessionStorage.getItem("admit-onboarding")||"{}");}catch{}
     this.show("<h1>Start your student workspace</h1><p>One account. One workspace. We’ll reuse it whenever you return.</p><form data-onboarding class='portal-form'><label>Student name<input name='name' autocomplete='name' maxlength='120' required value='"+safe(draft.name)+"'></label><label>Grade<select name='grade' required>"+[6,7,8,9,10,11,12].map(n=>"<option value='"+n+"'"+(Number(draft.grade)===n?" selected":"")+">Grade "+n+"</option>").join("")+"</select></label><label>Parent or guardian email<input name='guardian' type='email' autocomplete='off' maxlength='254' required value='"+safe(draft.guardian)+"'></label><p class='form-help'>Use a different email from your own. Your guardian must approve academic editing from their own account.</p><button class='btn' type='submit'>Create or open my workspace</button></form>");
     const form=this.gate.querySelector("form");
-    form.oninput=()=>sessionStorage.setItem("admit-onboarding",JSON.stringify({name:form.elements.name.value,grade:form.elements.grade.value,guardian:form.elements.guardian.value}));
+    form.oninput=()=>{try{sessionStorage.setItem("admit-onboarding",JSON.stringify({name:form.elements.name.value,grade:form.elements.grade.value,guardian:form.elements.guardian.value}));}catch{/* The form remains usable when browser storage is unavailable. */}};
     form.onsubmit=event=>{event.preventDefault();this.run(form.querySelector("button"),async()=>{
       if(!form.reportValidity())return;
       const payload={p_name:form.elements.name.value.trim(),p_grade:Number(form.elements.grade.value),p_guardian_email:form.elements.guardian.value.trim()};
       const signature=JSON.stringify(payload);if(this.onboardingSignature!==signature){this.onboardingSignature=signature;this.onboardingKey=crypto.randomUUID();}
       const result=await this.portal.rpc("complete_student_onboarding",{...payload,p_request_key:this.onboardingKey});
       const student=await this.portal.result(this.client.from("students").select("id,profile_id,grade,summary,status,profiles!inner(display_name)").eq("id",result.student_id).single());
-      await this.openStudent(student);sessionStorage.removeItem("admit-onboarding");this.booking();
+      await this.openStudent(student);try{sessionStorage.removeItem("admit-onboarding");}catch{}this.booking();
     });};
     this.gate.append(action("Log out",()=>this.logout(),true));
   }
@@ -151,7 +158,7 @@ export class AccountExperience {
       this.toolbar.prepend(action("Coaching record",()=>this.coach?.studentHome(student),true));
     }
     if(student.status==="pending_guardian"){
-      const note=document.createElement("div");note.className="info-box";note.textContent="Your workspace is ready. Academic editing opens after your guardian logs in with the email you provided and approves access.";this.root.prepend(note);
+      const note=document.createElement("div");note.className="info-box";note.textContent="Your workspace is ready. Academic editing opens after your guardian logs in with the email you provided and approves access.";note.append(action("Check or correct guardian approval",()=>this.accountAccess(student.id),true));this.root.prepend(note);
     }
     this.onAccountChange(this);
     performance.measure("admit-today-useful",{start:0,end:performance.now()});
@@ -162,10 +169,12 @@ export class AccountExperience {
     }
   }
   async logout(){
+    if(this.access&&!this.access.canLeave())return;
     if(this.meetings&&!this.meetings.canLeave())return;
     if((this.hasPendingChanges()||this.coach?.unsaved.length||document.querySelector("form[data-dirty]"))&&!window.confirm("You have unsaved or unconfirmed changes. Stay here to finish saving, or log out and discard local input?"))return;
     const {error}=await this.client.auth.signOut();if(error){this.message("Could not log out. Please try again.",true);return;}
     this.workspaceGeneration=(this.workspaceGeneration||0)+1;
+    this.access?.dispose();
     this.meetings?.dispose();this.meetings=null;
     this.coach?.dispose();this.coach=null;
     this.loadedUser=null;this.user=null;this.portal.studentId=null;this.portal.data=null;this.root.replaceChildren();this.toolbar.replaceChildren();this.login();
@@ -174,6 +183,10 @@ export class AccountExperience {
     if(this.portal.studentId&&this.portal.studentId===this.ownStudentId)this.portal.rpc("record_workspace_event",{p_student_id:this.portal.studentId,p_event:name,p_request_key:crypto.randomUUID()}).catch(()=>{});
   }
   showWorkspace(){this.gate.hidden=true;this.root.hidden=false;this.toolbar.hidden=false;this.recordWorkspaceEvent("portal_activated");}
+  async accountAccess(studentId=this.portal.studentId){
+    const actor=this.user?.id;const {openAccountAccess}=await import("./account-access.js");
+    if(this.user?.id===actor)openAccountAccess(this,studentId);
+  }
   async booking(){
     const studentId=this.portal.studentId,actor=this.user?.id;if(!studentId)return;
     this.recordWorkspaceEvent("meeting_booking_started");
