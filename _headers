@@ -1,0 +1,24 @@
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Content-Security-Policy: base-uri 'self'; object-src 'none'; frame-ancestors 'none'
+
+# The portal shell must be revalidated across login, logout and deployments.
+# These rules cover both old links and Cloudflare's extensionless destination.
+/portal
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+/portal.html
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+
+# Every generated asset in this folder has a content hash in its name.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+https://:project.pages.dev/*
+  X-Robots-Tag: noindex
+https://:version.:project.pages.dev/*
+  X-Robots-Tag: noindex
