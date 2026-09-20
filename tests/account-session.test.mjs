@@ -22,6 +22,30 @@ test('an invalid session cannot keep the coaching editor active',async()=>{
   await AccountExperience.prototype.refreshAccount.call(account);assert.equal(loggedOut,true);
 });
 
+test('a personal workspace does not hide guardian invitations or approved family access',async()=>{
+  const own={id:'own-workspace',profile_id:'profile'},child={id:'child-workspace',profile_id:'child-profile'};
+  for(const scenario of [
+    {students:[own],requests:[{request_id:'pending'}],expected:'family'},
+    {students:[own,child],requests:[],expected:'family'},
+    {students:[own],requests:[],expected:'own'},
+    {students:[],requests:[],expected:'onboarding'}
+  ]){
+    let route;
+    const query={select(){return this;},eq(){return this;},is(){return this;},limit(){return this;}};
+    const account={client:{auth:{getUser:async()=>({data:{user:{id:'actor'}}})},from:table=>({...query,table})},
+      show:()=>{},portal:{rpc:async name=>{
+        if(name==='bootstrap_account')return {profile_id:'profile'};
+        assert.equal(name,'guardian_requests');return scenario.requests;
+      },result:async q=>q.table==='profile_roles'?[{roles:{code:'student'}}]:scenario.students},
+      openStudent:async s=>{assert.equal(s.id,own.id);route='own';},
+      guardianHome:(students,requests)=>{assert.equal(students,scenario.students);assert.equal(requests,scenario.requests);route='family';},
+      onboarding:()=>{route='onboarding';}
+    };
+    await AccountExperience.prototype.refreshAccount.call(account);
+    assert.equal(route,scenario.expected);
+  }
+});
+
 test('expired callback query is explained and removed without losing the diagnosis handoff',async()=>{
   const originalLocation=globalThis.location,originalHistory=globalThis.history;let clean,message;
   try{

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createdPage,splitPage} from '../src/page-cursor.js';
+import {createdPage,splitPage,assessmentPage,splitAssessmentPage} from '../src/page-cursor.js';
 import {normalizeRecord} from '../src/portal-data.js';
 
 test('pagination keeps timestamp precision and UUID tie breakers without repeating the lookahead row',()=>{
@@ -11,6 +11,16 @@ test('pagination keeps timestamp precision and UUID tie breakers without repeati
   assert.deepEqual(calls.slice(0,2),[['order','created_at',{ascending:false}],['order','id',{ascending:false}]]);
   assert.equal(splitPage(rows.slice(0,3)).cursor,null);
   assert.throws(()=>createdPage(query,{...page.cursor,created_at:'2026",id.gt.0'}),/Invalid page cursor/);
+});
+
+test('assessment cursors preserve optional times and reject filter injection',()=>{
+  const row={id:'00000000-0000-4000-8000-000000000001',due_date:'2026-09-25',due_time:'10:00:00.123456'};
+  const calls=[],query={order(...v){calls.push(v);return this;},limit(n){assert.equal(n,26);return this;},or(v){calls.push(v);return this;}};
+  assessmentPage(query,row);assert.match(calls.at(-1),/due_time.gt.10:00:00.123456/);assert.match(calls.at(-1),/due_time.is.null/);
+  assessmentPage(query,{...row,due_time:null});assert.match(calls.at(-1),/due_time.is.null,id.gt/);
+  const page=splitAssessmentPage(Array.from({length:26},()=>row));assert.deepEqual(page.cursor,row);assert.equal(page.records.length,25);
+  assert.equal(splitAssessmentPage([row]).cursor,null);
+  for(const field of ['id','due_date','due_time'])assert.throws(()=>assessmentPage(query,{...row,[field]:'x),id.gt.0'}),/Invalid assessment cursor/);
 });
 
 test('proof changes cannot inherit an approval or feedback from an older version',()=>{

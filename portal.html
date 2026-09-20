@@ -1142,10 +1142,29 @@ function historyRecordMarkup(table,records){
   return views[table](records);
 }
 
+function assessmentPagingMarkup(){
+  if(!canonicalPortal || !canonicalPortal.assessmentCursor)return "";
+  return "<p role='status' data-assessment-page-status>More upcoming assessments are available.</p><button type='button' class='btn secondary' data-load-assessments>Load more assessments</button>";
+}
+
+async function loadMoreAssessments(button){
+  const adapter=canonicalPortal,status=document.querySelector('[data-assessment-page-status]');
+  if(!adapter || button.disabled)return;
+  button.disabled=true;button.textContent="Loading assessments…";
+  try{
+    await adapter.loadUpcomingAssessments();if(adapter!==canonicalPortal)return;
+    currentData=derive(adapter.data);renderAffectedViews("addassessment");
+  }catch(error){
+    if(adapter!==canonicalPortal)return;
+    if(status)status.textContent=error.message||"Could not load more assessments. Retry when connected.";
+    button.textContent="Retry loading assessments";
+  }finally{button.disabled=false;}
+}
+
 function viewMarkup(view,context){
   const progress = currentData.progress || {};
   if(view === "calendar" && canonicalPortal) return "<section class='portal-section'><div id='canonical-calendar-" + (context || view) + "' data-calendar-workspace></div></section>";
-  if(view === "assessments") return "<section class='portal-section'><h2>Upcoming Assessments</h2><p class='muted'>Every class, in date order.</p><div class='card'>" + assessmentList(currentData.assessments.filter(function(a){return !["completed","cancelled"].includes(String(a.status).toLowerCase());}).sort(function(a,b){return String(a.date+a.time).localeCompare(String(b.date+b.time));})) + addAssessmentForm() + "</div><details class='form-panel'><summary>Calendar</summary>" + viewMarkup("calendar","assessments") + "</details></section>";
+  if(view === "assessments") return "<section class='portal-section'><h2>Upcoming Assessments</h2><p class='muted'>Every class, in date order.</p><div class='card'>" + assessmentList(currentData.assessments.filter(function(a){return !["completed","cancelled"].includes(String(a.status).toLowerCase());}).sort(function(a,b){return String(a.date+"T"+(a.time||"24:00")).localeCompare(String(b.date+"T"+(b.time||"24:00"))) || String(a.id).localeCompare(String(b.id));})) + assessmentPagingMarkup() + addAssessmentForm() + "</div><details class='form-panel'><summary>Calendar</summary>" + viewMarkup("calendar","assessments") + "</details></section>";
   if(view === "today") return "<section class='portal-section'><div class='section-head'><div><span class='section-kicker'>Daily command center</span><h2>Today</h2></div><p>Your scheduled work, due reviews, assessments, and weekly actions in one place.</p></div>" + nextAssessmentCard(currentData.nextAssessment) + todayPlanPanel(currentData.todayPlan) + "<div class='card'><h3>Reviews due</h3>" + compactReviewQueue(currentData.reviewCards.filter(function(c){return c.box<5 && (!c.nextReview || c.nextReview<=qatarToday());}),null) + "</div><div class='card' style='margin-top:14px'><h3>Proof to submit</h3><div class='list'>" + taskList(canonicalPortal?currentData.tasks.filter(function(task){return String(task.status).toLowerCase()!=="archived" && (String(task.status).toLowerCase()!=="completed" || task.proofRequired && !task.proofNote);}):currentData.tasks) + "</div>" + addTaskForm() + "</div><details class='form-panel'><summary>More this week</summary>" + setupPanel(currentData) + "</details></section>";
   if(view === "classes") return "<section class='portal-section'><div class='section-head'><div><span class='section-kicker'>Subject workspaces</span><h2>Classes</h2></div><p>Open one class for its topics, tests, materials, and study strategy.</p></div><div id='classWorkspace'>" + classWorkspace(currentData) + "</div></section>";
   if(view === "calendar") return "<section class='portal-section'><div class='section-head'><div><span class='section-kicker'>Calendar sync</span><h2>Academic &amp; Extracurricular Calendar</h2></div><p>Import upcoming events from a dedicated school or activities calendar.</p></div><div class='info-box privacy-callout'><strong>Privacy first:</strong> link a separate school/activities calendar—not a personal calendar. The private feed URL is never shown after saving and is deleted on disconnect.</div><div class='card' style='margin-top:12px'><h3>Connections</h3>" + calendarSourceList(currentData.calendarSources) + linkCalendarForm() + "</div><div class='card' style='margin-top:12px'><h3>Upcoming imported events</h3><div class='list'>" + calendarEventList(currentData.calendarEvents) + "</div></div></section>";
@@ -1606,6 +1625,8 @@ document.addEventListener("submit",function(event){
 });
 
 document.addEventListener("click",function(event){
+  const assessmentPageButton=event.target.closest("[data-load-assessments]");
+  if(assessmentPageButton){loadMoreAssessments(assessmentPageButton);return;}
   const viewButton = event.target.closest("[data-app-view]");
   if(viewButton){
     switchPortalView(viewButton.getAttribute("data-app-view") || "today");

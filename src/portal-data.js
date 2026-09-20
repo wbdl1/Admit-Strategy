@@ -1,4 +1,4 @@
-import {createdPage,splitPage} from "./page-cursor.js";
+import {createdPage,splitPage,assessmentPage,splitAssessmentPage} from "./page-cursor.js";
 const collections={classes:"classes",assessments:"assessments",tasks:"tasks",study_blocks:"planner",study_materials:"materials",review_cards:"reviewCards",weak_points:"weakPoints",projects:"projects",evidence:"evidenceWins",sessions:"sessionNotes",progress_scores:"progressHistory",calendar_sources:"calendarSources",calendar_events:"calendarEvents"};
 const operationTables={class:"classes",assessment:"assessments",task:"tasks",planner:"study_blocks",material:"study_materials",reviewcard:"review_cards",weakpoint:"weak_points",project:"projects",evidence:"evidence"};
 const camel=s=>s.replace(/_([a-z])/g,(_,c)=>c.toUpperCase());
@@ -47,16 +47,27 @@ export class PortalData {
   rpc(name,args){return this.result(this.client.rpc(name,args));}
   async open(student){
     this.studentId=student.id;this.student=student;this.raw.clear();this.loaded.clear();this.loading.clear();
+    this.assessmentCursor=undefined;this.assessmentsFrom=today();this.assessmentLoading=null;
     this.data={student:{id:student.id,name:student.profiles?.display_name||"Student",summary:student.summary||"",grade:student.grade},accountStatus:student.status,plan:"Free",planStatus:"Active",progress:{},progressHistory:[],portalReminders:false};
     Object.values(collections).forEach(key=>this.data[key]=[]);
     await this.read("classes",{limit:100});
     await Promise.all([
-      this.read("assessments",{order:"due_date",limit:60,filter:q=>q.eq("status","upcoming").eq("classification_status","confirmed").gte("due_date",today())}),
+      this.loadUpcomingAssessments(60),
       this.read("tasks",{order:"due_date",limit:60,filter:q=>q.or('status.in.(not_started,in_progress,submitted),and(status.eq.completed,proof_required.neq."")')}),
       this.read("review_cards",{order:"next_review",limit:60,filter:q=>q.lt("box",5)}),
       this.read("study_blocks",{order:"date",limit:60,filter:q=>q.gte("date",today())})
     ]);
     this.loaded.add("today");return this.data;
+  }
+  async loadUpcomingAssessments(size=25){
+    if(this.assessmentCursor===null)return;
+    if(this.assessmentLoading)return this.assessmentLoading;
+    this.assessmentLoading=(async()=>{
+      const query=this.query('assessments').eq('status','upcoming').eq('classification_status','confirmed').gte('due_date',this.assessmentsFrom);
+      const page=splitAssessmentPage(await this.result(assessmentPage(query,this.assessmentCursor,size)),size);
+      this.ingest('assessments',page.records);this.assessmentCursor=page.cursor;
+    })();
+    try{await this.assessmentLoading;}finally{this.assessmentLoading=null;}
   }
   ingest(table,rows,{confirmed=false}={}){
     if(!collections[table])return;

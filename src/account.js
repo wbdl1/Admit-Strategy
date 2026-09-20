@@ -89,9 +89,11 @@ export class AccountExperience {
     if(this.roles.some(r=>["coach","admin"].includes(r))){await this.adminHome();return;}
     const students=await this.portal.result(this.client.from("students").select("id,profile_id,grade,summary,status,profiles!inner(display_name)").is("archived_at",null).limit(20));
     const own=students.find(s=>s.profile_id===account.profile_id);
-    if(own){await this.openStudent(own);return;}
     const requests=await this.portal.rpc("guardian_requests",{});
-    if(students.length||requests.length){this.guardianHome(students,requests);return;}
+    // An existing personal workspace must not hide a guardian invitation or
+    // another explicitly authorized family workspace.
+    if(requests.length||students.some(s=>s.profile_id!==account.profile_id)){this.guardianHome(students,requests);return;}
+    if(own){await this.openStudent(own);return;}
     this.onboarding();
   }
   async finishDiagnosis(){
