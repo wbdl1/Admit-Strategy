@@ -59,3 +59,23 @@ test('expired callback query is explained and removed without losing the diagnos
     if(originalHistory===undefined)delete globalThis.history;else globalThis.history=originalHistory;
   }
 });
+
+test('Google login offers account choice and preserves the intended callback',async()=>{
+  const previousDocument=globalThis.document;let googleButton,request;
+  const form={querySelector:()=>({}),elements:{email:{value:''}}};
+  try{
+    globalThis.document={createElement:()=>({})};
+    let shown=false;
+    const account={config:{googleEnabled:true},gate:{querySelector:selector=>{
+      if(selector==='[data-login]')return shown?form:null;
+      if(selector==='[data-google-login]')return {append:button=>{googleButton=button;}};
+      throw new Error('Unexpected element');
+    }},show:()=>{shown=true;},run:async(_button,fn)=>fn(),redirectUrl:()=> 'https://admitstrategy.com/portal.html?diagnosis=fixture',
+      client:{auth:{signInWithOAuth:async value=>{request=value;return {error:null};}}}};
+    AccountExperience.prototype.login.call(account);
+    await googleButton.onclick({currentTarget:googleButton});
+    assert.equal(request.provider,'google');
+    assert.equal(request.options.queryParams.prompt,'select_account');
+    assert.equal(request.options.redirectTo,'https://admitstrategy.com/portal.html?diagnosis=fixture');
+  }finally{if(previousDocument===undefined)delete globalThis.document;else globalThis.document=previousDocument;}
+});

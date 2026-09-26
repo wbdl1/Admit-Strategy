@@ -50,7 +50,7 @@ export class AccountExperience {
       const note=document.createElement("p");note.textContent="Sign in with the student’s account. Your diagnosis is kept in this browser for up to 24 hours while you finish. Guardian approval happens separately from the guardian’s own account.";this.gate.querySelector("form").before(note);
     }else if(this.diagnosisId){this.message("This diagnosis draft has expired or is unavailable in this browser. You can sign in to your existing workspace, or start the diagnosis again.",true);}
     if(this.config.googleEnabled){this.gate.querySelector("[data-google-login]").append(action("Continue with Google",async event=>this.run(event.currentTarget,async()=>{
-      const {error}=await this.client.auth.signInWithOAuth({provider:"google",options:{redirectTo:this.redirectUrl()}});if(error)throw error;
+      const {error}=await this.client.auth.signInWithOAuth({provider:"google",options:{redirectTo:this.redirectUrl(),queryParams:{prompt:"select_account"}}});if(error)throw error;
     })));}
     const form=this.gate.querySelector("[data-login]");form.onsubmit=event=>{event.preventDefault();this.run(form.querySelector("button"),async()=>{
       if(!form.reportValidity())return;
