@@ -5,7 +5,7 @@ import {AccountExperience} from '../src/account.js';
 test('repeated sign-in preserves the active coach form and its unsaved input',async()=>{
   const account={
     user:{id:'coach'},client:{auth:{getUser:async()=>({data:{user:{id:'coach'}}})}},
-    gate:{hidden:false},coach:{content:{isConnected:true}},
+    root:{replaceChildren(){}},gate:{hidden:false},coach:{content:{isConnected:true},dispose(){}},
     show:()=>assert.fail('Do not replace the active editor'),
     portal:{rpc:()=>assert.fail('Do not re-bootstrap the same active coach')}
   };
@@ -16,10 +16,44 @@ test('repeated sign-in preserves the active coach form and its unsaved input',as
 });
 
 test('an invalid session cannot keep the coaching editor active',async()=>{
-  let loggedOut=false;
-  const account={user:{id:'coach'},gate:{hidden:false},coach:{content:{isConnected:true}},
-    client:{auth:{getUser:async()=>({data:{user:null},error:new Error('Session expired')})}},login:()=>{loggedOut=true;}};
-  await AccountExperience.prototype.refreshAccount.call(account);assert.equal(loggedOut,true);
+  const {account,events,draft}=sessionFixture();
+  account.client.auth.getUser=async()=>({data:{user:null},error:new Error('Session expired')});
+  await account.refreshAccount();assert.equal(account.user,null);assert.equal(account.root.hidden,true);
+  assert.deepEqual(events,['suspended']);assert.equal(account.suspendedView.nodes[0],draft);
+});
+
+function sessionFixture(){
+  const events=[],draft={text:'Unsubmitted work'},gate={hidden:false,childNodes:[draft],replaceChildren(...nodes){this.childNodes=nodes;}};
+  const account=Object.assign(Object.create(AccountExperience.prototype),{
+    user:{id:'coach'},gate,root:{hidden:true,replaceChildren(){this.cleared=true;}},toolbar:{hidden:true},
+    coach:{actorId:'coach',content:{isConnected:true},sync:{hidden:false},unsaved:[],dispose(){this.disposed=true;}},
+    client:{auth:{getUser:async()=>({data:{user:{id:'coach'}}})}},
+    onSessionChange:state=>events.push(state),
+    login(){this.root.hidden=true;this.toolbar.hidden=true;this.gate.hidden=false;this.gate.replaceChildren({text:'Sign in'});},
+    show(){throw new Error('A different actor must bootstrap');}
+  });
+  return {account,events,draft};
+}
+test('verified same-account recovery restores the original editor nodes without a reload',async()=>{
+  const {account,events,draft}=sessionFixture();
+  account.suspendSession();account.suspendSession();await account.refreshAccount();
+  assert.equal(account.user.id,'coach');assert.equal(account.gate.childNodes[0],draft);
+  assert.equal(account.gate.childNodes[0].text,'Unsubmitted work');assert.equal(account.suspendedView,null);
+  assert.equal(events.at(-1),'resumed');
+});
+test('another account cannot restore a suspended editor or reuse its workspace',async()=>{
+  const {account,events}=sessionFixture();const coach=account.coach;
+  account.suspendSession();account.client.auth.getUser=async()=>({data:{user:{id:'different'}}});
+  await assert.rejects(account.refreshAccount(),/different actor must bootstrap/);
+  assert.equal(account.suspendedView,null);assert.equal(account.root.cleared,true);assert.equal(coach.disposed,true);
+  assert.equal(events.at(-1),'cleared');assert.equal(account.portal.studentId,undefined);
+});
+test('a new Auth identity suspends private views before asynchronous verification',async()=>{
+  let hidden=0,verified=0;
+  const account={user:{id:'original'},suspendSession(){hidden++;this.user=null;},refresh(){verified++;}};
+  AccountExperience.prototype.authChanged.call(account,'SIGNED_IN',{user:{id:'original'}});assert.equal(hidden,0);
+  AccountExperience.prototype.authChanged.call(account,'SIGNED_IN',{user:{id:'other'}});assert.equal(hidden,1);assert.equal(account.user,null);
+  await new Promise(resolve=>setTimeout(resolve,5));assert.equal(verified,2);
 });
 
 test('a personal workspace does not hide guardian invitations or approved family access',async()=>{
@@ -78,4 +112,17 @@ test('Google login offers account choice and preserves the intended callback',as
     assert.equal(request.options.queryParams.prompt,'select_account');
     assert.equal(request.options.redirectTo,'https://admitstrategy.com/portal.html?diagnosis=fixture');
   }finally{if(previousDocument===undefined)delete globalThis.document;else globalThis.document=previousDocument;}
+});
+test('Google session recovery leaves the draft tab intact and offers a separate sign-in tab',async()=>{
+  const originalDocument=globalThis.document;let request,googleButton,link,shown=false;
+  const form={before(){},querySelector:()=>({}),elements:{email:{value:''}}};
+  const target={append:button=>googleButton=button,replaceChildren:node=>link=node};
+  try{
+    globalThis.document={createElement:()=>({})};
+    const account={config:{googleEnabled:true},suspendedView:{actorId:'student'},gate:{querySelector:selector=>selector==='[data-login]'?(shown?form:null):selector==='[data-google-login]'?target:form},show:()=>shown=true,run:async(_button,fn)=>fn(),redirectUrl:()=> 'http://127.0.0.1:4173/portal.html',
+      client:{auth:{signInWithOAuth:async input=>{request=input;return {data:{url:'http://127.0.0.1:54321/auth/v1/authorize?provider=google'},error:null};}}}};
+    AccountExperience.prototype.login.call(account);await googleButton.onclick({currentTarget:googleButton});
+    assert.equal(request.options.skipBrowserRedirect,true);assert.equal(link.target,'_blank');assert.equal(link.rel,'noopener noreferrer');
+    assert.match(link.textContent,/another tab/);assert.equal(account.suspendedView.actorId,'student');
+  }finally{if(originalDocument===undefined)delete globalThis.document;else globalThis.document=originalDocument;}
 });

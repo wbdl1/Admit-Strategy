@@ -32,3 +32,40 @@ test("network timeout is bounded and preserves a caller's cancellation",async()=
   const controller=new AbortController(),pending=boundedFetch(transport,1000)("https://example.invalid",{signal:controller.signal});
   controller.abort(new Error("Caller cancelled"));await assert.rejects(pending,/Caller cancelled/);
 });
+
+function conflictFixture(){
+  let latest={id:'class',student_id:'student',row_version:2,name:'Biology',teacher:'Coach edit'},failRead=false;
+  const calls=[],reads=[];
+  const client={rpc:async(name,args)=>{
+    calls.push(structuredClone(args));
+    if(args.p_expected_version!==latest.row_version)return {status:409,error:{code:'P0409',message:'Record changed'}};
+    latest={...latest,...args.p_values,row_version:latest.row_version+1};return {data:{ok:true,record:latest}};
+  },from:table=>{const query={select(){return this;},eq(key,value){reads.push([table,key,value]);return this;},is(){return this;},async maybeSingle(){return failRead?{status:503,error:{code:'UNAVAILABLE'}}:{data:structuredClone(latest)};}};return query;}};
+  const portal=new PortalData(client);portal.studentId='student';portal.data={classes:[]};
+  portal.ingest('classes',[{...latest,row_version:1,teacher:'Original'}]);
+  return {portal,calls,reads,setReadFailure:value=>failRead=value,setLatest:value=>latest=value};
+}
+test('a concurrent edit requires comparison and explicit acceptance before a fresh save',async()=>{
+  const {portal,calls,reads}=conflictFixture(),draft={operation:'updateclass',recordId:'class',name:'Biology',teacher:'Student draft'};
+  await assert.rejects(portal.send(draft,'rejected'),e=>e.code==='P0409'&&!e.retryable&&e.rejected);
+  const comparison=await portal.compareConflict('rejected');
+  assert.equal(comparison.latest.teacher,'Coach edit');
+  assert.equal(portal.raw.get('classes:class').row_version,1);
+  await assert.rejects(portal.send(draft,'not-reviewed'),e=>e.code==='P0409');assert.equal(calls.length,1);
+  assert.ok(reads.some(([,key,value])=>key==='student_id'&&value==='student'));
+  assert.ok(reads.some(([,key,value])=>key==='id'&&value==='class'));
+  comparison.accept();assert.equal(draft.teacher,'Student draft');assert.equal(calls.length,1);
+  const saved=await portal.send(draft,'reviewed');
+  assert.equal(saved.changed.values.teacher,'Student draft');assert.equal(calls[1].p_expected_version,2);
+  assert.equal(portal.requests.get('rejected').args.p_expected_version,1);
+});
+test('failed comparison, missing records and newer cached versions never silently authorize overwrite',async()=>{
+  const fixture=conflictFixture(),{portal}=fixture;
+  await assert.rejects(portal.send({operation:'updateclass',recordId:'class',teacher:'Draft'},'rejected'));
+  fixture.setReadFailure(true);await assert.rejects(portal.compareConflict('rejected'));
+  assert.equal(portal.raw.get('classes:class').row_version,1);
+  fixture.setReadFailure(false);const old=await portal.compareConflict('rejected');
+  portal.raw.set('classes:class',{row_version:3});assert.throws(()=>old.accept(),/newer version/);
+  fixture.setLatest(null);const removed=await portal.compareConflict('rejected');assert.equal(removed.latest,null);
+  removed.accept();assert.equal(portal.data.classes.length,0);assert.equal(portal.raw.has('classes:class'),false);
+});

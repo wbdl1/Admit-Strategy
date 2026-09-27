@@ -1524,7 +1524,7 @@ function ensureSaveQueue(){
       if(!/calendar/.test(job.values.operation)) applyDemoAction(Object.assign({},job.values,{__recordId:job.id}),{quiet:true,keepEditor:true});
     },
     confirm:function(job,response){
-      if(!currentScope())return;
+      if(!currentScope()){job.uiDeferred=true;return;}
       const collection=collectionFor(job.values.operation);
       const changed=response.changed;
       const item=collection && (currentData[collection]||[]).find(function(row){return row.id===(job.values.recordId||job.id);});
@@ -1541,9 +1541,11 @@ function ensureSaveQueue(){
       if(/calendar/.test(job.values.operation)) reconcilePortal(job.values.operation);
     },
     onState:function(job){
-      if(!currentScope())return;
+      if(!currentScope()){job.uiDeferred=true;return;}
       const ui=mutationUI.get(job.id);
+      if(ui && scope)ui.scope=scope;
       if(ui && ui.button){ui.button.disabled=["queued","saving","retrying"].includes(job.state);ui.button.textContent=ui.button.disabled?"Saving…":ui.label;}
+      if(ui && ui.form && job.state!=="failed")ui.form.querySelector("[data-save-recovery]")?.remove();
       if(job.state==="failed" && job.error.rejected===true && !job.reverted && !saveQueue.laterPending(job).length){
         const collection=collectionFor(job.values.operation);
         if(collection){
@@ -1564,13 +1566,61 @@ function ensureSaveQueue(){
           }
         }
         showStatus("Saved ✓",true);
-      }else if(job.state==="failed") showStatus((job.error.rejected===true?"Change rejected. ":"Save unconfirmed. ")+"Your input is preserved. " + job.error.message,false);
+      }else if(job.state==="failed"){
+        showStatus((job.error.rejected===true?"Change rejected. ":"Save unconfirmed. ")+"Your input is preserved. " + job.error.message,false);
+        if(ui?.form?.isConnected){
+          ui.form.querySelector("[data-save-recovery]")?.remove();
+          const recovery=document.createElement("div");recovery.dataset.saveRecovery="true";recovery.setAttribute("role","status");
+          recovery.textContent=job.error.message;appendSaveRecovery(recovery,job);ui.form.append(recovery);
+        }
+      }
       else showStatus(job.state==="retrying"?"Saving… retrying the same change safely.":"Saving…",true);
       if(job.state!=="saved") clearTimeout(toastTimer);
       renderSyncPanel();
     }
   });
   return saveQueue;
+}
+function appendSaveRecovery(parent,job){
+  const ui=mutationUI.get(job.id);
+  if(job.error.retryable!==false){
+    const retry=document.createElement("button");retry.className="btn secondary";retry.type="button";retry.textContent="Retry save";retry.onclick=function(){saveQueue.retry(job.id);};parent.append(retry);
+  }
+  if(job.error.code!=="P0409" || !ui?.scope)return;
+  const compare=document.createElement("button");compare.type="button";compare.className="btn secondary";compare.textContent="Compare latest saved version";
+  compare.onclick=async function(){
+    compare.disabled=true;
+    try{
+      const comparison=await ui.scope.compareConflict(job.id);
+      if(job.state!=="failed" || !parent.isConnected)return;
+      parent.querySelector("[data-conflict-comparison]")?.remove();
+      const details=document.createElement("div");details.dataset.conflictComparison="true";
+      const note=document.createElement("p");note.textContent=comparison.latest?"These are the latest saved values. Your input is still in the form. Compare them before choosing a save base.":"This record is no longer available. Your draft is kept; it cannot replace a removed or inaccessible record.";details.append(note);
+      if(comparison.latest){
+        for(const key of Object.keys(job.values).filter(key=>!['operation','recordId'].includes(key))){
+          const line=document.createElement("p");line.style.overflowWrap="anywhere";
+          line.textContent=key.replace(/([A-Z])/g," $1")+": "+(comparison.latest[key]??"—");details.append(line);
+        }
+      }
+      const accept=document.createElement("button");accept.type="button";accept.className="btn secondary";
+      accept.textContent=comparison.latest?(ui.form?"Keep my draft and use this version":"Save my change using this version"):"Dismiss rejected save and keep draft";
+      accept.onclick=function(){
+        try{
+          if(job.state!=="failed")return;
+          comparison.accept();job.state="superseded";
+          renderAffectedViews(job.values.operation);renderSyncPanel();
+          parent.textContent=comparison.latest?"Your draft is unchanged. Review it, then Save to replace the values you compared.":"Rejected save dismissed. Your draft is unchanged.";
+          showStatus("Draft kept. Nothing new has been saved.",true);
+          // Review-button actions have no editor, so reapplying is a separate,
+          // explicit operation with a new key and the compared version.
+          if(comparison.latest&&!ui.form)submitRealValues(job.values,ui.button);
+        }catch(error){note.textContent=error.message;}
+      };
+      details.append(accept);parent.append(details);
+    }catch(error){const message=document.createElement("p");message.textContent="Could not compare: "+error.message;parent.append(message);}
+    finally{compare.disabled=false;}
+  };
+  parent.append(compare);
 }
 function renderSyncPanel(){
   let panel=document.getElementById("syncPanel");
@@ -1581,7 +1631,7 @@ function renderSyncPanel(){
   unsaved.forEach(function(job){
     const row=document.createElement("div");
     row.textContent=job.state==="failed"?(job.error.rejected===true?"Change rejected. ":"Save unconfirmed. ")+job.error.message:job.state==="blocked"?"This change is waiting for an earlier save.":"Saving your change…";
-    if(job.state==="failed" && job.error.retryable!==false){const retry=document.createElement("button");retry.className="btn secondary";retry.type="button";retry.textContent="Retry save";retry.onclick=function(){saveQueue.retry(job.id);};row.appendChild(retry);}
+    if(job.state==="failed")appendSaveRecovery(row,job);
     panel.appendChild(row);
   });
 }
@@ -1680,7 +1730,7 @@ document.addEventListener("click",function(event){
   if(!button) return;
   const panel = button.closest("details.form-panel");
   const form = button.closest("form");
-  if(form) form.reset();
+  if(form){form.reset();delete form.dataset.dirty;}
   setFormDateDefaults();
   if(panel) panel.open = false;
   const dialog = button.closest("dialog");
@@ -1770,6 +1820,23 @@ async function refreshPortal(showLoading){
   }
 }
 
+let suspendedDialogs=[];
+function handleSessionChange(state){
+  const sync=document.getElementById("syncPanel");
+  if(state==="suspended"){
+    document.querySelectorAll("dialog[open]").forEach(function(dialog){if(!suspendedDialogs.includes(dialog))suspendedDialogs.push(dialog);dialog.close();});
+    if(sync)sync.hidden=true;
+    document.getElementById("saveStatus").className="save-status";
+  }else if(state==="resumed"){
+    suspendedDialogs.forEach(function(dialog){if(dialog.isConnected&&!dialog.open)dialog.showModal();});suspendedDialogs=[];
+    saveQueue?.jobs.forEach(function(job){if(job.uiDeferred){delete job.uiDeferred;if(job.state==="saved"&&job.response)saveQueue.confirm(job,job.response);saveQueue.onState(job);}});
+    renderSyncPanel();
+  }else if(state==="cleared"){
+    suspendedDialogs=[];document.querySelectorAll("dialog[open]").forEach(function(dialog){dialog.close();});
+    document.getElementById("portalEditorBody").replaceChildren();
+    if(sync)sync.remove();saveQueue=null;mutationUI.clear();canonicalPortal=null;
+  }
+}
 async function load(){
   const params = new URLSearchParams(location.search);
   isDemo = params.get("demo") === "1";
@@ -1780,7 +1847,7 @@ async function load(){
     return;
   }
   if(window.ADMIT_CONFIG?.backend==="supabase"){
-    accountExperience=new window.Admit.AccountExperience({config:window.ADMIT_CONFIG,onMeetingChange:function(data,adapter){if(canonicalPortal!==adapter)return;currentData.nextMeeting=data.nextMeeting;const node=document.querySelector("[data-next-meeting]");if(node)node.textContent=data.nextMeeting||"No upcoming meeting found yet.";},hasPendingChanges:function(){return Boolean(saveQueue?.unsaved.length || fileExperience?.uploads.unsaved.length || calendarExperience?.unsaved.length);},root:document.getElementById("app"),onPortal:function(data,adapter){
+    accountExperience=new window.Admit.AccountExperience({config:window.ADMIT_CONFIG,onSessionChange:handleSessionChange,onMeetingChange:function(data,adapter){if(canonicalPortal!==adapter)return;currentData.nextMeeting=data.nextMeeting;const node=document.querySelector("[data-next-meeting]");if(node)node.textContent=data.nextMeeting||"No upcoming meeting found yet.";},hasPendingChanges:function(){return Boolean(saveQueue?.unsaved.length || fileExperience?.uploads.unsaved.length || calendarExperience?.unsaved.length);},root:document.getElementById("app"),onPortal:function(data,adapter){
       calendarExperience?.dispose();calendarExperience=new window.Admit.CalendarWorkspace({portal:adapter,config:window.ADMIT_CONFIG,onChange:function(){if(canonicalPortal===adapter){currentData=adapter.data;renderAffectedViews("addassessment");}}});
       historyExperience?.dispose();historyExperience=new window.Admit.WorkHistory({portal:adapter,render:historyRecordMarkup,patch:window.Admit.patch,onRows:function(){if(canonicalPortal===adapter){currentData=derive(adapter.data);renderAffectedViews("addassessment");}}});
       canonicalPortal=adapter;fileExperience=new window.Admit.FilesWorkspace({portal:adapter,config:window.ADMIT_CONFIG,onChange:function(){if(canonicalPortal===adapter)currentData=derive(adapter.data);}});saveQueue=null;mutationUI.clear();activePortalView="today";selectedReviewSubject="";portalViewScroll={};

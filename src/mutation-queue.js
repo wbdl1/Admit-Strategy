@@ -40,6 +40,7 @@ export class MutationQueue {
       try {
         const response = await this.send(structuredClone(job.values), job.id);
         if (!response || response.ok !== true) throw Object.assign(new Error(response?.error || "Save was not confirmed."), { retryable: response?.retryable === true, rejected: response?.rejected === true });
+        job.response = response;
         await this.confirm(job, response);
         job.state = "saved";
         this.onState(job);

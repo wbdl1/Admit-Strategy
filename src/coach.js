@@ -17,7 +17,7 @@ export class CoachAdmin {
   constructor(account){
     this.account=account;this.client=account.client;this.actorId=account.user.id;this.generation=0;this.ui=new Map();
     this.queue=new MutationQueue({
-      send:(values,id)=>{if(this.disposed||account.user?.id!==this.actorId)throw Object.assign(new Error("Sign in with the original coach account before retrying."),{rejected:true,retryable:false});return account.portal.rpc(values.rpc,{...values.args,p_request_key:id});},
+      send:(values,id)=>{if(this.disposed||account.user?.id!==this.actorId)throw Object.assign(new Error("Sign in with the original coach account before retrying."),{rejected:false,retryable:!this.disposed&&!account.user});return account.portal.rpc(values.rpc,{...values.args,p_request_key:id});},
       optimistic:job=>{const ui=this.ui.get(job.id);if(ui){ui.status.textContent="Saving…";ui.preview.textContent=ui.title+" — Saving…";ui.form.querySelector("button[type=submit]").disabled=true;}},
       confirm:(job,response)=>{const ui=this.ui.get(job.id);if(ui&&!this.disposed)ui.confirm(response.record);},
       onState:job=>this.state(job)
@@ -177,7 +177,7 @@ export class CoachAdmin {
       if(job.error.code==="P0409")ui.status.append(button("Compare latest saved version",()=>this.compareLatest(job,ui)));
       ui.form.querySelector("button[type=submit]").disabled=!job.error.rejected;
     }else if(job.state==="superseded"){ui.status.textContent="Rejected change dismissed. Your draft is unchanged.";}else ui.status.textContent=job.state==="retrying"?"Saving… retrying safely.":"Saving…";
-    this.sync.hidden=!this.unsaved.length;this.sync.replaceChildren();
+    this.sync.hidden=!this.unsaved.length||this.account.user?.id!==this.actorId;this.sync.replaceChildren();
     for(const pending of this.unsaved){
       const row=document.createElement("p");row.textContent=pending.state==="failed"?(pending.error.rejected?"A coaching change was rejected. Your draft is kept.":"A coaching save is unconfirmed. Retry the same request."):"Saving coaching changes…";
       if(pending.state==="failed"&&pending.error.retryable!==false)row.append(button("Retry coaching save",()=>this.queue.retry(pending.id)));

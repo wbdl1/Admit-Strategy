@@ -32,7 +32,7 @@ export function normalizeRecord(table,row,classes=[]){
 
 export class PortalData {
   constructor(client,{onAuthRequired=()=>{}}={}){
-    this.client=client;this.onAuthRequired=onAuthRequired;this.raw=new Map();this.requests=new Map();this.loaded=new Set();this.loading=new Map();
+    this.client=client;this.onAuthRequired=onAuthRequired;this.raw=new Map();this.requests=new Map();this.conflicts=new Map();this.loaded=new Set();this.loading=new Map();
   }
   async result(query){
     const result=await query;
@@ -179,11 +179,38 @@ export class PortalData {
         const input=operation==="reviewweakpoint"?{...values,lastReviewedAt:new Date().toISOString(),nextReview:values.status==="Mastered"?"":values.nextReview}:values;
         prepared={name:"save_record",table,args:{p_table:table,p_student_id:this.studentId,p_record_id:values.recordId||id,p_values:this.values(table,input),p_expected_version:row?.row_version??null,p_request_key:id}};
       }
+      prepared.studentId=this.studentId;
+      prepared.recordId=values.recordId||id;
       this.requests.set(id,prepared);
     }
-    const response=await this.rpc(prepared.name,prepared.args),record=response.record;
+    const key=prepared.table+":"+prepared.recordId;
+    if(this.conflicts.has(key))throw Object.assign(new Error("Review the latest saved version before saving this record again."),{code:"P0409",retryable:false,rejected:true});
+    let response;
+    try{response=await this.rpc(prepared.name,prepared.args);}
+    catch(error){if(error.code==="P0409")this.conflicts.set(key,true);throw error;}
+    const record=response.record;
     this.raw.set(prepared.table+":"+record.id,record);
     if(response.evidence){this.ingest("evidence",[response.evidence],{confirmed:true});record.evidence=[response.evidence];}
     return {ok:true,changed:{recordId:record.id,values:normalizeRecord(prepared.table,record,this.data.classes)}};
+  }
+  async compareConflict(id){
+    const prepared=this.requests.get(id);
+    if(!prepared||prepared.studentId!==this.studentId||!this.conflicts.has(prepared.table+":"+prepared.recordId))throw new Error("This comparison is no longer current.");
+    // A targeted authorized read does not change the save base or erase a draft.
+    const row=await this.result(this.query(prepared.table).eq("id",prepared.recordId).maybeSingle());
+    if(prepared.studentId!==this.studentId)throw new Error("This workspace is closed.");
+    const latest=row?normalizeRecord(prepared.table,row,this.data.classes):null;
+    return {latest,accept:()=>{
+      if(prepared.studentId!==this.studentId||!this.conflicts.has(prepared.table+":"+prepared.recordId))throw new Error("This comparison is no longer current.");
+      const cached=this.raw.get(prepared.table+":"+prepared.recordId);
+      if(row&&Number(cached?.row_version)>Number(row.row_version))throw new Error("A newer version arrived. Compare again before saving.");
+      if(row)this.ingest(prepared.table,[row],{confirmed:true});
+      else{
+        const list=this.data[collections[prepared.table]],index=list.findIndex(r=>r.id===prepared.recordId);
+        if(index>=0)list.splice(index,1);
+        this.raw.delete(prepared.table+":"+prepared.recordId);
+      }
+      this.conflicts.delete(prepared.table+":"+prepared.recordId);
+    }};
   }
 }

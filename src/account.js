@@ -8,19 +8,22 @@ const safe=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt
 const action=(label,fn,secondary=false)=>{const b=document.createElement("button");b.type="button";b.className="btn"+(secondary?" secondary":"");b.textContent=label;b.onclick=fn;return b;};
 
 export class AccountExperience {
-  constructor({config,root,onPortal,onAccountChange=()=>{},onMeetingChange=()=>{},hasPendingChanges=()=>false}){
+  constructor({config,root,onPortal,onAccountChange=()=>{},onMeetingChange=()=>{},onSessionChange=()=>{},hasPendingChanges=()=>false}){
     this.config=config;this.root=root;this.onPortal=onPortal;this.onAccountChange=onAccountChange;
     this.hasPendingChanges=hasPendingChanges;
     this.onMeetingChange=onMeetingChange;
+    this.onSessionChange=onSessionChange;
     this.diagnosisId=new URL(location.href).searchParams.get("diagnosis");
     try{this.diagnosis=readDiagnosisDraft(localStorage,this.diagnosisId);}catch{this.diagnosis=null;}
     this.client=createClient(config.supabaseUrl,config.publishableKey,{global:{fetch:boundedFetch()},auth:{flowType:"pkce",persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-    this.portal=new PortalData(this.client,{onAuthRequired:()=>this.login()});
+    this.portal=new PortalData(this.client,{onAuthRequired:()=>this.suspendSession()});
     this.gate=document.createElement("section");this.gate.className="hero account-gate";this.gate.setAttribute("aria-label","Account access");root.before(this.gate);
     this.toolbar=document.createElement("nav");this.toolbar.className="demo-actions account-toolbar";this.toolbar.setAttribute("aria-label","Account");root.before(this.toolbar);
-    this.client.auth.onAuthStateChange(event=>{
-      if(["SIGNED_IN","SIGNED_OUT","INITIAL_SESSION"].includes(event))setTimeout(()=>this.refresh(),0);
-    });
+    this.client.auth.onAuthStateChange((event,session)=>this.authChanged(event,session));
+  }
+  authChanged(event,session){
+    if(event==="SIGNED_OUT"||(event==="SIGNED_IN"&&this.user&&session?.user?.id!==this.user.id))this.suspendSession();
+    if(["SIGNED_IN","SIGNED_OUT","INITIAL_SESSION"].includes(event))setTimeout(()=>this.refresh(),0);
   }
   async start(){
     const url=new URL(location.href),callback=url.searchParams.has("code")||url.searchParams.has("error")||url.hash.includes("error=");
@@ -50,8 +53,14 @@ export class AccountExperience {
       const note=document.createElement("p");note.textContent="Sign in with the student’s account. Your diagnosis is kept in this browser for up to 24 hours while you finish. Guardian approval happens separately from the guardian’s own account.";this.gate.querySelector("form").before(note);
     }else if(this.diagnosisId){this.message("This diagnosis draft has expired or is unavailable in this browser. You can sign in to your existing workspace, or start the diagnosis again.",true);}
     if(this.config.googleEnabled){this.gate.querySelector("[data-google-login]").append(action("Continue with Google",async event=>this.run(event.currentTarget,async()=>{
-      const {error}=await this.client.auth.signInWithOAuth({provider:"google",options:{redirectTo:this.redirectUrl(),queryParams:{prompt:"select_account"}}});if(error)throw error;
+      const recovering=Boolean(this.suspendedView);
+      const {data,error}=await this.client.auth.signInWithOAuth({provider:"google",options:{redirectTo:this.redirectUrl(),queryParams:{prompt:"select_account"},...(recovering?{skipBrowserRedirect:true}:{})}});if(error)throw error;
+      if(recovering){
+        const link=document.createElement("a");link.href=data.url;link.target="_blank";link.rel="noopener noreferrer";link.className="btn";link.textContent="Open Google sign-in in another tab";
+        this.gate.querySelector("[data-google-login]").replaceChildren(link);
+      }
     })));}
+    if(this.suspendedView){const note=document.createElement("p");note.textContent="Your unfinished work is kept in this tab. Leave it open and sign in with the same account in another tab of this browser, then return here.";this.gate.querySelector("form").before(note);}
     const form=this.gate.querySelector("[data-login]");form.onsubmit=event=>{event.preventDefault();this.run(form.querySelector("button"),async()=>{
       if(!form.reportValidity())return;
       const {error}=await this.client.auth.signInWithOtp({email:form.elements.email.value.trim(),options:{emailRedirectTo:this.redirectUrl()}});if(error)throw error;
@@ -59,24 +68,43 @@ export class AccountExperience {
     });};
   }
   redirectUrl(){const next=new URL("portal.html",location.href);if(this.diagnosis)next.searchParams.set("diagnosis",this.diagnosis.id);else if(new URL(location.href).searchParams.get("book")==="1")next.searchParams.set("book","1");return next.href;}
+  suspendSession(){
+    if(this.user&&!this.suspendedView&&(!this.root.hidden||(!this.gate.hidden&&this.coach?.content?.isConnected)))this.suspendedView={actorId:this.user.id,nodes:Array.from(this.gate.childNodes),gateHidden:this.gate.hidden,rootHidden:this.root.hidden,toolbarHidden:this.toolbar.hidden};
+    this.user=null;
+    this.onSessionChange?.("suspended");
+    if(this.coach?.sync)this.coach.sync.hidden=true;
+    this.login();
+  }
   async refresh(){
     if(this.refreshing)return this.refreshing;
-    this.refreshing=this.refreshAccount().catch(error=>{this.login();this.message(error.message||"Could not load your account. Try again.",true);}).finally(()=>{this.refreshing=null;});
+    this.refreshing=this.refreshAccount().catch(error=>{this.suspendSession();this.message(error.message||"Could not load your account. Try again.",true);}).finally(()=>{this.refreshing=null;});
     return this.refreshing;
   }
   async refreshAccount(){
     const {data,error}=await this.client.auth.getUser();
-    if(error||!data.user){this.login();return;}
+    if(error||!data.user){this.suspendSession();return;}
     const user=data.user;
+    const previousActor=this.suspendedView?.actorId||this.loadedUser||this.user?.id;
+    if(previousActor&&previousActor!==user.id){
+      this.suspendedView=null;this.loadedUser=null;this.user=null;
+      this.coach?.dispose();this.coach=null;this.access?.dispose();this.meetings?.dispose();this.meetings=null;
+      this.onSessionChange?.("cleared");this.root.replaceChildren();
+      this.portal=new PortalData(this.client,{onAuthRequired:()=>this.suspendSession()});
+    }
     if(this.diagnosis && user.email?.toLowerCase()!==this.diagnosis.email){
       this.show("<h1>Use the student’s account</h1><p>This diagnosis belongs to the student email you entered. Sign out of the current account, then sign in with that email to keep each student’s records separate.</p>");
       this.gate.append(action("Log out and continue",()=>this.logout()),action("Return to website",()=>location.assign("index.html"),true));return;
     }
+    if(this.suspendedView?.actorId===user.id&&!this.diagnosis){
+      const view=this.suspendedView;this.suspendedView=null;this.user=user;
+      this.gate.replaceChildren(...view.nodes);this.gate.hidden=view.gateHidden;this.root.hidden=view.rootHidden;this.toolbar.hidden=view.toolbarHidden;
+      if(this.coach?.sync)this.coach.sync.hidden=!this.coach.unsaved.length;
+      this.onSessionChange?.("resumed");return;
+    }
     // Supabase can announce SIGNED_IN again when a tab regains focus.
     // Keep the current coaching form and its drafts for the same verified actor.
     if(this.user?.id===user.id && this.coach?.content?.isConnected && !this.gate.hidden && !this.diagnosis)return;
-    if(this.loadedUser===user.id && this.portal.studentId&&!this.diagnosis){this.gate.hidden=true;this.root.hidden=false;this.toolbar.hidden=false;return;}
-    if(this.loadedUser&&this.loadedUser!==user.id){this.root.replaceChildren();this.portal=new PortalData(this.client,{onAuthRequired:()=>this.login()});}
+    if(this.loadedUser===user.id && this.portal.studentId&&!this.diagnosis){this.user=user;this.gate.hidden=true;this.root.hidden=false;this.toolbar.hidden=false;return;}
     this.show("<h1>Opening your workspace…</h1><p>Checking your account and permissions.</p>");
     const account=await this.portal.rpc("bootstrap_account",{p_display_name:"New account"});this.account=account;
     if(account.state==="review_required"){
@@ -145,7 +173,7 @@ export class AccountExperience {
     this.show("<h1>Opening Today…</h1><p>Loading your next assessment and actions.</p>");
     // A new adapter binds in-flight work to its original student. Sharing one
     // mutable adapter across coach/guardian workspaces can retarget a retry.
-    const adapter=new PortalData(this.client,{onAuthRequired:()=>this.login()});
+    const adapter=new PortalData(this.client,{onAuthRequired:()=>this.suspendSession()});
     const data=await adapter.open(student);
     if(generation!==this.workspaceGeneration||actor!==this.user?.id)return;
     this.portal=adapter;this.loadedUser=this.user.id;
@@ -179,6 +207,7 @@ export class AccountExperience {
     this.access?.dispose();
     this.meetings?.dispose();this.meetings=null;
     this.coach?.dispose();this.coach=null;
+    this.suspendedView=null;this.onSessionChange?.("cleared");
     this.loadedUser=null;this.user=null;this.portal.studentId=null;this.portal.data=null;this.root.replaceChildren();this.toolbar.replaceChildren();this.login();
   }
   recordWorkspaceEvent(name){
