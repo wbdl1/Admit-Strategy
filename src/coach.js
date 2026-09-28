@@ -5,7 +5,12 @@ const escape=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&
 const label=value=>String(value??"").replaceAll("_"," ");
 const button=(text,fn,secondary=true)=>{const b=document.createElement("button");b.type="button";b.className="btn"+(secondary?" secondary":"");b.textContent=text;b.onclick=fn;return b;};
 const shortDate=value=>value?new Intl.DateTimeFormat(undefined,{dateStyle:"medium",...(String(value).includes("T")?{timeStyle:"short",timeZone:"Asia/Qatar"}:{timeZone:"UTC"})}).format(new Date(value)):"No date";
-const studentColumns="id,profile_id,grade,summary,status,row_version,profiles!inner(display_name)";
+const studentColumns="id,profile_id,grade,summary,status,row_version,created_at,profiles!inner(display_name)";
+export function coachStudentQuery(client,term,cursor){
+  let query=client.from("students").select(studentColumns).is("archived_at",null);
+  const name=term.trim();if(name)query=query.ilike("profiles.display_name",name.replace(/[\\%_]/g,"\\$&")+"%");
+  return createdPage(query,cursor);
+}
 const definitions={
   sessions:{title:"Sessions",name:"title",fields:[['title','Session title','text',160],['session_date','Session date','date'],['shared_summary','Student recap','textarea',4000],['next_actions','Two or three next actions','textarea',2000]]},
   coach_notes:{title:"Private coach notes",name:"title",fields:[['title','Note title','text',160],['body','Private note','textarea',10000]]},
@@ -48,15 +53,13 @@ export class CoachAdmin {
     this.content.innerHTML="<label>Find a student<input type='search' placeholder='Search Dylan' autocomplete='off' maxlength='120'></label><div data-results class='list'></div>";
     const input=this.content.querySelector("input"),list=this.content.querySelector("[data-results]");let timer;
     const find=async()=>{
-      const generation=++this.generation;this.account.message("Finding students…");
-      try{
-        let query=this.client.from("students").select(studentColumns).is("archived_at",null).order("created_at",{ascending:false}).limit(25);
-        const term=input.value.trim();if(term)query=query.ilike("profiles.display_name",term.replace(/[\\%_]/g,"\\$&")+"%");
-        const rows=await this.account.portal.result(query);if(generation!==this.generation||!list.isConnected)return;
-        list.replaceChildren();rows.forEach(s=>list.append(button(s.profiles.display_name+" · Grade "+(s.grade||"—")+" · "+label(s.status),()=>this.studentHome(s))));
-        this.account.message(rows.length===25?"Showing the newest 25 matches. Refine the name to narrow the search.":rows.length?"Choose a student.":"No matching students.");
-      }catch(error){this.account.message(error.message,true);list.replaceChildren(button("Retry search",find));}
-    };input.oninput=()=>{clearTimeout(timer);timer=setTimeout(find,150);};await find();
+      if(!list.isConnected||this.disposed)return;
+      ++this.generation;const term=input.value;
+      list.replaceChildren();this.account.message("");
+      await this.pages(cursor=>this.account.portal.result(coachStudentQuery(this.client,term,cursor)),(s,parent)=>{
+        parent.append(button(s.profiles.display_name+" · Grade "+(s.grade||"—")+" · "+label(s.status),()=>this.studentHome(s)));
+      },{parent:list,empty:"No matching students."});
+    };input.oninput=()=>{clearTimeout(timer);++this.generation;timer=setTimeout(find,150);};await find();
   }
   async loadHome(section){
     const generation=++this.generation;this.account.message("Loading…");

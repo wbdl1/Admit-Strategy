@@ -94,6 +94,29 @@ test('expired callback query is explained and removed without losing the diagnos
   }
 });
 
+test('provider denial and initialization failure leave recovery available and the route clean',async()=>{
+  const oldLocation=globalThis.location,oldHistory=globalThis.history;
+  try{
+    for(const scenario of [
+      {suffix:'#error=access_denied&error_description=untrusted-private-detail',expected:/cancelled or declined/},
+      {suffix:'&error=server_error&error_description=untrusted-private-detail',expected:/could not be completed/},
+      {suffix:'&code=unusable-code',fail:true,expected:/could not be completed/}
+    ]){
+      let clean,message,refreshed=false;
+      globalThis.location={href:'http://127.0.0.1:4173/portal.html?book=1'+scenario.suffix};
+      globalThis.history={state:null,replaceState(_state,_title,url){clean=url;}};
+      const account={client:{auth:{initialize:async()=>{if(scenario.fail)throw new Error('Private provider detail');}}},
+        refresh:async()=>{refreshed=true;},message:text=>message=text};
+      await AccountExperience.prototype.start.call(account);
+      assert.equal(refreshed,true);assert.equal(clean.search,'?book=1');assert.equal(clean.hash,'');
+      assert.match(message,scenario.expected);assert.doesNotMatch(message,/private-detail|Private provider/);
+    }
+  }finally{
+    if(oldLocation===undefined)delete globalThis.location;else globalThis.location=oldLocation;
+    if(oldHistory===undefined)delete globalThis.history;else globalThis.history=oldHistory;
+  }
+});
+
 test('Google login offers account choice and preserves the intended callback',async()=>{
   const previousDocument=globalThis.document;let googleButton,request;
   const form={querySelector:()=>({}),elements:{email:{value:''}}};

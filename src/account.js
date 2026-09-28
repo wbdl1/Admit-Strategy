@@ -27,13 +27,23 @@ export class AccountExperience {
   }
   async start(){
     const url=new URL(location.href),callback=url.searchParams.has("code")||url.searchParams.has("error")||url.hash.includes("error=");
-    await this.client.auth.initialize();
-    await this.refresh();
+    const fragment=new URLSearchParams(url.hash.slice(1)),code=url.searchParams.get("error_code")||fragment.get("error_code"),error=url.searchParams.get("error")||fragment.get("error");
+    let initializationFailed=false;
+    try{await this.client.auth.initialize();}catch{initializationFailed=true;}
     if(callback){
-      // Never leave a consumed or expired code in a bookmark or shared URL.
+      // Strip credentials even when initialization fails. Keep the intended diagnosis/booking route.
       const clean=new URL(location.href);for(const key of ["code","sb_flow_id","error","error_code","error_description","sb"])clean.searchParams.delete(key);clean.hash="";
       history.replaceState(history.state,"",clean);
-      if(!this.user)this.message("This sign-in link has expired or cannot be used in this browser. Request a new link below and open it in the same browser.",true);
+    }
+    await this.refresh();
+    if(!this.user&&(callback||initializationFailed)){
+      const text=code==="otp_expired"||(!error&&!initializationFailed)
+        ?"This sign-in link has expired or cannot be used in this browser. Request a new link below and open it in the same browser."
+        :error==="access_denied"&&!code
+        ?"Sign-in was cancelled or declined. Try Google again or request an email sign-in link below."
+        :"Sign-in could not be completed. Check your connection, then try Google again or request a new email sign-in link.";
+      // Provider-supplied descriptions are untrusted and can contain sensitive details.
+      this.message(text,true);
     }
   }
   message(text,error=false){const target=this.gate.querySelector("[data-account-status]");if(target){target.textContent=text;target.setAttribute("role",error?"alert":"status");}}
@@ -208,7 +218,7 @@ export class AccountExperience {
     this.meetings?.dispose();this.meetings=null;
     this.coach?.dispose();this.coach=null;
     this.suspendedView=null;this.onSessionChange?.("cleared");
-    this.loadedUser=null;this.user=null;this.portal.studentId=null;this.portal.data=null;this.root.replaceChildren();this.toolbar.replaceChildren();this.login();
+    this.loadedUser=null;this.user=null;this.portal.studentId=null;this.portal.data=null;this.root.replaceChildren();this.toolbar.replaceChildren();this.gate.replaceChildren();this.login();
   }
   recordWorkspaceEvent(name){
     if(this.portal.studentId&&this.portal.studentId===this.ownStudentId)this.portal.rpc("record_workspace_event",{p_student_id:this.portal.studentId,p_event:name,p_request_key:crypto.randomUUID()}).catch(()=>{});
