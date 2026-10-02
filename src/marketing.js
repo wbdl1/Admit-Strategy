@@ -1,5 +1,9 @@
 import {saveDiagnosisDraft} from "./diagnosis.js";
 import {celebrate} from "./celebration.js";
+import {marketingAuthCallbackUrl} from "./auth-callback.js";
+
+const authCallback=window.ADMIT_CONFIG?.backend==="supabase"?marketingAuthCallbackUrl(location.href):null;
+if(authCallback)location.replace(authCallback);
 
 window.AdmitMarketing={
   celebrate,
@@ -10,7 +14,7 @@ window.AdmitMarketing={
   }
 };
 // Account code is fetched after the marketing content has rendered.
-if(window.ADMIT_CONFIG?.backend==="supabase"){
+if(window.ADMIT_CONFIG?.backend==="supabase"&&!authCallback){
   const explain=(id,text)=>{const node=document.getElementById(id);if(node)node.textContent=text;};
   explain("privacy-access-summary","Return through Log in with your verified account. Your workspace is shared only with your authorized guardian and coach. Contact Ryan to request access, correction or deletion.");
   explain("account-access-faq","Use Log in to return to the same workspace with your verified account. A student workspace is created once, and a guardian approves access from their own account. Your diagnosis is linked after sign-in.");

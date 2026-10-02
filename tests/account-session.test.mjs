@@ -99,6 +99,8 @@ test('provider denial and initialization failure leave recovery available and th
   try{
     for(const scenario of [
       {suffix:'#error=access_denied&error_description=untrusted-private-detail',expected:/cancelled or declined/},
+      {suffix:'&error=access_denied&error_code=flow_state_expired&error_description=untrusted-private-detail',expected:/attempt has expired.*Google again/},
+      {suffix:'&error_code=flow_state_not_found',expected:/attempt has expired.*Google again/},
       {suffix:'&error=server_error&error_description=untrusted-private-detail',expected:/could not be completed/},
       {suffix:'&code=unusable-code',fail:true,expected:/could not be completed/}
     ]){

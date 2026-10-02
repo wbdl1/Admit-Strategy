@@ -26,7 +26,7 @@ export class AccountExperience {
     if(["SIGNED_IN","SIGNED_OUT","INITIAL_SESSION"].includes(event))setTimeout(()=>this.refresh(),0);
   }
   async start(){
-    const url=new URL(location.href),callback=url.searchParams.has("code")||url.searchParams.has("error")||url.hash.includes("error=");
+    const url=new URL(location.href),callback=url.searchParams.has("code")||url.searchParams.has("error")||url.searchParams.has("error_code")||url.hash.includes("error=")||url.hash.includes("error_code=");
     const fragment=new URLSearchParams(url.hash.slice(1)),code=url.searchParams.get("error_code")||fragment.get("error_code"),error=url.searchParams.get("error")||fragment.get("error");
     let initializationFailed=false;
     try{await this.client.auth.initialize();}catch{initializationFailed=true;}
@@ -37,7 +37,9 @@ export class AccountExperience {
     }
     await this.refresh();
     if(!this.user&&(callback||initializationFailed)){
-      const text=code==="otp_expired"||(!error&&!initializationFailed)
+      const text=code==="flow_state_expired"||code==="flow_state_not_found"
+        ?"This sign-in attempt has expired. Try Google again or request a new email sign-in link below."
+        :code==="otp_expired"||(!error&&!initializationFailed)
         ?"This sign-in link has expired or cannot be used in this browser. Request a new link below and open it in the same browser."
         :error==="access_denied"&&!code
         ?"Sign-in was cancelled or declined. Try Google again or request an email sign-in link below."
