@@ -29,7 +29,7 @@ export class AccountExperience {
     const url=new URL(location.href),callback=url.searchParams.has("code")||url.searchParams.has("error")||url.searchParams.has("error_code")||url.hash.includes("error=")||url.hash.includes("error_code=");
     const fragment=new URLSearchParams(url.hash.slice(1)),code=url.searchParams.get("error_code")||fragment.get("error_code"),error=url.searchParams.get("error")||fragment.get("error");
     let initializationFailed=false;
-    try{await this.client.auth.initialize();}catch{initializationFailed=true;}
+    try{initializationFailed=Boolean((await this.client.auth.initialize())?.error);}catch{initializationFailed=true;}
     if(callback){
       // Strip credentials even when initialization fails. Keep the intended diagnosis/booking route.
       const clean=new URL(location.href);for(const key of ["code","sb_flow_id","error","error_code","error_description","sb"])clean.searchParams.delete(key);clean.hash="";
@@ -104,6 +104,7 @@ export class AccountExperience {
       this.portal=new PortalData(this.client,{onAuthRequired:()=>this.suspendSession()});
     }
     if(this.diagnosis && user.email?.toLowerCase()!==this.diagnosis.email){
+      this.user=user;
       this.show("<h1>Use the student’s account</h1><p>This diagnosis belongs to the student email you entered. Sign out of the current account, then sign in with that email to keep each student’s records separate.</p>");
       this.gate.append(action("Log out and continue",()=>this.logout()),action("Return to website",()=>location.assign("index.html"),true));return;
     }
@@ -120,6 +121,9 @@ export class AccountExperience {
     this.show("<h1>Opening your workspace…</h1><p>Checking your account and permissions.</p>");
     const account=await this.portal.rpc("bootstrap_account",{p_display_name:"New account"});this.account=account;
     if(account.state==="review_required"){
+      // The identity is verified; linking authorization remains pending. Do not
+      // describe this successful sign-in as an expired callback.
+      this.user=user;
       this.show("<h1>Your existing workspace is being linked</h1><p>Ryan needs to verify the connection to your earlier records. Your existing workspace is preserved.</p>");
       this.gate.append(action("Check account status",()=>this.refresh()),action("Log out",()=>this.logout(),true));return;
     }

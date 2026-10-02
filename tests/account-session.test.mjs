@@ -102,12 +102,13 @@ test('provider denial and initialization failure leave recovery available and th
       {suffix:'&error=access_denied&error_code=flow_state_expired&error_description=untrusted-private-detail',expected:/attempt has expired.*Google again/},
       {suffix:'&error_code=flow_state_not_found',expected:/attempt has expired.*Google again/},
       {suffix:'&error=server_error&error_description=untrusted-private-detail',expected:/could not be completed/},
-      {suffix:'&code=unusable-code',fail:true,expected:/could not be completed/}
+      {suffix:'&code=unusable-code',fail:true,expected:/could not be completed/},
+      {suffix:'&code=returned-error-code',returnedError:true,expected:/could not be completed/}
     ]){
       let clean,message,refreshed=false;
       globalThis.location={href:'http://127.0.0.1:4173/portal.html?book=1'+scenario.suffix};
       globalThis.history={state:null,replaceState(_state,_title,url){clean=url;}};
-      const account={client:{auth:{initialize:async()=>{if(scenario.fail)throw new Error('Private provider detail');}}},
+      const account={client:{auth:{initialize:async()=>{if(scenario.fail)throw new Error('Private provider detail');return {error:scenario.returnedError?new Error('Private provider detail'):null};}}},
         refresh:async()=>{refreshed=true;},message:text=>message=text};
       await AccountExperience.prototype.start.call(account);
       assert.equal(refreshed,true);assert.equal(clean.search,'?book=1');assert.equal(clean.hash,'');
@@ -117,6 +118,25 @@ test('provider denial and initialization failure leave recovery available and th
     if(oldLocation===undefined)delete globalThis.location;else globalThis.location=oldLocation;
     if(oldHistory===undefined)delete globalThis.history;else globalThis.history=oldHistory;
   }
+});
+
+test('a verified callback awaiting legacy identity review is not an expired login or a workspace grant',async()=>{
+  const saved={location:globalThis.location,history:globalThis.history,document:globalThis.document};let shown='',message='',bootstrapCalls=0;
+  try{
+    globalThis.location={href:'https://admitstrategy.com/portal?code=fixture'};
+    globalThis.history={state:null,replaceState(){}};
+    globalThis.document={createElement:()=>({})};
+    const account=Object.assign(Object.create(AccountExperience.prototype),{
+      root:{hidden:true},toolbar:{hidden:true},gate:{append(){}},
+      client:{auth:{initialize:async()=>({error:null}),getUser:async()=>({data:{user:{id:'verified-claimant',email:'fixture@example.invalid'}}})},from(){assert.fail('Pending review must not fetch academic records');}},
+      portal:{rpc:async name=>{assert.equal(name,'bootstrap_account');bootstrapCalls++;return {state:'review_required',claim_id:'claim'};}},
+      show:html=>shown=html,message:text=>message=text
+    });
+    await account.start();
+    assert.match(shown,/existing workspace is being linked/);assert.equal(message,'');
+    assert.equal(account.user.id,'verified-claimant');assert.equal(account.portal.studentId,undefined);
+    assert.equal(account.root.hidden,true);assert.equal(account.toolbar.hidden,true);assert.equal(bootstrapCalls,1);
+  }finally{for(const [key,value] of Object.entries(saved)){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}}
 });
 
 test('Google login offers account choice and preserves the intended callback',async()=>{
