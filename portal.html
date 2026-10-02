@@ -1562,7 +1562,8 @@ function ensureSaveQueue(){
           if(/^add/.test(job.values.operation)){
             ui.form.reset();
             ui.form.querySelectorAll("[data-default-today]").forEach(function(input){input.value=qatarToday();});
-            const panel=ui.form.closest("details");if(panel)panel.open=false;
+            // Keep the form open: collapsing it after persistence shrinks the
+            // page and jumps the student's scroll position on small screens.
           }
         }
         showStatus("Saved ✓",true);
