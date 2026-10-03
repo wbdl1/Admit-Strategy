@@ -94,6 +94,22 @@ test('expired callback query is explained and removed without losing the diagnos
   }
 });
 
+test('a coach must explicitly approve their own guardian invitation without exposing the coaching directory as family',async()=>{
+  for(const pending of [true,false]){
+    let route;
+    const requests=pending?[{request_id:'invitation',student_name:'Synthetic child'}]:[];
+    const query={select(){return this;},eq(){return this;},is(){return this;}};
+    const account={client:{auth:{getUser:async()=>({data:{user:{id:'coach'}}})},from:table=>{assert.equal(table,'profile_roles');return query;}},
+      show(){},portal:{rpc:async name=>name==='bootstrap_account'?{profile_id:'coach-profile'}:requests,
+        result:async()=>[{roles:{code:'admin'}}]},
+      guardianHome:(students,invitations)=>{assert.deepEqual(students,[]);assert.equal(invitations,requests);route='approval';},
+      adminHome:async()=>{route='admin';}
+    };
+    await AccountExperience.prototype.refreshAccount.call(account);
+    assert.equal(route,pending?'approval':'admin');
+  }
+});
+
 test('provider denial and initialization failure leave recovery available and the route clean',async()=>{
   const oldLocation=globalThis.location,oldHistory=globalThis.history;
   try{

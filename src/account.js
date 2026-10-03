@@ -130,7 +130,13 @@ export class AccountExperience {
     const roles=await this.portal.result(this.client.from("profile_roles").select("roles(code)").eq("profile_id",account.profile_id).is("archived_at",null));
     this.roles=roles.map(r=>r.roles?.code).filter(Boolean);this.user=user;
     if(this.diagnosis){await this.finishDiagnosis();return;}
-    if(this.roles.some(r=>["coach","admin"].includes(r))){await this.adminHome();return;}
+    if(this.roles.some(r=>["coach","admin"].includes(r))){
+      // Coaching access is not guardian consent. Show only invitations addressed
+      // to this verified identity, never the coach's whole student directory.
+      const requests=await this.portal.rpc("guardian_requests",{});
+      if(requests.length){this.guardianHome([],requests);return;}
+      await this.adminHome();return;
+    }
     const students=await this.portal.result(this.client.from("students").select("id,profile_id,grade,summary,status,profiles!inner(display_name)").is("archived_at",null).limit(20));
     const own=students.find(s=>s.profile_id===account.profile_id);
     const requests=await this.portal.rpc("guardian_requests",{});
@@ -178,6 +184,7 @@ export class AccountExperience {
   }
   guardianHome(students,requests){
     this.show("<h1>Your family’s workspaces</h1><p>Only students who authorize you appear here.</p>");
+    if(this.roles.some(r=>["coach","admin"].includes(r)))this.gate.append(action("Coach Admin",()=>this.adminHome(),true));
     for(const student of students)this.gate.append(action("Open "+student.profiles.display_name,()=>this.openStudent(student)));
     for(const request of requests){const card=document.createElement("div");card.className="card";card.innerHTML="<h2>"+safe(request.student_name)+" · Grade "+safe(request.grade)+"</h2><label><input type='checkbox'> I am this student’s parent or authorized guardian and approve the use of Admit Strategy under its <a href='privacy.html'>privacy notice</a>.</label>";
       card.append(action("Approve workspace",event=>this.run(event.currentTarget,async()=>{if(!card.querySelector("input").checked)throw new Error("Confirm that you are the authorized guardian first.");await this.portal.rpc("approve_guardian_request",{p_request_id:request.request_id,p_authorized_guardian:true});await this.refreshAccount();})));this.gate.append(card);
