@@ -52,6 +52,16 @@ export async function checkProductionSurface(get=request) {
       require(settingsResponse.status===200,"Production authentication is unavailable.");
       const settings=await settingsResponse.json();
       require(settings.external?.google===true && settings.external?.email===true,"A required authentication provider is disabled.");
+      // Uploads cannot be published until this authenticated validator completes.
+      // Preflight and an unauthenticated rejection exercise deployment/CORS without
+      // creating a file, issuing a signed URL or bypassing user authorization.
+      const validator=productionSupabaseUrl+"/functions/v1/file-validate";
+      const preflight=await get(validator,{method:"OPTIONS",headers:{Origin:productionOrigin,"Access-Control-Request-Method":"POST","Access-Control-Request-Headers":"authorization,apikey,content-type"}});
+      require(preflight.status===204 && preflight.headers.get("access-control-allow-origin")===productionOrigin,"Upload validator is missing or rejects the production origin.");
+      const allowed=(preflight.headers.get("access-control-allow-headers")||"").toLowerCase().split(",").map(x=>x.trim());
+      require(["authorization","apikey","content-type"].every(x=>allowed.includes(x)),"Upload validator does not allow the browser upload headers.");
+      const denied=await get(validator,{method:"POST",headers:{Origin:productionOrigin,apikey:config.publishableKey,"Content-Type":"application/json"},body:"{}"});
+      require(denied.status===401 && denied.headers.get("access-control-allow-origin")===productionOrigin,"Upload validator must reject unauthenticated access with a browser-readable response.");
     }
     checks.push(path);
   }
@@ -63,7 +73,7 @@ export async function checkProductionSurface(get=request) {
     const result=await follow("/portal.html",{origin,query:"?book=1"});
     require(result.response.status===200 && result.url.origin===productionOrigin,"HTTP/www did not reach the canonical HTTPS site.");
   }
-  return {checks,canonicalOrigin:productionOrigin,passed:true,scope:"Public routes, redirects, headers and provider availability only; no account, booking or email was created."};
+  return {checks,canonicalOrigin:productionOrigin,passed:true,scope:"Public routes, redirects, headers, provider availability and upload-validator preflight/authentication rejection only; no account, file, booking or email was created."};
 }
 
 if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href) {
