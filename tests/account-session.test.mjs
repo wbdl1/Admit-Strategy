@@ -136,22 +136,28 @@ test('provider denial and initialization failure leave recovery available and th
   }
 });
 
-test('a verified callback awaiting legacy identity review is not an expired login or a workspace grant',async()=>{
-  const saved={location:globalThis.location,history:globalThis.history,document:globalThis.document};let shown='',message='',bootstrapCalls=0;
+test('a verified callback with a pending legacy claim enters normal onboarding or its own workspace',async()=>{
+  const saved={location:globalThis.location,history:globalThis.history};
   try{
     globalThis.location={href:'https://admitstrategy.com/portal?code=fixture'};
     globalThis.history={state:null,replaceState(){}};
-    globalThis.document={createElement:()=>({})};
-    const account=Object.assign(Object.create(AccountExperience.prototype),{
-      root:{hidden:true},toolbar:{hidden:true},gate:{append(){}},
-      client:{auth:{initialize:async()=>({error:null}),getUser:async()=>({data:{user:{id:'verified-claimant',email:'fixture@example.invalid'}}})},from(){assert.fail('Pending review must not fetch academic records');}},
-      portal:{rpc:async name=>{assert.equal(name,'bootstrap_account');bootstrapCalls++;return {state:'review_required',claim_id:'claim'};}},
-      show:html=>shown=html,message:text=>message=text
-    });
-    await account.start();
-    assert.match(shown,/existing workspace is being linked/);assert.equal(message,'');
-    assert.equal(account.user.id,'verified-claimant');assert.equal(account.portal.studentId,undefined);
-    assert.equal(account.root.hidden,true);assert.equal(account.toolbar.hidden,true);assert.equal(bootstrapCalls,1);
+    for(const existing of [false,true]){
+      let route,message='',bootstrapCalls=0;
+      const own={id:'canonical-student',profile_id:'canonical-profile',status:'pending_guardian'};
+      const query={select(){return this;},eq(){return this;},is(){return this;},limit(){return this;}};
+      const account=Object.assign(Object.create(AccountExperience.prototype),{
+        client:{auth:{initialize:async()=>({error:null}),getUser:async()=>({data:{user:{id:'verified-claimant',email:'fixture@example.invalid'}}})},from:table=>({...query,table})},
+        portal:{rpc:async name=>{if(name==='bootstrap_account'){bootstrapCalls++;return {state:'ready',profile_id:'canonical-profile',legacy_review_pending:true};}assert.equal(name,'guardian_requests');return [];},
+          result:async q=>q.table==='profile_roles'?[]:existing?[own]:[]},
+        show(){},message:text=>message=text,onboarding(){route='onboarding';},openStudent:async student=>{assert.equal(student,own);route='workspace';}
+      });
+      await account.start();
+      assert.equal(route,existing?'workspace':'onboarding');assert.equal(message,'');assert.equal(bootstrapCalls,1);
+      assert.equal(account.user.id,'verified-claimant');
+      assert.match(account.legacyNotice(),/Older records may be available/);
+      assert.match(account.legacyNotice(),/use this workspace now/);
+      assert.match(account.legacyNotice(),/Guardian approval is separate/);
+    }
   }finally{for(const [key,value] of Object.entries(saved)){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}}
 });
 

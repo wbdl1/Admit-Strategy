@@ -42,7 +42,7 @@ export class CoachAdmin {
     if(!this.canNavigate())return;
     this.generation++;this.student=null;
     this.shell("Coach Admin","Find students, review their work, and manage upcoming coaching.");
-    for(const [key,title] of Object.entries({students:"Students",leads:"Leads",bookings:"Upcoming meetings",evidence:"Evidence awaiting review",communications:"Communications",claims:"Account linking",failures:"System failures"})){
+    for(const [key,title] of Object.entries({students:"Students",leads:"Leads",bookings:"Upcoming meetings",evidence:"Evidence awaiting review",communications:"Communications",claims:"Legacy import review",failures:"System failures"})){
       const b=button(title,()=>this.home(key));b.setAttribute("aria-current",key===section?"page":"false");this.nav.append(b);
     }
     if(section==="students"){this.search();return;}
@@ -89,10 +89,15 @@ export class CoachAdmin {
         if(row.error_code)this.text(card,"Error "+row.error_code+" · Reference "+row.trace_id);
         if(row.student_id)card.append(button("Open student",()=>this.openStudentId(row.student_id)));
         if(section==="claims"){
-          const confirm=document.createElement("label");confirm.innerHTML="<input type='checkbox'> I verified that this account belongs to the student whose existing records are shown.";card.append(confirm);
-          card.append(button("Link verified account",async event=>{
-            if(!confirm.querySelector("input").checked){this.account.message("Verify the student’s identity before linking the account.",true);return;}
-            await this.account.run(event.currentTarget,async()=>{await this.account.portal.rpc("admin_approve_account_claim",{p_claim_id:row.claim_id});card.remove();this.account.message("Account linked.");});
+          if(!this.account.roles.includes("admin")){this.text(card,"An administrator must verify ownership before importing these older records.");continue;}
+          const confirm=document.createElement("label");confirm.innerHTML="<input type='checkbox'> I independently verified ownership of these older records. Matching email alone is insufficient. This does not approve a guardian relationship.";card.append(confirm);
+          const note=document.createElement("label"),input=document.createElement("textarea");note.textContent="How ownership was verified";input.maxLength=2000;input.minLength=10;input.required=true;note.append(input);card.append(note);
+          card.append(button("Import verified older records",async event=>{
+            if(!confirm.querySelector("input").checked||input.value.trim().length<10){this.account.message("Confirm independently verified ownership and explain the evidence first.",true);return;}
+            await this.account.run(event.currentTarget,async()=>{
+              const result=await this.account.portal.rpc("admin_import_account_claim",{p_claim_id:row.claim_id,p_ownership_verified:true,p_verification_note:input.value.trim()});
+              card.remove();this.account.message(result.student_id?"Older records imported into the existing workspace. Guardian approval is unchanged.":"Contact review recorded. No student records or guardian access were granted.");
+            });
           },false));
         }
       }
