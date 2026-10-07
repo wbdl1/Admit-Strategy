@@ -156,7 +156,7 @@ test('a verified callback with a pending legacy claim enters normal onboarding o
       assert.equal(account.user.id,'verified-claimant');
       assert.match(account.legacyNotice(),/Older records may be available/);
       assert.match(account.legacyNotice(),/use this workspace now/);
-      assert.match(account.legacyNotice(),/Guardian approval is separate/);
+      assert.match(account.legacyNotice(),/Guardian access requires separate approval/);
     }
   }finally{for(const [key,value] of Object.entries(saved)){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}}
 });
@@ -192,4 +192,27 @@ test('Google session recovery leaves the draft tab intact and offers a separate 
     assert.equal(request.options.skipBrowserRedirect,true);assert.equal(link.target,'_blank');assert.equal(link.rel,'noopener noreferrer');
     assert.match(link.textContent,/another tab/);assert.equal(account.suspendedView.actorId,'student');
   }finally{if(originalDocument===undefined)delete globalThis.document;else globalThis.document=originalDocument;}
+});
+
+test('workspace edit controls follow backend permission instead of guardian status or broad role names',async()=>{
+ const saved={document:globalThis.document,location:globalThis.location};
+ try{
+  globalThis.document={createElement:()=>({append(){}})};globalThis.location={href:'http://127.0.0.1:4173/portal.html'};
+  for(const scenario of [
+   {own:true,roles:['student'],status:'pending_guardian',response:{data:{can_edit:true}},expected:true},
+   {own:true,roles:['student'],status:'active',response:{data:{can_edit:false}},expected:false},
+   {own:false,roles:['guardian'],status:'active',expected:false},
+   {own:false,roles:['guardian','coach'],status:'active',response:{error:{code:'42501',message:'Workspace unavailable'},status:403},expected:false}
+  ]){
+   let edits;
+   const rows=new Proxy({then:resolve=>resolve({data:[],error:null})},{get:(target,key)=>key==='then'?target.then:()=>rows});
+   const student={id:'fixture',profile_id:scenario.own?'owner':'child',status:scenario.status};
+   const account=Object.assign(Object.create(AccountExperience.prototype),{
+    user:{id:'actor'},account:{profile_id:'owner'},roles:scenario.roles,client:{from:()=>rows,rpc:async()=>scenario.response},
+    show(){},gate:{},root:{dataset:{},prepend(){}},toolbar:{replaceChildren(){},prepend(){}},
+    onPortal:(_data,adapter)=>{edits=adapter.canEdit;},onAccountChange(){},recordWorkspaceEvent(){}
+   });
+   await account.openStudent(student);assert.equal(edits,scenario.expected);
+  }
+ }finally{for(const [key,value] of Object.entries(saved)){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}}
 });

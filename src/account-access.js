@@ -5,13 +5,13 @@ const button=(text,fn)=>{const node=el('button',text);node.type='button';node.cl
 export function openAccountAccess(account,studentId=account.portal.studentId){
   if(!studentId||account.access&&!account.access.canLeave())return;
   account.access?.dispose();
-  const actor=account.user.id,adapter=account.portal,dialog=el('dialog'),head=el('div'),body=el('div'),title=el('h2','Account and guardian approval');
+  const actor=account.user.id,adapter=account.portal,dialog=el('dialog'),head=el('div'),body=el('div'),title=el('h2','Account and family access');
   dialog.className='editor-dialog account-access-dialog';head.className='editor-head';body.className='editor-body';title.id='account-access-title';dialog.setAttribute('aria-labelledby',title.id);
   const status=el('p');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
   let current,disposed=false;const forms=new Map();
   const freeze=value=>body.querySelectorAll('fieldset').forEach(field=>field.disabled=value);
   const summary=el('p');
-  const describe=()=>{summary.textContent='Workspace: '+current.status.replaceAll('_',' ')+'. Account: '+(current.account_disabled?'disabled':current.account_linked?'linked':'awaiting first login')+'. Guardian: '+(current.guardian_approved?'approved':'approval required')+'.';};
+  const describe=()=>{summary.textContent='Workspace: '+current.status.replaceAll('_',' ')+'. Account: '+(current.account_disabled?'disabled':current.account_linked?'linked':'awaiting first login')+'. Guardian: '+(current.guardian_approved?'approved access':'no approved access')+'.';};
   const queue=new MutationQueue({
     send:(values,id)=>{
       if(disposed||account.user?.id!==actor)throw Object.assign(new Error('Sign in with the original account before retrying.'),{rejected:true,retryable:false});
@@ -54,16 +54,16 @@ export function openAccountAccess(account,studentId=account.portal.studentId){
     try{
       current=await adapter.rpc('workspace_access',{p_student_id:studentId});if(disposed||account.user?.id!==actor)return;
       body.replaceChildren(summary);describe();
-      if(!current.guardian_approved&&['pending_guardian','review_required'].includes(current.status)){
-        body.append(el('p','Your guardian must log in to Admit Strategy using the email below and approve your workspace from their own account. You can correct a typo or renew an expired request here.'));
+      if(!current.guardian_approved&&['active','pending_guardian'].includes(current.status)){
+        body.append(el('p','Family access is optional. The invited guardian must sign in with this email and explicitly approve the relationship before seeing your workspace. You can correct or renew an invitation here.'));
         if(current.invitation)body.append(el('p','Current request expires '+new Date(current.invitation.expires_at).toLocaleDateString()+'.'));
         const form=addForm('Parent or guardian email','guardian','email',current.invitation?.email,(email,form)=>save(form,'replace_guardian_request',{p_student_id:studentId,p_email:email,p_expected_version:current.student_version}));
         form.querySelector('button').textContent='Update guardian request';
         body.append(el('p','Saving updates the request. It does not send an email. Ask your guardian to open Admit Strategy → Log in.'));
       }
       if(current.can_manage_status){
-        addForm('Workspace access','status',[['pending_guardian','Await guardian approval'],['active','Academic editing enabled'],['suspended','Academic editing paused']],current.status,(value,form)=>save(form,'coach_update_student_status',{p_student_id:studentId,p_status:value,p_expected_version:current.student_version}));
-        body.append(el('p','Enabling academic editing requires a verified linked account and active guardian approval. Pausing editing preserves records.'));
+        addForm('Workspace access','status',[['active','Academic editing enabled'],['suspended','Academic editing paused']],current.status,(value,form)=>save(form,'coach_update_student_status',{p_student_id:studentId,p_status:value,p_expected_version:current.student_version}));
+        body.append(el('p','Enabling academic editing requires a verified linked account and the configured access policy. Family access is separate. Pausing editing preserves records.'));
       }
       if(current.can_disable_account){
         const warning=el('label'),acknowledgement=el('input');acknowledgement.type='checkbox';
@@ -79,9 +79,9 @@ export function openAccountAccess(account,studentId=account.portal.studentId){
         warning.hidden=select.value!=='false';
         form.querySelector('button').textContent='Save account access';
       }
-      body.append(button('Check approval and return',async()=>{
+      body.append(button('Check access and return',async()=>{
         if(!view.canLeave())return;
-        status.textContent='Checking approval…';
+        status.textContent='Checking access…';
         try{
           current=await adapter.rpc('workspace_access',{p_student_id:studentId});describe();
           if(account.ownStudentId===studentId){account.loadedUser=null;await account.refresh();}

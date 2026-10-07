@@ -428,10 +428,10 @@
 
     function renderAccountCapture(){
       const form=document.createElement("form");form.className="chat-capture";form.id="chatCaptureForm";
-      form.innerHTML='<div class="chat-note"><strong>Save your diagnosis</strong><br>Next, sign in with the student’s account. We’ll reuse an existing workspace. A guardian approves academic editing from their own account.</div>'+
+      form.innerHTML='<div class="chat-note"><strong>Save your diagnosis</strong><br>Next, sign in with the student’s account. We’ll reuse your workspace. Guardian access is optional and requires separate approval.</div>'+
         '<label>Student name<input name="name" maxlength="120" autocomplete="name" required></label>'+
         '<label>Student email<input name="email" type="email" maxlength="254" autocomplete="email" required></label>'+
-        '<label>Parent or guardian email<input name="guardian" type="email" maxlength="254" autocomplete="off" required></label>'+
+        '<label>Parent or guardian email (optional)<input name="guardian" type="email" maxlength="254" autocomplete="off"></label>'+
         '<label class="chat-consent"><input name="service" type="checkbox" required><span>I accept the <a href="privacy.html">privacy notice</a> and necessary account and booking messages.</span></label>'+
         '<label class="chat-consent"><input name="marketing" type="checkbox"><span>Also send study tips and occasional marketing updates. Optional; unsubscribe anytime.</span></label>'+
         '<p class="chat-note">Your answers and details stay in this browser for up to 24 hours while you sign in, then are removed after saving.</p>'+

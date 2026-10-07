@@ -17,7 +17,7 @@ window.AdmitMarketing={
 if(window.ADMIT_CONFIG?.backend==="supabase"&&!authCallback){
   const explain=(id,text)=>{const node=document.getElementById(id);if(node)node.textContent=text;};
   explain("privacy-access-summary","Return through Log in with your verified account. Your workspace is shared only with your authorized guardian and coach. Contact Ryan to request access, correction or deletion.");
-  explain("account-access-faq","Use Log in to return to the same workspace with your verified account. A student workspace is created once, and a guardian approves access from their own account. Your diagnosis is linked after sign-in.");
+  explain("account-access-faq","Use Log in to return to the same workspace with your verified account. Your private student workspace is created once. Optional guardian access requires a separate approved relationship. Your diagnosis is linked after sign-in.");
   explain("google-login-faq",window.ADMIT_CONFIG.googleEnabled?"Yes. Choose Continue with Google on the login screen, or use an email sign-in link. Google only shares the identity information needed to sign you in; it does not connect your calendar or school files.":"Email sign-in is available. Google sign-in will appear here after its configuration has been verified.");
   explain("calendar-faq","Add events manually or import an .ics calendar file. Confirm any assessment suggestions before they join your assessment list. Automatic Google or Microsoft calendar syncing is not active.");
 

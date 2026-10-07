@@ -9,7 +9,7 @@ const validEmail=value=>value.length<=254&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val
 
 export function diagnosisDraft(lead,{id=crypto.randomUUID(),now=Date.now()}={}){
   const draft={id,createdAt:now,name:String(lead.name||"").trim(),email:email(lead.email),guardian:email(lead.parentEmail),grade:Number(String(lead.grade||"").replace(/^Grade\s+/i,"")),marketing:lead.campaignOptIn==="yes",service:lead.serviceContactConsent==="yes",answers:{challenge:lead.challenge,study_method:lead.studyMethod,assessment_horizon:lead.assessmentHorizon,weekly_capacity:lead.weeklyCapacity,result_summary:String(lead.diagnosisSummary||"").trim()}};
-  if(!UUID.test(id)||!draft.name||draft.name.length>120||!validEmail(draft.email)||!validEmail(draft.guardian)||draft.email===draft.guardian||!Number.isInteger(draft.grade)||draft.grade<6||draft.grade>12||!draft.service)throw new Error("Enter a student name, grade 6–12, distinct student and guardian emails, and accept the privacy notice.");
+  if(!UUID.test(id)||!draft.name||draft.name.length>120||!validEmail(draft.email)||(draft.guardian&&(!validEmail(draft.guardian)||draft.email===draft.guardian))||!Number.isInteger(draft.grade)||draft.grade<6||draft.grade>12||!draft.service)throw new Error("Enter a student name, grade 6–12, a valid student email and, if provided, a different guardian email, and accept the privacy notice.");
   for(const [key,allowed] of Object.entries(choices))if(!allowed.includes(draft.answers[key]))throw new Error("Complete all six diagnosis questions first.");
   if(!draft.answers.result_summary||draft.answers.result_summary.length>2000)throw new Error("Complete the diagnosis to get your result.");
   return draft;

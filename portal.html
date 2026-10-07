@@ -202,6 +202,21 @@ a{color:var(--success)}
 .canonical-workspace .hero .demo-actions .btn{padding:8px 12px;min-height:44px;font-size:.8rem}
 .canonical-workspace .hero-line{gap:8px}
 .account-access-dialog .editor-body{padding:18px}.account-access-dialog fieldset{border:0;padding:0;margin:0;min-width:0}.account-access-dialog .editor-body>p{margin:0 0 14px}.account-access-dialog form{margin-bottom:14px}
+
+/* Classes forms remain in normal document flow above the optional settings. */
+.class-add-panel .form-actions{align-items:stretch}
+.class-add-panel [data-class-feedback]:empty{display:none}
+.class-add-panel .info-box{margin-top:0}
+@media(max-width:620px){
+  #view-classes{scroll-padding-top:80px}
+  #view-classes .portal-form input,#view-classes .portal-form select{font-size:16px;min-height:44px;scroll-margin-block:88px 24px}
+  #view-classes .portal-form label{gap:8px}
+  #view-classes .form-grid{gap:16px}
+  .class-add-panel .form-actions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+  .class-add-panel .btn{white-space:normal}
+  #view-classes .class-workspace-head{flex-wrap:wrap}
+  #view-classes .class-tabs{max-width:100%}
+}
 </style>
 </head>
 <body>
@@ -912,18 +927,29 @@ function addEvidenceForm(){
 }
 
 function classList(items){
-  if(!items || !items.length) return "<div class='empty'>Create a class to give its topics an independent Box system and review rhythm.</div>";
+  if(!items || !items.length) return "<div class='empty'>Start with one class. Add its name and an optional teacher below.</div>";
   return "<div class='class-grid'>" + items.map(function(item){
     const intervals = item.intervals || {1:1,2:3,3:7,4:14};
     return "<article class='class-card' style='--class-color:" + safe(item.color || "#6ee7d2") + "'><div class='record-head'><div><h3>" + safe(item.name) + "</h3><span class='muted'>" + safe(item.teacher || "Teacher not added") + "</span></div><button class='record-edit' type='button' data-open-editor='0' data-editor-title='Edit class'>Edit</button></div><div class='intervals'><span>Default " + safe(item.defaultMinutes || 25) + " min</span><span>B1 " + safe(intervals[1] || 1) + "d</span><span>B2 " + safe(intervals[2] || 3) + "d</span><span>B3 " + safe(intervals[3] || 7) + "d</span><span>B4 " + safe(intervals[4] || 14) + "d</span></div><details class='form-panel edit-panel'><summary>Edit class</summary><form class='portal-form' data-portal-form><input type='hidden' name='operation' value='updateclass'><input type='hidden' name='recordId' value='" + safe(item.id) + "'><div class='form-grid'><label>Class or subject name<input name='name' maxlength='80' required value='" + safe(item.name || "") + "'></label><label>Teacher (optional)<input name='teacher' maxlength='120' value='" + safe(item.teacher || "") + "'></label></div><div class='form-grid'><label>Accent color<input name='color' type='color' value='" + safe(item.color || "#6ee7d2") + "'></label><label>Default study block<input name='defaultMinutes' type='number' min='10' max='120' value='" + safe(item.defaultMinutes || 25) + "'></label></div><div class='form-grid'><label>Box 1 interval (days)<input name='box1Days' type='number' min='1' max='30' value='" + safe(intervals[1] || 1) + "'></label><label>Box 2 interval (days)<input name='box2Days' type='number' min='1' max='60' value='" + safe(intervals[2] || 3) + "'></label></div><div class='form-grid'><label>Box 3 interval (days)<input name='box3Days' type='number' min='1' max='120' value='" + safe(intervals[3] || 7) + "'></label><label>Box 4 interval (days)<input name='box4Days' type='number' min='1' max='365' value='" + safe(intervals[4] || 14) + "'></label></div><p class='form-help'>These intervals apply the next time a topic moves within this class.</p>" + formActions("Save class") + "</form></details></article>";
   }).join("") + "</div>";
 }
 
+function classAccessMessage(){
+  if(!canonicalPortal || canonicalPortal.canEdit!==false) return "";
+  return "This workspace is read-only for this account. Check workspace access before adding a class.";
+}
 function addClassForm(){
-  return "<details class='form-panel'><summary>Add a class</summary><form class='portal-form' data-portal-form><input type='hidden' name='operation' value='addclass'><div class='form-grid'><label>Class Name<input name='name' maxlength='80' required placeholder='Biology'></label><label>Teacher<input name='teacher' maxlength='120' placeholder='Teacher (optional)'></label></div>" +
+  const access=classAccessMessage();
+  const actions=access
+    ? "<div class='form-actions'><button class='btn' type='button' data-class-access>Check workspace access</button><button class='btn ghost' type='button' data-close-form>Cancel</button></div>"
+    : formActions("Add");
+  return "<details class='form-panel class-add-panel'" + (!currentData.classes?.length?" open":"") + "><summary>Add a class</summary><form class='portal-form' data-portal-form data-class-form><input type='hidden' name='operation' value='addclass'>" +
+    (access?"<p class='info-box' role='status'>"+safe(access)+"</p>":"") +
+    "<div class='form-grid'><label>Class Name<input name='name' maxlength='80' required autocomplete='off' enterkeyhint='next' placeholder='Biology'></label><label>Teacher <span class='form-help'>(optional)</span><input name='teacher' maxlength='120' autocomplete='off' enterkeyhint='done' placeholder='Teacher name'></label></div>" +
+    "<p data-class-feedback role='status' aria-live='polite' class='form-help'></p>" + actions +
     "<details class='form-panel'><summary>Advanced Settings</summary><div class='portal-form'><div class='form-grid'><label>Color<input name='color' type='color' value='#20e3b2'></label><label>Default study block (minutes)<input name='defaultMinutes' type='number' min='10' max='120' value='25'></label></div>" +
     [1,2,3,4].map(function(box){return "<label>Box " + box + " interval (days)<input name='box" + box + "Days' type='number' min='1' max='" + ({1:30,2:60,3:120,4:365}[box]) + "' value='" + ({1:1,2:3,3:7,4:14}[box]) + "'></label>";}).join("") +
-    "</div></details>" + formActions("Add") + "</form></details>";
+    "</div></details></form></details>";
 }
 
 function materialList(items,classId,history){
@@ -1306,7 +1332,7 @@ function applyAccountPermissions(){
   historyExperience?.mountAll();
   historyExperience?.refreshAll();
   document.querySelectorAll("#app form[data-portal-form] button,#app [data-move-review]").forEach(function(button){
-    if(canonicalPortal.canEdit===false)button.disabled=true;
+    if(canonicalPortal.canEdit===false && !button.matches("[data-class-access],form[data-class-form] [data-close-form]"))button.disabled=true;
   });
 }
 
@@ -1543,6 +1569,8 @@ function ensureSaveQueue(){
     onState:function(job){
       if(!currentScope()){job.uiDeferred=true;return;}
       const ui=mutationUI.get(job.id);
+      const feedback=ui?.form?.querySelector("[data-class-feedback]");
+      if(feedback)feedback.textContent=job.state==="saved"?"Saved ✓":job.state==="failed"?"Not saved yet. Your input is kept. "+job.error.message:job.state==="retrying"?"Saving… retrying safely.":"Saving…";
       if(ui && scope)ui.scope=scope;
       if(ui && ui.button){ui.button.disabled=["queued","saving","retrying"].includes(job.state);ui.button.textContent=ui.button.disabled?"Saving…":ui.label;}
       if(ui && ui.form && job.state!=="failed")ui.form.querySelector("[data-save-recovery]")?.remove();
@@ -1648,10 +1676,23 @@ function operationFromValues(values){
   return String(values && values.operation || "");
 }
 
+document.addEventListener("invalid",function(event){
+  const form=event.target.closest("form[data-class-form]");
+  if(!form)return;
+  let parent=event.target.parentElement;
+  while(parent && parent!==form){if(parent.tagName==="DETAILS")parent.open=true;parent=parent.parentElement;}
+  form.querySelector("[data-class-feedback]").textContent="Check "+(event.target.closest("label")?.textContent.trim()||"this field")+": "+event.target.validationMessage;
+},true);
+
 document.addEventListener("submit",function(event){
   const form = event.target.closest("form[data-portal-form]");
   if(!form) return;
   event.preventDefault();
+  if(form.hasAttribute("data-class-form") && classAccessMessage()){
+    form.querySelector("[data-class-feedback]").textContent=classAccessMessage();
+    form.querySelector("[data-class-access]")?.focus();
+    return;
+  }
   if(!form.reportValidity()) return;
   const values = formValues(form);
   if(values.operation === "submittaskproof" && !String(values.proofNote || "").trim() && !String(values.proofUrl || "").trim()){
@@ -1676,6 +1717,8 @@ document.addEventListener("submit",function(event){
 });
 
 document.addEventListener("click",function(event){
+  const classAccessButton=event.target.closest("[data-class-access]");
+  if(classAccessButton){accountExperience?.accountAccess(canonicalPortal.studentId);return;}
   const assessmentPageButton=event.target.closest("[data-load-assessments]");
   if(assessmentPageButton){loadMoreAssessments(assessmentPageButton);return;}
   const viewButton = event.target.closest("[data-app-view]");

@@ -62,7 +62,7 @@ export class AccountExperience {
       this.gate.querySelector("h1").textContent="Save your diagnosis and book your first meeting";
       this.gate.querySelector("input[name=email]").value=this.diagnosis.email;
       this.gate.querySelector("input[name=email]").readOnly=true;
-      const note=document.createElement("p");note.textContent="Sign in with the student’s account. Your diagnosis is kept in this browser for up to 24 hours while you finish. Guardian approval happens separately from the guardian’s own account.";this.gate.querySelector("form").before(note);
+      const note=document.createElement("p");note.textContent="Sign in with the student’s account. Your diagnosis is kept in this browser for up to 24 hours while you finish. Guardian access is optional and requires a separate approval from the guardian’s own account.";this.gate.querySelector("form").before(note);
     }else if(this.diagnosisId){this.message("This diagnosis draft has expired or is unavailable in this browser. You can sign in to your existing workspace, or start the diagnosis again.",true);}
     if(this.config.googleEnabled){this.gate.querySelector("[data-google-login]").append(action("Continue with Google",async event=>this.run(event.currentTarget,async()=>{
       const recovering=Boolean(this.suspendedView);
@@ -152,7 +152,7 @@ export class AccountExperience {
       try{clearDiagnosisDraft(localStorage,this.diagnosis.id);}catch{}
       this.diagnosis=null;this.diagnosisId=null;
       const clean=new URL(location.href);clean.searchParams.delete("diagnosis");clean.searchParams.delete("book");clean.searchParams.delete("code");history.replaceState(history.state,"",clean);
-      this.show("<h1>Your diagnosis is saved</h1><p>"+safe(summary)+"</p><p>"+(result.reused?"Your existing workspace is ready.":"Your student workspace is ready.")+" Book your free first meeting to choose the next practical steps.</p>"+(student.status==="pending_guardian"?"<p>Your guardian can log in using the email you supplied to approve academic editing. You can book the meeting now.</p>":""));
+      this.show("<h1>Your diagnosis is saved</h1><p>"+safe(summary)+"</p><p>"+(result.reused?"Your existing workspace is ready.":"Your student workspace is ready.")+" Book your free first meeting to choose the next practical steps.</p>");
       this.gate.append(action("Book your free first meeting",()=>this.booking()),action("Open your portal",()=>this.showWorkspace(),true));
       celebrate("diagnosis:"+requestId);
     }catch(error){
@@ -161,11 +161,11 @@ export class AccountExperience {
     }
   }
   legacyNotice(){
-    return this.account?.legacy_review_pending?"<p class='info-box'>Older records may be available to import after ownership verification. You can use this workspace now; older records remain private until reviewed. Guardian approval is separate.</p>":"";
+    return this.account?.legacy_review_pending?"<p class='info-box'>Older records may be available to import after ownership verification. You can use this workspace now; older records remain private until reviewed. Guardian access requires separate approval.</p>":"";
   }
   onboarding(){
     let draft={};try{draft=JSON.parse(sessionStorage.getItem("admit-onboarding")||"{}");}catch{}
-    this.show("<h1>Start your student workspace</h1><p>One account. One workspace. We’ll reuse it whenever you return.</p>"+this.legacyNotice()+"<form data-onboarding class='portal-form'><label>Student name<input name='name' autocomplete='name' maxlength='120' required value='"+safe(draft.name)+"'></label><label>Grade<select name='grade' required>"+[6,7,8,9,10,11,12].map(n=>"<option value='"+n+"'"+(Number(draft.grade)===n?" selected":"")+">Grade "+n+"</option>").join("")+"</select></label><label>Parent or guardian email<input name='guardian' type='email' autocomplete='off' maxlength='254' required value='"+safe(draft.guardian)+"'></label><p class='form-help'>Use a different email from your own. Your guardian must approve academic editing from their own account.</p><button class='btn' type='submit'>Create or open my workspace</button></form>");
+    this.show("<h1>Start your student workspace</h1><p>One account. One workspace. We’ll reuse it whenever you return.</p>"+this.legacyNotice()+"<form data-onboarding class='portal-form'><label>Student name<input name='name' autocomplete='name' maxlength='120' required value='"+safe(draft.name)+"'></label><label>Grade<select name='grade' required>"+[6,7,8,9,10,11,12].map(n=>"<option value='"+n+"'"+(Number(draft.grade)===n?" selected":"")+">Grade "+n+"</option>").join("")+"</select></label><label>Parent or guardian email (optional)<input name='guardian' type='email' autocomplete='off' maxlength='254' value='"+safe(draft.guardian)+"'></label><p class='form-help'>You can use your private workspace without a guardian. To invite one, use a different email. Their access requires separate approval.</p><button class='btn' type='submit'>Create or open my workspace</button></form>");
     const form=this.gate.querySelector("form");
     form.oninput=()=>{try{sessionStorage.setItem("admit-onboarding",JSON.stringify({name:form.elements.name.value,grade:form.elements.grade.value,guardian:form.elements.guardian.value}));}catch{/* The form remains usable when browser storage is unavailable. */}};
     form.onsubmit=event=>{event.preventDefault();this.run(form.querySelector("button"),async()=>{
@@ -194,11 +194,12 @@ export class AccountExperience {
     // A new adapter binds in-flight work to its original student. Sharing one
     // mutable adapter across coach/guardian workspaces can retarget a retry.
     const adapter=new PortalData(this.client,{onAuthRequired:()=>this.suspendSession()});
-    const data=await adapter.open(student);
+    const manageAccess=student.profile_id===this.account.profile_id||this.roles.some(r=>["coach","admin"].includes(r));
+    const [data,access]=await Promise.all([adapter.open(student),manageAccess?adapter.rpc("workspace_access",{p_student_id:student.id}).catch(error=>{if(error.code==="42501")return {can_edit:false};throw error;}):Promise.resolve({can_edit:false})]);
     if(generation!==this.workspaceGeneration||actor!==this.user?.id)return;
     this.portal=adapter;this.loadedUser=this.user.id;
     this.ownStudentId=student.profile_id===this.account.profile_id?student.id:null;
-    this.portal.canEdit=this.roles.some(r=>["coach","admin"].includes(r)) || (student.profile_id===this.account.profile_id && student.status==="active");
+    this.portal.canEdit=access.can_edit===true;
     this.onPortal(data,this.portal);this.gate.hidden=true;this.root.hidden=false;this.toolbar.hidden=false;
     this.toolbar.replaceChildren(action("Log out",()=>this.logout(),true));
     if(student.profile_id===this.account.profile_id||this.roles.some(r=>["coach","admin"].includes(r)))this.toolbar.prepend(action("Meetings",()=>this.booking()));
@@ -210,8 +211,8 @@ export class AccountExperience {
     if(student.profile_id===this.account.profile_id&&this.account.legacy_review_pending){
       const notice=document.createElement("div");notice.innerHTML=this.legacyNotice();this.root.prepend(notice);
     }
-    if(student.status==="pending_guardian"){
-      const note=document.createElement("div");note.className="info-box";note.textContent="Your workspace is ready. Academic editing opens after your guardian logs in with the email you provided and approves access.";note.append(action("Check or correct guardian approval",()=>this.accountAccess(student.id),true));this.root.prepend(note);
+    if(!this.portal.canEdit&&this.ownStudentId){
+      const note=document.createElement("div");note.className="info-box";note.textContent="Academic editing is paused for this account. Your existing work is preserved.";note.append(action("Check workspace access",()=>this.accountAccess(student.id),true));this.root.prepend(note);
     }
     this.onAccountChange(this);
     performance.measure("admit-today-useful",{start:0,end:performance.now()});
