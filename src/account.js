@@ -200,6 +200,7 @@ export class AccountExperience {
     this.portal=adapter;this.loadedUser=this.user.id;
     this.ownStudentId=student.profile_id===this.account.profile_id?student.id:null;
     this.portal.canEdit=access.can_edit===true;
+    this.portal.canRequestFeedback=access.can_request_feedback===true;
     this.onPortal(data,this.portal);this.gate.hidden=true;this.root.hidden=false;this.toolbar.hidden=false;
     this.toolbar.replaceChildren(action("Log out",()=>this.logout(),true));
     if(student.profile_id===this.account.profile_id||this.roles.some(r=>["coach","admin"].includes(r)))this.toolbar.prepend(action("Meetings",()=>this.booking()));

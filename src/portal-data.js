@@ -5,6 +5,7 @@ const camel=s=>s.replace(/_([a-z])/g,(_,c)=>c.toUpperCase());
 const label=s=>String(s||"").replaceAll("_"," ").replace(/^./,c=>c.toUpperCase());
 const status=s=>String(s||"").trim().toLowerCase().replaceAll(" ","_");
 const today=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Qatar",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+export const currentFeedbackRequest=proof=>proof.evidence_feedback_requests?.find(request=>!request.cancelled_at&&Number(request.evidence_version)===Number(proof.row_version));
 export const currentEvidenceReview=proof=>proof.evidence_reviews?.find(review=>!review.archived_at&&Number(review.evidence_version)===Number(proof.row_version));
 
 export function normalizeRecord(table,row,classes=[]){
@@ -16,12 +17,12 @@ export function normalizeRecord(table,row,classes=[]){
   if(table==="study_blocks")Object.assign(record,{startTime:row.start_time?.slice(0,5)||"",endTime:row.end_time?.slice(0,5)||"",timeHint:row.time_hint||""});
   if(["tasks","study_blocks"].includes(table)&&row.evidence?.length){
     const proof=row.evidence[0],review=currentEvidenceReview(proof);
-    Object.assign(record,{proofNote:proof.proof_text,proofUrl:proof.proof_url,coachReview:review?label(review.status):"Pending",coachFeedback:review?.feedback||""});
+    Object.assign(record,{proofNote:proof.proof_text,proofUrl:proof.proof_url,coachReview:review?label(review.status):currentFeedbackRequest(proof)?"Feedback requested":"",coachFeedback:review?.feedback||""});
   }
   if(table==="study_materials")Object.assign(record,{url:row.external_url||"",fileId:row.file_id,status:row.archived_at?"Archived":"Active"});
   if(table==="evidence"){
     const review=currentEvidenceReview(row);
-    Object.assign(record,{whatIDid:row.what_i_did,evidence:row.proof_text,coachReview:row.status==="draft"?"Draft":review?label(review.status):"Pending",coachFeedback:review?.feedback||""});
+    Object.assign(record,{status:row.status==="draft"?"Draft":"Saved",whatIDid:row.what_i_did,evidence:row.proof_text,feedbackRequested:!!currentFeedbackRequest(row),coachReview:review?label(review.status):currentFeedbackRequest(row)?"Feedback requested":"",coachFeedback:review?.feedback||"",reviewHistory:(row.evidence_reviews||[]).filter(r=>!r.archived_at&&Number(r.evidence_version)!==Number(row.row_version)).map(r=>({version:r.evidence_version,status:label(r.status),feedback:r.feedback}))});
   }
   if(table==="sessions")Object.assign(record,{detail:[row.shared_summary,row.next_actions?"Next actions: "+row.next_actions:""].filter(Boolean).join("\n\n"),status:"Completed"});
   if(table==="progress_scores")Object.assign(record,{title:label(row.metric),sessionDate:row.scored_at.slice(0,10),progress:{[camel(row.metric)]:row.score}});
@@ -53,7 +54,7 @@ export class PortalData {
     await this.read("classes",{limit:100});
     await Promise.all([
       this.loadUpcomingAssessments(60),
-      this.read("tasks",{order:"due_date",limit:60,filter:q=>q.or('status.in.(not_started,in_progress,submitted),and(status.eq.completed,proof_required.neq."")')}),
+      this.read("tasks",{order:"due_date",limit:60,filter:q=>q.in("status",["not_started","in_progress","submitted"])}),
       this.read("review_cards",{order:"next_review",limit:60,filter:q=>q.lt("box",5)}),
       this.read("study_blocks",{order:"date",limit:60,filter:q=>q.gte("date",today())})
     ]);
@@ -84,7 +85,7 @@ export class PortalData {
   query(table){
     if(!Object.hasOwn(collections,table))throw new Error("Unknown workspace collection");
     const withProof=["tasks","study_blocks"].includes(table);
-    let query=this.client.from(table).select(withProof?"*,evidence(id,row_version,proof_text,proof_url,created_at,evidence_reviews(status,feedback,created_at,evidence_version))":table==='evidence'?'*,evidence_reviews(*)':"*").eq("student_id",this.studentId).is("archived_at",null);
+    let query=this.client.from(table).select(withProof?"*,evidence(id,row_version,proof_text,proof_url,created_at,evidence_feedback_requests(evidence_version,cancelled_at),evidence_reviews(status,feedback,created_at,evidence_version))":table==='evidence'?'*,evidence_reviews(*),evidence_feedback_requests(*)':"*").eq("student_id",this.studentId).is("archived_at",null);
     if(withProof)query=query.is("evidence.archived_at",null).eq("evidence.status","submitted").order("created_at",{referencedTable:"evidence",ascending:false}).limit(1,{referencedTable:"evidence"}).is("evidence.evidence_reviews.archived_at",null).order("created_at",{referencedTable:"evidence.evidence_reviews",ascending:false}).limit(1,{referencedTable:"evidence.evidence_reviews"});
     return query;
   }
@@ -162,6 +163,9 @@ export class PortalData {
       if(operation==="movereviewcard"){
         const row=this.raw.get("review_cards:"+values.recordId);
         prepared={name:"review_card",table:"review_cards",args:{p_card_id:values.recordId,p_box:Number(values.box),p_expected_version:row?.row_version,p_request_key:id}};
+      }else if(operation==="requestfeedback"){
+        const row=this.raw.get("evidence:"+values.recordId);
+        prepared={name:"set_evidence_feedback_request",table:"evidence",args:{p_evidence_id:values.recordId,p_expected_version:row?.row_version,p_requested:values.requested==="true",p_request_key:id}};
       }else if(operation==="submittaskproof"){
         const row=this.raw.get("tasks:"+values.recordId);
         prepared={name:"submit_task_proof",table:"tasks",args:{p_task_id:values.recordId,p_note:values.proofNote||"",p_url:values.proofUrl||"",p_reflection:values.reflection||"",p_expected_version:row?.row_version,p_request_key:id}};
@@ -189,6 +193,10 @@ export class PortalData {
     try{response=await this.rpc(prepared.name,prepared.args);}
     catch(error){if(error.code==="P0409")this.conflicts.set(key,true);throw error;}
     const record=response.record;
+    if(prepared.table==="evidence"){
+      const prior=this.raw.get(key);
+      for(const field of ["evidence_reviews","evidence_feedback_requests"])record[field]??=prior?.[field]||[];
+    }
     this.raw.set(prepared.table+":"+record.id,record);
     if(response.evidence){this.ingest("evidence",[response.evidence],{confirmed:true});record.evidence=[response.evidence];}
     return {ok:true,changed:{recordId:record.id,values:normalizeRecord(prepared.table,record,this.data.classes)}};

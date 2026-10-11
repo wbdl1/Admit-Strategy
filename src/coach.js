@@ -42,7 +42,7 @@ export class CoachAdmin {
     if(!this.canNavigate())return;
     this.generation++;this.student=null;
     this.shell("Coach Admin","Find students, review their work, and manage upcoming coaching.");
-    for(const [key,title] of Object.entries({students:"Students",leads:"Leads",bookings:"Upcoming meetings",evidence:"Evidence awaiting review",communications:"Communications",claims:"Legacy import review",failures:"System failures"})){
+    for(const [key,title] of Object.entries({students:"Students",leads:"Leads",bookings:"Upcoming meetings",evidence:"Requested feedback",communications:"Communications",claims:"Legacy import review",failures:"System failures"})){
       const b=button(title,()=>this.home(key));b.setAttribute("aria-current",key===section?"page":"false");this.nav.append(b);
     }
     if(section==="students"){this.search();return;}
@@ -68,8 +68,8 @@ export class CoachAdmin {
         this.content.replaceChildren();
         await this.pages(cursor=>this.account.portal.rpc('coach_pending_evidence',{p_after_created_at:cursor?.created_at||null,p_after_id:cursor?.id||null}),(row,parent)=>{
           const card=this.card(row.activity,parent);this.text(card,shortDate(row.created_at));card.append(button('Open student',()=>this.openStudentId(row.student_id)));
-        },{empty:'No evidence awaiting review.'});
-        if(generation===this.generation)this.account.message('Evidence review queue loaded.');return;
+        },{empty:'No student feedback requests awaiting review.'});
+        if(generation===this.generation)this.account.message('Requested feedback queue loaded.');return;
       }
       let rows;
       if(section==="claims")rows=await this.account.portal.rpc("admin_pending_account_claims",{});
@@ -231,12 +231,15 @@ export class CoachAdmin {
   }
   async evidence(){
     const studentId=this.student.id;
-    await this.pages(cursor=>this.account.portal.result(createdPage(this.client.from('evidence').select('*,evidence_reviews(*)').eq('student_id',studentId).eq('status','submitted').is('archived_at',null),cursor)),(row,parent)=>{
+    await this.pages(cursor=>this.account.portal.result(createdPage(this.client.from('evidence').select('*,evidence_reviews(*),evidence_feedback_requests(*)').eq('student_id',studentId).eq('status','submitted').is('archived_at',null),cursor)),(row,parent)=>{
       const card=this.card(row.activity,parent),preview=card.querySelector("h2");this.text(card,row.what_i_did);this.text(card,row.proof_text);
       if(row.proof_url&&/^https:\/\//.test(row.proof_url)){const link=document.createElement("a");link.href=row.proof_url;link.textContent="Open submitted proof";link.target="_blank";link.rel="noopener noreferrer";card.append(link);}
-      let review=row.evidence_reviews?.[0]||{};
-      if(review.id&&(review.archived_at||Number(review.evidence_version)!==Number(row.row_version)))this.text(card,'This proof needs a new review. The previous decision applied to an earlier version.');
-      this.form(card,[["status","Review decision",["approved","changes_requested"]],["feedback","Feedback the student can see","textarea",2000]],review,(values,form,status)=>{
+      let review=row.evidence_reviews?.find(r=>!r.archived_at&&Number(r.evidence_version)===Number(row.row_version))||{};
+      for(const older of row.evidence_reviews||[])if(!older.archived_at&&Number(older.evidence_version)!==Number(row.row_version))this.text(card,'Earlier version '+older.evidence_version+' · '+label(older.status)+': '+older.feedback);
+      const requested=row.evidence_feedback_requests?.some(r=>!r.cancelled_at&&Number(r.evidence_version)===Number(row.row_version));
+      if(!requested){this.text(card,review.id?'Historical feedback · '+label(review.status)+': '+review.feedback:'Saved by the student. No feedback requested for this version.');return;}
+      this.text(card,'Feedback was requested for this version. The student controls task completion.');
+      this.form(card,[["status","Feedback status",["approved","changes_requested"]],["feedback","Feedback the student can see","textarea",2000]],review,(values,form,status)=>{
         this.save({args:{p_table:"evidence_reviews",p_student_id:studentId,p_record_id:review.id||crypto.randomUUID(),p_values:{...values,evidence_id:row.id,evidence_version:row.row_version,archived_at:null},p_expected_version:review.row_version??null},title:row.activity+" · "+label(values.status),form,status,preview,confirm:saved=>{review=saved;}});
       });
     },{empty:'No submitted evidence yet.'});

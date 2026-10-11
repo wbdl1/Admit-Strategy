@@ -27,10 +27,10 @@ test('proof changes cannot inherit an approval or feedback from an older version
   const evidence={row_version:3,status:'submitted',proof_text:'Updated proof',evidence_reviews:[{evidence_version:2,status:'approved',feedback:'Earlier proof feedback'}]};
   for(const table of ['tasks','study_blocks','evidence']){
     const row=normalizeRecord(table,table==='evidence'?evidence:{evidence:[evidence]});
-    assert.equal(row.coachReview,'Pending');assert.equal(row.coachFeedback,'');
+    assert.equal(row.coachReview,'');assert.equal(row.coachFeedback,'');
   }
   evidence.evidence_reviews[0].evidence_version=3;
   assert.equal(normalizeRecord('evidence',evidence).coachReview,'Approved');
   evidence.evidence_reviews[0].archived_at='2026-09-13';
-  assert.equal(normalizeRecord('evidence',evidence).coachReview,'Pending');
+  assert.equal(normalizeRecord('evidence',evidence).coachReview,'');
 });
