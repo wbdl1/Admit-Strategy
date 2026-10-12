@@ -192,6 +192,7 @@ export class PortalData {
     let response;
     try{response=await this.rpc(prepared.name,prepared.args);}
     catch(error){if(error.code==="P0409")this.conflicts.set(key,true);throw error;}
+    if(response.deleted||response.ok===false)throw Object.assign(new Error('This record was deleted. Reload the workspace to continue.'),{retryable:false,rejected:true});
     const record=response.record;
     if(prepared.table==="evidence"){
       const prior=this.raw.get(key);

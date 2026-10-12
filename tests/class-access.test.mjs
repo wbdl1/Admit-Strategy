@@ -26,7 +26,7 @@ test('implicit keyboard submit cannot queue a mutation in a restricted class for
 });
 test('class access and cancellation stay actionable under read-only permission enforcement',()=>{
  const blocked={disabled:false,matches:()=>false},recovery={disabled:false,matches:()=>true},cancel={disabled:false,matches:()=>true};
- const context={canonicalPortal:{canEdit:false},fileExperience:null,calendarExperience:null,historyExperience:null,document:{querySelectorAll:()=>[blocked,recovery,cancel]}};
+ const context={canonicalPortal:{canEdit:false},studyExperience:null,fileExperience:null,calendarExperience:null,historyExperience:null,document:{querySelectorAll:()=>[blocked,recovery,cancel]}};
  vm.runInNewContext(source.slice(source.indexOf('function applyAccountPermissions(){'),source.indexOf('function actionId(){'))+';applyAccountPermissions();',context);
  assert.equal(blocked.disabled,true);assert.equal(recovery.disabled,false);assert.equal(cancel.disabled,false);
 });

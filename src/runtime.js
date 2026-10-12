@@ -1,3 +1,4 @@
+import { StudyWorkspace } from "./study.js";
 import morphdom from "morphdom";
 import { MutationQueue } from "./mutation-queue.js";
 import { AccountExperience } from "./account.js";
@@ -25,7 +26,7 @@ function patch(root, html) {
     childrenOnly: true,
     getNodeKey: key,
     onBeforeElUpdated(from, to) {
-      if((from.hasAttribute("data-file-workspace")||from.hasAttribute("data-calendar-workspace")||from.hasAttribute("data-work-history"))&&from.id===to.id)return false;
+      if((from.hasAttribute("data-study-workspace")||from.hasAttribute("data-file-workspace")||from.hasAttribute("data-calendar-workspace")||from.hasAttribute("data-work-history"))&&from.id===to.id)return false;
       if (from.isEqualNode(to)) return false;
       if (from.tagName === "DETAILS") to.open = from.open;
       if (from.matches("form[data-dirty]")) {
@@ -42,7 +43,7 @@ function patch(root, html) {
   });
 }
 
-window.Admit = { MutationQueue, patch, AccountExperience, FilesWorkspace, CalendarWorkspace, WorkHistory, bindWorkspaceMutation };
+window.Admit = { StudyWorkspace, MutationQueue, patch, AccountExperience, FilesWorkspace, CalendarWorkspace, WorkHistory, bindWorkspaceMutation };
 document.addEventListener("input", event => {
   const form = event.target.closest("form[data-portal-form]");
   if (form) { form.dataset.dirty = "true"; form.dataset.revision = String(Number(form.dataset.revision || 0) + 1); }
