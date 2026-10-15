@@ -16,7 +16,7 @@ test('study store traverses beyond API limits and removes archived or deleted ca
  const portal={studentId:'student',raw:new Map(),data:{classes:[{id:'class',name:'Biology'}],reviewCards:[{id:'deleted',classId:'class'},{id:'other',classId:'other'}]},result:q=>q,client:{from(table){let after='',count;const q={select(){return q;},eq(){return q;},order(){return q;},limit(n){count=n;return q;},gt(_key,v){after=v;return q;},then(resolve){calls++;resolve(table==='study_units'?[]:cards.filter(c=>c.id>after).slice(0,count));}};return q;}}};
  const store=new StudyStore(portal);await store.load('class');assert.equal(store.cards.length,1025);assert.equal(calls,7);assert.equal(portal.data.reviewCards.length,1025);assert.ok(!portal.data.reviewCards.some(c=>c.id==='00000'||c.id==='deleted'));
 });
-test('student-friendly stages and due filtering preserve scheduler meaning',()=>{assert.equal(studyStage({box:5}),'Mastered');assert.equal(studyDue({box:1}),true);assert.equal(studyDue({box:5}),false);assert.equal(studyDue({box:1,archived_at:'2026-01-01'}),false);});
+test('student-friendly stages and due filtering preserve scheduler meaning',()=>{assert.equal(studyStage({box:5}),'Strong');assert.equal(studyDue({box:1}),true);assert.equal(studyDue({box:5}),false);assert.equal(studyDue({box:1,archived_at:'2026-01-01'}),false);});
 
 test('an uncertain study save retries the exact request and advances only after confirmation',async()=>{
  let fail=true,saved=0;const calls=[];

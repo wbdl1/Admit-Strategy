@@ -55,10 +55,15 @@ export class PortalData {
     await Promise.all([
       this.loadUpcomingAssessments(60),
       this.read("tasks",{order:"due_date",limit:60,filter:q=>q.in("status",["not_started","in_progress","submitted"])}),
-      this.read("review_cards",{order:"next_review",limit:60,filter:q=>q.lt("box",5)}),
+      this.read("review_cards",{order:"next_review",limit:60,filter:q=>q.lte("next_review",today())}),
       this.read("study_blocks",{order:"date",limit:60,filter:q=>q.gte("date",today())})
     ]);
-    this.loaded.add("today");return this.data;
+    await this.refreshStudyOverview();this.loaded.add("today");return this.data;
+  }
+  async refreshStudyOverview(){
+    const student=this.studentId,generation=this.studyOverviewGeneration=(this.studyOverviewGeneration||0)+1;
+    try{const result=await this.rpc('study_overview',{p_student_id:student});if(this.studentId===student&&generation===this.studyOverviewGeneration){this.data.studyOverview=result;this.data.studyOverviewError=null;}}
+    catch(error){if(this.studentId===student&&generation===this.studyOverviewGeneration)this.data.studyOverviewError=error.message;}
   }
   async loadUpcomingAssessments(size=25){
     if(this.assessmentCursor===null)return;
@@ -82,10 +87,11 @@ export class PortalData {
     }
     return rows.map(row=>normalizeRecord(table,row,this.data.classes));
   }
-  query(table){
+  query(table,{archived=false,includeArchived=false}={}){
     if(!Object.hasOwn(collections,table))throw new Error("Unknown workspace collection");
     const withProof=["tasks","study_blocks"].includes(table);
-    let query=this.client.from(table).select(withProof?"*,evidence(id,row_version,proof_text,proof_url,created_at,evidence_feedback_requests(evidence_version,cancelled_at),evidence_reviews(status,feedback,created_at,evidence_version))":table==='evidence'?'*,evidence_reviews(*),evidence_feedback_requests(*)':"*").eq("student_id",this.studentId).is("archived_at",null);
+    let query=this.client.from(table).select(withProof?"*,evidence(id,row_version,proof_text,proof_url,created_at,evidence_feedback_requests(evidence_version,cancelled_at),evidence_reviews(status,feedback,created_at,evidence_version))":table==='evidence'?'*,evidence_reviews(*),evidence_feedback_requests(*)':"*").eq("student_id",this.studentId);
+    if(!includeArchived)query=archived?query.not("archived_at","is",null):query.is("archived_at",null);
     if(withProof)query=query.is("evidence.archived_at",null).eq("evidence.status","submitted").order("created_at",{referencedTable:"evidence",ascending:false}).limit(1,{referencedTable:"evidence"}).is("evidence.evidence_reviews.archived_at",null).order("created_at",{referencedTable:"evidence.evidence_reviews",ascending:false}).limit(1,{referencedTable:"evidence.evidence_reviews"});
     return query;
   }
@@ -94,8 +100,8 @@ export class PortalData {
     const rows=await this.result(filter(query));
     this.ingest(table,rows);return rows;
   }
-  async readPage(table,cursor=null){
-    const page=splitPage(await this.result(createdPage(this.query(table),cursor)));
+  async readPage(table,cursor=null,{archived=false}={}){
+    const page=splitPage(await this.result(createdPage(this.query(table,{archived}),cursor)));
     const missing=[...new Set(page.records.map(row=>row.class_id).filter(id=>id&&!this.data.classes.some(c=>c.id===id)))];
     if(missing.length)this.ingest("classes",await this.result(this.query("classes").in("id",missing).limit(25)));
     this.ingest(table,page.records);
@@ -177,11 +183,11 @@ export class PortalData {
         const row=this.raw.get("assessments:"+values.recordId);
         prepared={name:"save_record",table:"assessments",args:{p_table:"assessments",p_student_id:this.studentId,p_record_id:values.recordId,p_values:{classification_status:status(values.decision)},p_expected_version:row?.row_version,p_request_key:id}};
       }else{
-        const table=operationTables[operation.replace(/^(add|update|review)/,"")];
+        const table=operationTables[operation.replace(/^(add|update|review|archive|restore)/,"")];
         if(!table)throw Object.assign(new Error("This action is not available yet in the local release."),{retryable:false,rejected:true});
         const row=values.recordId?this.raw.get(table+":"+values.recordId):null;
         const input=operation==="reviewweakpoint"?{...values,lastReviewedAt:new Date().toISOString(),nextReview:values.status==="Mastered"?"":values.nextReview}:values;
-        prepared={name:"save_record",table,args:{p_table:table,p_student_id:this.studentId,p_record_id:values.recordId||id,p_values:this.values(table,input),p_expected_version:row?.row_version??null,p_request_key:id}};
+        prepared={name:"save_record",table,args:{p_table:table,p_student_id:this.studentId,p_record_id:values.recordId||id,p_values:operation.startsWith("archive")?{archived_at:new Date().toISOString()}:operation.startsWith("restore")?{archived_at:null}:this.values(table,input),p_expected_version:row?.row_version??null,p_request_key:id}};
       }
       prepared.studentId=this.studentId;
       prepared.recordId=values.recordId||id;
@@ -194,6 +200,7 @@ export class PortalData {
     catch(error){if(error.code==="P0409")this.conflicts.set(key,true);throw error;}
     if(response.deleted||response.ok===false)throw Object.assign(new Error('This record was deleted. Reload the workspace to continue.'),{retryable:false,rejected:true});
     const record=response.record;
+    if(["classes","assessments","review_cards"].includes(prepared.table))await this.refreshStudyOverview();
     if(prepared.table==="evidence"){
       const prior=this.raw.get(key);
       for(const field of ["evidence_reviews","evidence_feedback_requests"])record[field]??=prior?.[field]||[];
@@ -206,7 +213,7 @@ export class PortalData {
     const prepared=this.requests.get(id);
     if(!prepared||prepared.studentId!==this.studentId||!this.conflicts.has(prepared.table+":"+prepared.recordId))throw new Error("This comparison is no longer current.");
     // A targeted authorized read does not change the save base or erase a draft.
-    const row=await this.result(this.query(prepared.table).eq("id",prepared.recordId).maybeSingle());
+    const row=await this.result(this.query(prepared.table,{includeArchived:true}).eq("id",prepared.recordId).maybeSingle());
     if(prepared.studentId!==this.studentId)throw new Error("This workspace is closed.");
     const latest=row?normalizeRecord(prepared.table,row,this.data.classes):null;
     return {latest,accept:()=>{

@@ -69,3 +69,17 @@ test('failed comparison, missing records and newer cached versions never silentl
   fixture.setLatest(null);const removed=await portal.compareConflict('rejected');assert.equal(removed.latest,null);
   removed.accept();assert.equal(portal.data.classes.length,0);assert.equal(portal.raw.has('classes:class'),false);
 });
+
+test('archive and restore keep stable retry payloads without overwriting personal content',async()=>{
+ for(const operation of ['archivetask','restoretask']){
+  const calls=[];let fail=true;const portal=new PortalData({rpc:async(name,args)=>{calls.push(structuredClone(args));return fail?{error:{code:'NETWORK_ERROR'},status:0}:{data:{ok:true,record:{id:'task',row_version:4,title:'Keep this',...args.p_values}}};}});
+  portal.studentId='student';portal.data={classes:[]};portal.raw.set('tasks:task',{id:'task',row_version:3,title:'Keep this'});
+  await assert.rejects(portal.send({operation,recordId:'task'},'request'));fail=false;
+  const saved=await portal.send({operation,recordId:'task'},'request');assert.deepEqual(calls[0],calls[1]);assert.deepEqual(Object.keys(calls[1].p_values),['archived_at']);assert.equal(saved.changed.values.title,'Keep this');
+ }
+});
+test('late study overview requests cannot replace newer counts and failures expose retry state',async()=>{
+ const pending=[];const portal=new PortalData({rpc:()=>new Promise(resolve=>pending.push(resolve))});portal.studentId='student';portal.data={};
+ const first=portal.refreshStudyOverview(),second=portal.refreshStudyOverview();pending[1]({data:{groups:[{due_count:2}]}});await second;pending[0]({data:{groups:[{due_count:5}]}});await first;assert.equal(portal.data.studyOverview.groups[0].due_count,2);
+ const failed=portal.refreshStudyOverview();pending[2]({error:{code:'NETWORK_ERROR'},status:0});await failed;assert.ok(portal.data.studyOverviewError);
+});

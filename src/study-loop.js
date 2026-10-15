@@ -1,0 +1,25 @@
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+export const dayDistance=(date,today)=>Math.round((Date.parse(date+'T12:00:00Z')-Date.parse(today+'T12:00:00Z'))/86400000);
+export function nextReviewLabel(date,today){
+ if(!date)return 'Ready for a first review';const days=dayDistance(date,today);
+ return days<0?`${Math.abs(days)} day${days===-1?'':'s'} overdue`:days===0?'Due today':days===1?'Review tomorrow':`Review in ${days} days`;
+}
+export function sessionSummary(items=[],today){
+ const answered=items.filter(i=>i.rating&&i.answered_at);
+ return {reviewed:answered.length,knew:answered.filter(i=>i.rating==='knew').length,partly:answered.filter(i=>i.rating==='partly').length,missed:answered.filter(i=>i.rating==='missed').length,tomorrow:answered.filter(i=>dayDistance(i.next_review,today)===1).length};
+}
+export function summaryMarkup(summary,followingDay=false){return `<dl class="study-results"><div><dt>Reviewed</dt><dd>${summary.reviewed}</dd></div><div><dt>Knew it</dt><dd>${summary.knew}</dd></div><div><dt>Improving</dt><dd>${summary.partly}</dd></div><div><dt>Weak</dt><dd>${summary.missed}</dd></div></dl><p>${summary.tomorrow} scheduled for ${followingDay?'the day after this session':'tomorrow'}. These counts reflect your answers in this session.</p>`;}
+export function studyTodayMarkup(data,today){
+ const overview=data.studyOverview;
+ if(!overview||data.studyOverviewError)return '<div class="card"><h3>What to study</h3><p role="status">Study priorities could not load. Your work is kept.</p><button class="btn" data-refresh-study>Retry study priorities</button></div>';
+ const steps=[[(data.classes||[]).length>0,'Add a class'],[overview.unit_count>0,'Add a unit'],[overview.item_count>0,'Add what you are learning'],[(data.assessments||[]).length>0,'Add your next assessment']];
+ const setup=steps.some(s=>!s[0])?`<div class="card study-first-use"><h3>Turn schoolwork into a short study session</h3><ol>${steps.map(([done,label])=>`<li>${done?'✓ ':''}${label}</li>`).join('')}<li>Open Today and start studying</li></ol><p>Admit Strategy brings material back more often when you struggle with it and less often as you learn it.</p><button class="btn secondary" data-app-view="${steps.slice(0,3).some(s=>!s[0])?'classes':'assessments'}">${steps.slice(0,3).some(s=>!s[0])?'Open Classes':'Add an assessment'}</button></div>`:'';
+ const sessions=overview.sessions||[],active=sessions.find(s=>s.status==='active');
+ const resume=active?`<p><button class="btn" data-open-study-session="${active.id}" data-study-class="${active.class_id}" data-study-subject="${esc(active.class_name)}">Resume studying — ${esc(active.class_name)} (${active.reviewed}/${active.planned_count})</button></p>`:'';
+ const groups=(overview.groups||[]).filter(g=>!active||g.class_id!==active.class_id).slice(0,active?2:3);
+ const cards=groups.map(g=>`<article class="study-today-card"><h4>${esc(g.class_name)} — ${esc(g.unit_name)}</h4><p><strong>${g.due_count} reviews due</strong> · ${g.weak_count} weak items</p>${g.assessment_date?`<p>Class assessment ${dayDistance(g.assessment_date,today)===0?'today':`in ${dayDistance(g.assessment_date,today)} days`}</p>`:''}<p class="muted">About ${Math.max(1,Math.ceil(Math.min(g.due_count,20)*0.5))} min for up to ${Math.min(g.due_count,20)} items — an estimate</p><button class="btn" data-start-study="${g.class_id}" data-study-unit="${g.unit_id||''}" data-study-subject="${esc(g.class_name)}">Start studying</button></article>`).join('');
+ const last=sessions.find(s=>s.status!=='active'&&s.reviewed>0);
+ return setup+`<div class="card"><h3>What should I study now?</h3>${resume}<div class="study-today-grid">${cards||`<p>No reviews due right now. ${overview.next_review?esc(nextReviewLabel(overview.next_review,today))+'.':'Add a unit and paste what you are learning in Classes.'}</p>`}</div><p class="muted">Overdue reviews first, then weak material and classes with approaching assessments. Each session has up to 20 items.</p></div>`+(last?`<div class="card"><h3>Your last study session — ${esc(last.class_name)}</h3>${summaryMarkup(last,last.finished_at?.slice(0,10)!==today)}</div>`:'');
+}
+
+export function studyHistoryMarkup(overview,today){const sessions=(overview?.sessions||[]).filter(s=>s.status!=='active'&&s.reviewed>0);return `<div class="card"><h3>Recent study sessions</h3>${sessions.length?sessions.map(s=>`<article><h4>${esc(s.class_name)} · ${esc(s.finished_at?.slice(0,10)||s.created_at?.slice(0,10))}</h4>${summaryMarkup(s,s.finished_at?.slice(0,10)!==today)}</article>`).join(''):'<p>Finish a study session to see what you reviewed and what needs more practice.</p><button class="btn secondary" data-app-view="today">Open Today</button>'}</div>`;}

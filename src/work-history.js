@@ -17,6 +17,10 @@ export class WorkHistory {
         more.type='button';more.className='btn secondary';more.hidden=true;
         const page={table,panel,list,status,more,ids:[],cursor:null,loaded:false,busy:false};this.pages.push(page);
         panel.append(summary,list,status,more);root.append(panel);
+        if(['tasks','assessments','study_materials','projects'].includes(table)){
+          const label=element('label','Show archived '),toggle=element('input');toggle.type='checkbox';label.append(toggle);panel.insertBefore(label,list);
+          toggle.onchange=()=>{if(page.busy||list.querySelector('form[data-dirty]')){toggle.checked=!!page.archived;status.textContent='Finish saving your open edits first.';return;}page.archived=toggle.checked;page.ids=[];page.cursor=null;page.loaded=false;list.replaceChildren();this.load(page);};
+        }
         panel.ontoggle=()=>{if(panel.open&&!page.loaded)this.load(page);};more.onclick=()=>this.load(page);
       }
     }
@@ -24,7 +28,7 @@ export class WorkHistory {
   async load(page){
     if(this.disposed||page.busy)return;page.busy=true;page.more.disabled=true;page.status.textContent='Loading history…';
     try{
-      const result=await this.portal.readPage(page.table,page.cursor);
+      const result=await this.portal.readPage(page.table,page.cursor,{archived:!!page.archived});
       if(this.disposed||!page.panel.isConnected)return;
       for(const record of result.records)if(!page.ids.includes(record.id))page.ids.push(record.id);
       page.cursor=result.cursor;page.loaded=true;this.refresh(page);this.onRows();
@@ -40,7 +44,7 @@ export class WorkHistory {
     for(const record of this.portal.historyRecords(page.table,page.ids)){
       let row=[...page.list.children].find(node=>node.dataset.historyRecord===record.id);
       if(!row){row=element('div');row.dataset.historyRecord=record.id;page.list.append(row);}
-      this.patch(row,this.render(page.table,[record]));
+      const matches=!!record.archivedAt===!!page.archived;row.hidden=!matches;if(matches)this.patch(row,this.render(page.table,[record]));
       if(this.portal.canEdit===false)row.querySelectorAll('form[data-portal-form] button,[data-move-review]').forEach(button=>button.disabled=true);
     }
   }

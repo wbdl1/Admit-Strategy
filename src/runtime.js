@@ -1,3 +1,5 @@
+import { PortalGuide } from "./portal-guide.js";
+import { studyTodayMarkup,studyHistoryMarkup } from "./study-loop.js";
 import { StudyWorkspace } from "./study.js";
 import morphdom from "morphdom";
 import { MutationQueue } from "./mutation-queue.js";
@@ -43,7 +45,7 @@ function patch(root, html) {
   });
 }
 
-window.Admit = { StudyWorkspace, MutationQueue, patch, AccountExperience, FilesWorkspace, CalendarWorkspace, WorkHistory, bindWorkspaceMutation };
+window.Admit = { PortalGuide, StudyWorkspace, studyTodayMarkup, studyHistoryMarkup, MutationQueue, patch, AccountExperience, FilesWorkspace, CalendarWorkspace, WorkHistory, bindWorkspaceMutation };
 document.addEventListener("input", event => {
   const form = event.target.closest("form[data-portal-form]");
   if (form) { form.dataset.dirty = "true"; form.dataset.revision = String(Number(form.dataset.revision || 0) + 1); }
