@@ -2,8 +2,8 @@ export const guideSteps=[
  {view:'today',title:'Today',body:'Today shows the most important academic actions and reviews you should focus on now.'},
  {view:'classes',title:'Classes',body:'Classes organize what you are learning. Add subjects, units/topics and study material here.'},
  {view:'assessments',title:'Assessments',body:'Add tests, quizzes, projects and deadlines so Admit Strategy can prioritize your work.'},
- {view:'classes',title:'Study / Reviews',body:'Admit Strategy brings difficult material back more often and strong material back less often so you review at the right time. Open a class, choose Topics, then Start studying.'},
- {view:'progress',title:'Progress',body:'See what you have studied, completed and where you may still be weak.'},
+ {view:'classes',title:'Study / Reviews',body:'Admit Strategy brings difficult material back more often and strong material back less often so you review at the right time. Open a class, choose Units & study, and pick a mode. Every mode updates the same review progress.'},
+ {view:'progress',title:'Progress',body:'See confirmed study activity, recent sessions and concepts that need practice. These are real outcomes, not predicted grades.'},
  {view:'classes',title:'You’re ready.',body:'Start by adding one class and your next assessment.'}
 ];
 export class PortalGuide {

@@ -13,7 +13,7 @@ if (!html.includes("function switchPortalView(view)")) failures.push("Primary na
 if (!html.includes("portalViewScroll[activePortalView] = {x:window.scrollX,y:Math.max(window.scrollY,portalViewTop(activePortalView))}")) failures.push("Primary navigation must remember each view's scroll position without restoring shared header space.");
 if (!html.includes("saved ? saved.y : portalViewTop(activePortalView)")) failures.push("A newly opened view must start at its content heading.");
 if (!html.includes("function classWorkspace(data)")) failures.push("Subject tools need a class workspace.");
-if (!html.includes('[["overview","Overview"],["topics","Topics"],["tests","Tests"],["materials","Materials"],["strategy","Study Strategy"]]')) {
+if (!html.includes('[["overview","Overview"],["topics",canonicalPortal?"Units & study":"Topics"],["tests","Tests"],["materials","Materials"],["strategy","Study Strategy"]]')) {
   failures.push("Class navigation is incomplete.");
 }
 if (!html.includes("reviewDisplayMode === \"board\"") || !html.includes("Review queue") || !html.includes("Board view")) {

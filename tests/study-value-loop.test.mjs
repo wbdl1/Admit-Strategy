@@ -27,3 +27,8 @@ test('Today offers no more than three real grouped sessions with explicit assess
  const html=studyTodayMarkup(data,'2026-10-14');assert.equal((html.match(/data-start-study=/g)||[]).length,3);assert.match(html,/18 reviews due/);assert.match(html,/6 weak items/);assert.match(html,/Linked assessment in 5 days/);assert.match(html,/estimate/);assert.doesNotMatch(html,/readiness|Box [1-5]/);
  assert.match(studyTodayMarkup({studyOverview:{groups:[],sessions:[],unit_count:0,item_count:0}},'2026-10-14'),/Add what you are learning/);
 });
+
+test('repeated attempts never count an old review date as an additional tomorrow item',()=>{
+ const rows=[{review_card_id:'a',rating:'missed',answered_at:'now',next_review:'2026-10-15'},{review_card_id:'a',rating:'knew',answered_at:'later',next_review:'2026-10-17'},{review_card_id:'b',rating:'missed',answered_at:'now',next_review:'2026-10-15'}];
+ const s=sessionSummary(rows,'2026-10-14');assert.equal(s.reviewed,3);assert.equal(s.tomorrow,1);
+});
