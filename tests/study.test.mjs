@@ -37,3 +37,11 @@ test('account switching rejects a pending study write before dispatch',async()=>
 test('a stale study store cannot read into a different student workspace',async()=>{
  const portal={studentId:'one'},store=new StudyStore(portal);portal.studentId='two';await assert.rejects(store.load('class'),/closed/);assert.throws(()=>store.sync(),/closed/);
 });
+
+test('coverage buttons save after concept reveal while flashcards still require revealing the answer',async()=>{
+ const workspace=new StudyWorkspace({portal:{},patch(){},notify(){}});let answers=[];workspace.answer=async(_s,rating)=>answers.push(rating);
+ const state={session:{session:{reflection_revealed_at:'2026-10-16'},items:[{id:'item',review_card_id:'card',presentation:'coverage'}],cards:[{id:'card'}]}};
+ const event={stopPropagation(){},target:{closest(){return {dataset:{studyAction:'missed'}};}}};
+ await workspace.click(state,event);assert.deepEqual(answers,['missed']);state.session.session.reflection_revealed_at=null;await workspace.click(state,event);assert.equal(answers.length,1);
+ state.session.items[0].presentation='flashcard';await workspace.click(state,event);assert.equal(answers.length,1);state.revealed=true;await workspace.click(state,event);assert.equal(answers.length,2);
+});
