@@ -21,9 +21,9 @@ test('session summary counts only confirmed answers, not skipped or pending item
  const rows=[{rating:'knew',answered_at:'now',next_review:'2026-10-17'},{rating:'partly',answered_at:'now',next_review:'2026-10-16'},{rating:'missed',answered_at:'now',next_review:'2026-10-15'},{rating:null,skipped_at:'now'},{rating:'knew',answered_at:null}];
  assert.deepEqual(sessionSummary(rows,'2026-10-14'),{reviewed:3,knew:1,partly:1,missed:1,tomorrow:1});
 });
-test('Today offers no more than three real grouped sessions with honest class assessment context',()=>{
+test('Today offers no more than three real grouped sessions with explicit assessment context',()=>{
  const group={class_id:'c',unit_id:'u',class_name:'Biology',unit_name:'Cells',due_count:18,weak_count:6,assessment_date:'2026-10-19'};
  const data={classes:[{}],assessments:[{}],studyOverview:{unit_count:1,item_count:100,groups:Array.from({length:5},()=>group),sessions:[]}};
- const html=studyTodayMarkup(data,'2026-10-14');assert.equal((html.match(/data-start-study=/g)||[]).length,3);assert.match(html,/18 reviews due/);assert.match(html,/6 weak items/);assert.match(html,/Class assessment in 5 days/);assert.match(html,/estimate/);assert.doesNotMatch(html,/readiness|Box [1-5]/);
+ const html=studyTodayMarkup(data,'2026-10-14');assert.equal((html.match(/data-start-study=/g)||[]).length,3);assert.match(html,/18 reviews due/);assert.match(html,/6 weak items/);assert.match(html,/Linked assessment in 5 days/);assert.match(html,/estimate/);assert.doesNotMatch(html,/readiness|Box [1-5]/);
  assert.match(studyTodayMarkup({studyOverview:{groups:[],sessions:[],unit_count:0,item_count:0}},'2026-10-14'),/Add what you are learning/);
 });
