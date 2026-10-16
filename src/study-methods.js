@@ -1,4 +1,4 @@
-export const methodNames={flashcard:'Flashcards',quiz_choice:'Quiz: multiple choice',quiz_written:'Quiz: written answers',learn:'Learn',blurting:'Free recall / Blurting'};
+export const methodNames={flashcard:'Flashcards',quiz_choice:'Quiz: multiple choice',quiz_written:'Quiz: written answers',learn:'Learn',blurting:'Free recall / Blurting',diagram:'Diagram labels'};
 export const normalizeChoice=value=>String(value||'').trim().toLocaleLowerCase().replace(/\s+/g,' ').replace(/[.!?]+$/,'');
 // Same-unit alternatives only. Ambiguous, long or insufficient alternatives use written recall.
 export function answerChoices(card,cards,seed=''){
