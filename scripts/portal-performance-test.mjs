@@ -5,8 +5,8 @@ const failures = [];
 
 if (html.includes("scrollIntoView")) failures.push("Portal must not trigger automatic scrolling.");
 if (!/\.save-status\{position:fixed/.test(html)) failures.push("Save feedback must use a fixed toast.");
-if (!html.includes('const items = [["today","Today"],["classes","Classes"],["assessments","Assessments"],["progress","Progress"]]')) {
-  failures.push("Primary navigation must contain the four approved areas in order.");
+if (!html.includes('const items = [["today","Today"],["classes","Classes"],["study","Study"],["assessments","Assessments"],["progress","Progress"],["help","Help"]]')) {
+  failures.push("Primary navigation must contain the six owner-requested areas in order.");
 }
 if (!html.includes("function renderAffectedViews(operation)")) failures.push("Mutations need scoped view updates.");
 if (!html.includes("function switchPortalView(view)")) failures.push("Primary navigation needs per-view scroll handling.");
