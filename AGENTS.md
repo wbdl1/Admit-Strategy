@@ -42,3 +42,11 @@ Admit Strategy is the execution layer for a student's academic life: understand 
 3. Run JavaScript syntax checks, the portal performance contract, relevant backend suites, `git diff --check`, desktop/mobile fictional-demo QA, overflow checks, and browser-console checks.
 4. Keep frontend and backend changes in focused branches and pull requests. Deploy backend contract changes first, verify them, then publish the frontend.
 5. Never claim a change is live until the matching workflow succeeds and the exact production URL is checked.
+
+## Production deployment responsibility
+
+- For every task that changes production frontend/backend code, determine whether Cloudflare Pages, Supabase, or both require deployment. Complete the required production deployment and verification within the task; a Git commit or push alone does not make code live.
+- Compare the reviewed change with the latest `RELEASE-STATUS.md`, deployment receipts and current provider state before any provider mutation. If the exact reviewed artifact is already deployed, verify the existing evidence and do not redeploy it or reapply migrations.
+- Deploy changed frontend HTML/CSS/JavaScript, build dependencies or public build configuration to the existing Pages project. Apply only missing reviewed Supabase migrations and deploy only changed Edge Functions or required backend configuration to the existing project. When both change, verify a compatible backend before publishing the frontend.
+- Verify the canonical production portal and deployment-origin HTML/assets against the reviewed build hashes, then exercise the affected visible workflow and persistence. Verify the affected backend contract, migration/function state and ownership/isolation as applicable. Record local, committed, deployed and accepted states separately.
+- Documentation, agent instructions and tests that do not alter a production artifact require no Pages/Supabase deployment. Do not repeat DNS, Auth, legacy imports, provider setup, backup rehearsals or passed suites unless the actual change requires them or a regression is identified. Preserve existing data, RLS, private uploads and recovery evidence.
