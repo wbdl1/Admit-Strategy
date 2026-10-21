@@ -76,3 +76,23 @@ test('new and moved assessments update cached Study context and unit linking pre
 test('recommended reviews stay short without discarding the rest of the backlog',()=>{
  const cards=Array.from({length:125},(_,i)=>({id:String(i),unit_id:'unit',next_review:'2026-10-01'}));const rec=recommendStudy(cards,[],[],'2026-10-21');assert.equal(rec.cards.length,24);assert.equal(rec.minutes,12);assert.equal(rec.due,125);assert.equal(cards.length,125);
 });
+
+test('starting a different method or model saves the current draft without a switch prompt',async()=>{
+ const w=workspace(),s=state(),calls=[];s.classId='class';s.unit='unit';s.method='quiz_choice';s.root={querySelector:()=>null};
+ s.session.session={...s.session.session,method:'blurting',row_version:2,reflection_text:'Earlier draft'};
+ s.drafts.set('reflection-s',{reflection:'New words to preserve'});
+ w.mutate=async(_s,name,args,onSaved)=>{calls.push({name,args});if(name==='save_study_reflection')onSaved({...s.session,session:{...s.session.session,reflection_text:args.p_text,row_version:3}});else onSaved({session:{id:'next',status:'active',method:'quiz_choice'}});};
+ await w.start(s,'practice');assert.deepEqual(calls.map(c=>c.name),['save_study_reflection','start_study_experience']);assert.equal(calls[0].args.p_text,'New words to preserve');assert.equal(calls[0].args.p_reveal,false);assert.equal(calls[1].args.p_replace_active,true);assert.equal(s.session.session.id,'next');assert.equal(s.drafts.size,0);
+ await w.startDiagram(s,'diagram');assert.equal(calls.at(-1).name,'start_model_experience');assert.equal(calls.at(-1).args.p_replace_active,true);
+});
+test('a failed draft save keeps the current session and text and prevents switching',async()=>{
+ const w=workspace(),s=state(),calls=[];s.root={querySelector:()=>null};s.session.session={...s.session.session,method:'feynman',row_version:2,reflection_text:''};s.method='learn';s.drafts.set('reflection-s',{reflection:'Keep this explanation'});
+ w.mutate=async(_s,name,args)=>{calls.push(name);s.pending={name,args};};
+ await w.start(s,'practice');assert.deepEqual(calls,['save_study_reflection']);assert.equal(s.session.session.id,'s');assert.equal(s.drafts.get('reflection-s').reflection,'Keep this explanation');
+ await w.startDiagram(s,'diagram');assert.deepEqual(calls,['save_study_reflection']);
+});
+test('switching with saved answers does not submit another grade or change review history',async()=>{
+ const w=workspace(),s=state(),calls=[];s.root={querySelector:()=>null};s.method='learn';s.session.items[0].answered_at='now';s.session.items[0].rating='missed';
+ w.mutate=async(_s,name,args,onSaved)=>{calls.push(name);onSaved({session:{id:'new',status:'active',method:'learn'}});};
+ const old=s.session;await w.start(s,'practice');assert.deepEqual(calls,['start_study_experience']);assert.equal(old.items[0].rating,'missed');assert.equal(old.cards[0].box,3);
+});

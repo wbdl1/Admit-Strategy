@@ -2,7 +2,7 @@ export const guideSteps=[
  {view:'today',title:'Today',body:'Today shows the most important academic actions and reviews you should focus on now.'},
  {view:'classes',title:'Classes',body:'Classes organize what you are learning. Add subjects, units/topics and study material here.'},
  {view:'assessments',title:'Assessments',body:'Add tests, quizzes, projects and deadlines so Admit Strategy can prioritize your work.'},
- {view:'study',title:'Study',body:'Choose what you’re learning, then pick a way to practise. Admit Strategy remembers what you struggle with and brings it back later.'},
+ {view:'study',title:'Study',body:'Choose what you’re learning, then pick a way to practice. Admit Strategy remembers what you struggle with and brings it back later.'},
  {view:'progress',title:'Progress',body:'See confirmed study activity, recent sessions and concepts that need practice. These are real outcomes, not predicted grades.'},
  {view:'classes',title:'You’re ready.',body:'Start by adding one class and your next assessment.'}
 ];
