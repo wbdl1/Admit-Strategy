@@ -2,7 +2,7 @@ export const guideSteps=[
  {view:'today',title:'Today',body:'Today shows the most important academic actions and reviews you should focus on now.'},
  {view:'classes',title:'Classes',body:'Classes organize what you are learning. Add subjects, units/topics and study material here.'},
  {view:'assessments',title:'Assessments',body:'Add tests, quizzes, projects and deadlines so Admit Strategy can prioritize your work.'},
- {view:'classes',title:'Study / Reviews',body:'Admit Strategy brings difficult material back more often and strong material back less often so you review at the right time. Open a class, choose Units & study, and pick a mode. Every mode updates the same review progress.'},
+ {view:'study',title:'Study',body:'Choose what you’re learning, then pick a way to practise. Admit Strategy remembers what you struggle with and brings it back later.'},
  {view:'progress',title:'Progress',body:'See confirmed study activity, recent sessions and concepts that need practice. These are real outcomes, not predicted grades.'},
  {view:'classes',title:'You’re ready.',body:'Start by adding one class and your next assessment.'}
 ];
@@ -19,7 +19,7 @@ export class PortalGuide {
   if(!this.isActive())return;
   this.skipAfterSync=!!cached?.skipAfterSync;
   if(cached?.pending){this.pending=cached.pending;this.state=cached.state;await this.flush();}
-  this.show();
+  this.expanded=false;this.render();
  }
  dispose(){this.disposed=true;}
  live(){return !this.disposed&&this.isActive()&&this.root.isConnected;}
@@ -46,6 +46,7 @@ export class PortalGuide {
   const button=(text,fn,secondary=false)=>{const b=el('button',text);b.type='button';b.className='btn'+(secondary?' secondary':'');b.onclick=fn;return b;};
   if(!this.state){this.root.hidden=false;this.root.append(el('p',this.error||'Loading the optional guide…'),button('Retry guide',()=>this.start(),true));return;}
   const active=this.state.status==='active';this.root.hidden=!active&&!this.error&&!this.pending;
+  if(active&&!this.expanded){this.root.append(el('p','Add what you’re learning → Study it → Come back when it’s due.'),button('Show me around',()=>{this.expanded=true;this.show();},true),button('Dismiss',()=>this.change(this.state.step,'skipped'),true));return;}
   if(active){const step=guideSteps[this.state.step];this.root.append(el('p',this.state.step===5?"Quick portal guide complete":`Quick portal guide · ${this.state.step+1} of 5`),el('h2',step.title),el('p',step.body));
    const actions=el('div','');actions.className='guide-actions';
    if(this.state.step>0){const back=button('Back',()=>this.change(this.state.step-1),true);back.disabled=this.busy||!!this.pending;actions.append(back);}
@@ -56,5 +57,5 @@ export class PortalGuide {
   }
   if(this.busy||this.error||this.pending){const status=el('p',this.busy?'Saving guide progress…':this.error||'Guide progress waiting to sync.');status.setAttribute('role','status');this.root.append(status);if(!this.busy)this.root.append(button('Retry guide sync',()=>this.flush(),true));}
  }
- async restart(){if(!this.state)await this.start();if(!this.state)return;if(this.pending)await this.flush();if(this.pending)return;await this.change(0);}
+ async restart(){if(!this.state)await this.start();this.expanded=true;if(!this.state)return;if(this.pending)await this.flush();if(this.pending)return;await this.change(0);}
 }

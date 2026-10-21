@@ -10,7 +10,7 @@ test('private image retrieval requires a ready authorized file and handles stora
  portal.result=async()=>({mime_type:'text/html'});await assert.rejects(privateStudyImage(portal,'file'),/supported image/);
 });
 test('an interrupted diagram save preserves the draft and retries exactly once with the same key',async()=>{
- let fail=true,calls=[];const d=new StudyDiagrams({portal:{rpc:async(_name,args)=>{calls.push(structuredClone(args));if(fail)throw new Error('Interrupted');return {ok:true};}},config:{},patch(){},onStart(){},isActive:()=>true});d.unit={id:'unit'};d.status=()=>{};d.load=async()=>{};
+ let fail=true,calls=[];const d=new StudyDiagrams({portal:{rpc:async(_name,args)=>{calls.push(structuredClone(args));if(fail)throw new Error('Interrupted');return {ok:true};}},config:{},patch(){},onStart(){},isActive:()=>true});d.unit={id:'unit'};d.cards=[{id:'card',term:'Nucleus'}];d.status=()=>{};d.load=async()=>{};
  d.draft={id:'diagram',file_id:'file',title:'Cell',points:[{review_card_id:'card',x:50,y:50}],row_version:null};d.dirty=true;
  await d.save(d.draft,false);assert.ok(d.pending);assert.ok(d.draft);fail=false;await d.save();assert.deepEqual(calls[0],calls[1]);assert.equal(d.pending,null);assert.equal(d.dirty,false);assert.equal(d.draft,null);
 });

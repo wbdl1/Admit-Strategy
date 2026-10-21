@@ -209,6 +209,9 @@ export class AccountExperience {
       this.toolbar.prepend(action("Coach Admin",()=>this.adminHome(),true));
       this.toolbar.prepend(action("Coaching record",()=>this.coach?.studentHome(student),true));
     }
+    const accountMenu=document.createElement("details"),accountSummary=document.createElement("summary"),accountActions=document.createElement("div");
+    accountSummary.textContent="Account";accountActions.className="account-menu-actions";
+    accountActions.append(...this.toolbar.childNodes);accountMenu.append(accountSummary,accountActions);this.toolbar.append(accountMenu);
     if(student.profile_id===this.account.profile_id&&this.account.legacy_review_pending){
       const notice=document.createElement("div");notice.innerHTML=this.legacyNotice();this.root.prepend(notice);
     }

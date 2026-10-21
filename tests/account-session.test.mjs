@@ -209,7 +209,7 @@ test('workspace edit controls follow backend permission instead of guardian stat
    const student={id:'fixture',profile_id:scenario.own?'owner':'child',status:scenario.status};
    const account=Object.assign(Object.create(AccountExperience.prototype),{
     user:{id:'actor'},account:{profile_id:'owner'},roles:scenario.roles,client:{from:()=>rows,rpc:async()=>scenario.response},
-    show(){},gate:{},root:{dataset:{},prepend(){}},toolbar:{replaceChildren(){},prepend(){}},
+    show(){},gate:{},root:{dataset:{},prepend(){}},toolbar:{childNodes:[],replaceChildren(){},prepend(){},append(){}},
     onPortal:(_data,adapter)=>{edits=adapter.canEdit;},onAccountChange(){},recordWorkspaceEvent(){}
    });
    await account.openStudent(student);assert.equal(edits,scenario.expected);
