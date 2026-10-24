@@ -1,0 +1,13 @@
+/* Shared by the public site, account screens and student workspace. */
+:root{color-scheme:light;--bg:#F7F3EA;--paper:#F7F3EA;--panel:#fffefa;--panel2:#edf3f1;--card:#fffefa;--card2:#edf3f1;--text:#11161A;--muted:#526267;--line:#b7c7c3;--accent:#0B6B70;--accent2:#0B6B70;--petrol:#0B6B70;--mist:#DCE7E5;--gold:#F2B84B;--success:#075b60;--pending:#765000;--warn:#765000;--danger:#a52929;--red:#a52929}
+html{font-size:16px;background:var(--paper)}
+body{color:var(--text);background:var(--paper);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;font-size:1rem;line-height:1.6}
+button,input,select,textarea{font:inherit}button,a,input,select,textarea,summary{touch-action:manipulation}
+button,input,select,textarea{min-height:44px}button,a,summary{-webkit-tap-highlight-color:#0b6b7020}
+input,textarea,select{color:var(--text);background:var(--panel);border:1px solid #879d98;border-radius:10px;line-height:1.5}
+input::placeholder,textarea::placeholder{color:#526267;opacity:1}
+label{color:var(--text);font-weight:600}a{color:var(--petrol)}
+:where(button,a,input,select,textarea,summary,[tabindex]):focus-visible{outline:3px solid var(--petrol)!important;outline-offset:4px!important;box-shadow:0 0 0 2px var(--paper)}
+button:disabled,input:disabled,select:disabled,textarea:disabled{opacity:1;cursor:not-allowed;color:#526267;background:#e3e9e6}
+input[type=checkbox],input[type=radio]{accent-color:var(--petrol)}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
