@@ -1,9 +1,8 @@
 /* Shared portal design: content first, progressive controls, touch-sized actions. */
-:root{--bg:#F7F3EA;--card:#fffefa;--card2:#edf3f1;--text:#11161A;--muted:#526267;--line:#cbd7d4;--accent:#0B6B70;--accent2:#0B6B70;--success:#075b60;--pending:#765000;--warn:#765000;--red:#a52929;--petrol:#0B6B70;--paper:#F7F3EA;--mist:#DCE7E5;--gold:#F2B84B}
 body{background:var(--paper);color:var(--text);padding:24px;line-height:1.5}
 .wrap{max-width:1120px}.top{margin-bottom:4px;min-height:48px}.brand{color:var(--petrol);font-size:1.25rem}.top .pill{display:none}
 a{color:var(--petrol)}button{color:inherit}button,input,select,textarea,summary{touch-action:manipulation}
-button,input,select,textarea{font-size:1rem}button:disabled{cursor:not-allowed;opacity:.5}
+button,input,select,textarea{font-size:1rem}button:disabled{cursor:not-allowed;opacity:1}
 :where(button,a,input,select,textarea,summary,[tabindex]):focus-visible{outline:3px solid var(--petrol)!important;outline-offset:4px!important;box-shadow:0 0 0 2px var(--paper)}
 :where(input,select,textarea){min-height:44px;color:var(--text)!important;background:#fffefa!important;border:1px solid #9aadaa!important;border-radius:10px!important;padding:10px 12px}
 :where(input,textarea)::placeholder{color:#68777b;opacity:1}input[type=checkbox],input[type=radio]{min-height:20px;width:20px;height:20px;accent-color:var(--petrol);flex:none}
@@ -52,3 +51,28 @@ summary{cursor:pointer;min-height:44px;padding:12px 0;font-weight:650;color:var(
 .study-mode-card .study-best,.flashcard-side,.flashcard-hint{color:var(--muted)}.study-mode-card .study-best{font-size:.8rem}.study-system-links span{color:var(--muted)}
 
 .editor-dialog{padding:0}.editor-head{background:#fffefa;color:var(--text)}.editor-close{background:var(--mist);color:var(--text)}.study-toolbar.study-context{display:grid}
+
+/* Readability is a shared contract, including forms inherited from the original portal. */
+.form-panel>summary,.portfolio-section>summary,.class-options>summary,.study-context-options>summary,.study-gallery-disclosure>summary{color:var(--text);font-size:1rem;font-weight:650}
+.form-panel>summary:hover,.form-panel>summary:focus-visible{color:var(--petrol)}
+.portal-form label,.calendar-form label{font-size:1rem;font-weight:600;gap:8px}
+.portal-form input,.portal-form select,.portal-form textarea{font-size:1rem;font-weight:400;line-height:1.5;color-scheme:light}
+.portal-form input[type=date],.portal-form input[type=time]{color-scheme:light}
+input::placeholder,textarea::placeholder{color:#526267!important;opacity:1}
+.form-help,.detail-label,.detail-value,.study-item-unit,.study-strength,.study-best,.study-mode-card small,.study-results dt,.file-type,.review-meta,.flashcard-hint,.flashcard-side,.teaching-steps,.model-steps,.workspace-header h1 span{font-size:.875rem!important;line-height:1.5}
+.study-context label>span,.study-context small{font-size:.875rem}.study-context select{font-size:1rem}
+.study-item p,.study-mode-card p{font-size:1rem}.study-item-unit{font-size:.875rem!important}
+.study-mode-card button,.study-item-more .btn,.box-concept .btn,.view-toggle button,.workspace-header .btn,.portal-guide .btn,.study-quick-methods .btn{font-size:.875rem}
+.classroom-student>span:last-child{font-size:.875rem}.teaching-steps{flex-wrap:wrap}
+.study-mode-card .study-best{color:var(--muted)}.study-question{color:var(--text);background:var(--mist);border-left-color:var(--petrol)}
+.study-first-steps,.setup-step{color:var(--text)}.editor-close,.move-row button{color:var(--petrol);background:var(--mist)}
+.study-model-canvas .model-target{color:#fffefa;background:var(--petrol);border-color:#fffefa}.study-model-canvas .model-target.selected{color:var(--text);background:var(--gold);box-shadow:0 0 0 3px var(--petrol)}.study-model-canvas .model-target.answered{color:var(--muted);background:var(--mist);opacity:1}
+.btn:disabled,.record-edit:disabled,.study-workspace button:disabled{opacity:1;color:#526267;background:#e3e9e6;border-color:#9aadaa}
+.classroom-student:disabled{background:transparent;color:var(--text)}.drop-ready{outline-color:var(--petrol)!important;background:var(--mist)!important}
+.study-coverage-group{margin:24px 0}.study-coverage-item{padding:16px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start}.study-coverage-item p{margin:4px 0}.study-coverage-item details{max-width:220px}.study-coverage-item summary{padding:8px 0}.study-coverage-item select{width:100%;font-size:1rem}.coverage-evidence{font-size:.875rem;color:var(--muted)}.study-coverage-save{position:sticky;bottom:12px;padding:16px;background:var(--paper);border-top:1px solid var(--line);margin-top:24px}.study-coverage-save .btn{width:100%}
+@media(max-width:600px){.quick-nav button{font-size:.8125rem;font-weight:650;letter-spacing:-.02em}.study-context{grid-template-columns:1fr}.study-mode-card small{font-size:.875rem}.study-mode-card button{font-size:.875rem}.study-coverage-item{grid-template-columns:1fr}.study-coverage-item details{max-width:none}.study-coverage-save{bottom:72px}.study-system-links{grid-template-columns:1fr}.study-system-links button{min-height:64px}}
+.study-mode-card h4{color:var(--text)}
+.quick-nav button,.view-toggle button,.section-kicker,.study-recommendation small{font-size:.875rem}
+.study-session h5,.study-debrief h5{font-size:1rem;line-height:1.5;color:var(--text)}
+
+@media(max-width:600px){.quick-nav{grid-template-columns:.85fr 1fr .8fr 1.35fr 1fr}.quick-nav button{font-size:.875rem;padding-inline:1px}}

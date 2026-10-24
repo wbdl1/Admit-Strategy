@@ -37,3 +37,11 @@ test('invalid optional class input expands its section and explains the error in
  vm.runInNewContext(source.slice(source.indexOf('document.addEventListener("invalid"'),source.indexOf('document.addEventListener("submit"')),context);
  handler({target:input});assert.equal(details.open,true);assert.match(feedback.textContent,/Default study block.*at least 10/);
 });
+
+test('untouched material forms follow the selected class while edits and drafts stay intact',()=>{
+ const field=(value,dirty=false,editing=false)=>({value,closest:()=>({dataset:{dirty:dirty?'true':undefined},querySelector:()=>editing?{}:null})});
+ const inputs=[field('Biology'),field('Custom class',true),field('Original class',false,true),field('')];
+ const context={selectedReviewSubject:'Chemistry',document:{querySelectorAll:()=>inputs}};
+ vm.runInNewContext(source.slice(source.indexOf('function primeClassInputs(){'),source.indexOf('function openPanelKeys('))+';primeClassInputs();',context);
+ assert.deepEqual(inputs.map(i=>i.value),['Chemistry','Custom class','Original class','Chemistry']);
+});

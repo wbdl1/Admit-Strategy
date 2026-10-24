@@ -39,7 +39,7 @@ test('teaching progressively discloses question and debrief controls without los
  const w=workspace(),s=state();s.session.session={...s.session.session,method:'feynman',reflection_text:'Saved teaching'};s.session.prompts=[{id:'q',question:'Why?',response:'',self_rating:null}];
  let html=w.reflectionMarkup(s);assert.match(html,/Continue to questions/);assert.ok(!html.includes('Continue to debrief'));assert.ok(!html.includes('data-study-action="ask-question"'));
  s.teachingStep='questions';html=w.reflectionMarkup(s);assert.match(html,/Continue to debrief/);assert.ok(!html.includes('name="reflection"'));assert.match(html,/Saved teaching/);
- s.questionId='q';html=w.reflectionMarkup(s);assert.match(html,/name="rating" required/);assert.match(html,/Choose your result/);assert.ok(!html.includes('Continue to debrief'));
+ s.questionId='q';html=w.reflectionMarkup(s);assert.match(html,/Reflect on this answer \(optional\)/);assert.match(html,/No reflection yet/);assert.ok(!html.includes('name="rating" required'));assert.ok(!html.includes('Continue to debrief'));
 });
 test('dictation distinguishes absent pack, blocked microphone, and preserves errors through onend',async()=>{
  let instance;class Local{constructor(){instance=this;}start(){}stop(){this.onend?.();}}Local.prototype.processLocally=false;

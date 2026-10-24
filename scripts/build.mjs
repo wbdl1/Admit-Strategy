@@ -37,8 +37,12 @@ for(const entry of ["runtime","marketing","config"]){
   }
 }
 
-const css=await readFile(resolve(target,'portal-ux.css'));
-const cssName='portal-ux-'+createHash('sha256').update(css).digest('hex').slice(0,12)+'.css';
-await rename(resolve(target,'portal-ux.css'),resolve(target,'assets',cssName));
-const portalPath=resolve(target,'portal.html');
-await writeFile(portalPath,(await readFile(portalPath,'utf8')).replace('href="portal-ux.css"','href="assets/'+cssName+'"'));
+for(const stylesheet of ['design-system','portal-ux','launch']){
+  const css=await readFile(resolve(target,stylesheet+'.css'));
+  const cssName=stylesheet+'-'+createHash('sha256').update(css).digest('hex').slice(0,12)+'.css';
+  await rename(resolve(target,stylesheet+'.css'),resolve(target,'assets',cssName));
+  for(const page of (await readdir(target)).filter(n=>n.endsWith('.html'))){
+    const path=resolve(target,page);
+    await writeFile(path,(await readFile(path,'utf8')).replace('href="'+stylesheet+'.css"','href="assets/'+cssName+'"'));
+  }
+}
