@@ -36,3 +36,8 @@ nav a{color:var(--muted);min-height:44px;display:inline-flex;align-items:center}
 .stat,.portal-box,.price-card{overflow-wrap:anywhere}.plan-label{border-radius:8px}.price-period{color:var(--muted)}
 .contrast-card li{color:var(--muted)}.contrast-card.admin,.contrast-card.strategy{background:var(--panel);border-color:var(--line)}
 .hero h1{font-size:clamp(2.6rem,4.4vw,4.2rem)}
+
+/* A plain-language product introduction stays with the launch headline. */
+.product-intro{padding:0;margin:24px 0}.product-intro h2{font-size:1.5rem;letter-spacing:-.02em;line-height:1.2;margin-bottom:12px;color:var(--text)}.product-intro p{font-size:1rem;line-height:1.6;color:var(--text)}
+.product-loop{list-style:none;display:flex;align-items:center;gap:14px;padding:16px 0 0;margin:0;color:var(--petrol);font-size:.875rem;font-weight:650;line-height:1.45}.product-loop li{flex:1;position:relative}.product-loop li+li{padding-left:18px}.product-loop li+li::before{content:"→";position:absolute;left:-8px;top:0}
+@media(max-width:480px){.product-loop{display:grid;gap:8px}.product-loop li+li{padding:18px 0 0}.product-loop li+li::before{content:"↓";left:0;top:-4px}.product-intro{margin:20px 0}}

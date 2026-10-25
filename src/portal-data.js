@@ -114,7 +114,7 @@ export class PortalData {
     if(this.loaded.has(view))return;
     if(this.loading.has(view))return this.loading.get(view);
     const promise=(async()=>{
-      const tables={classes:["study_materials","weak_points","evidence"],assessments:[],calendar:[],materials:["study_materials"],progress:["weak_points","projects","evidence","sessions"]}[view]||[];
+      const tables={classes:["study_materials","weak_points","evidence"],assessments:[],calendar:[],materials:["study_materials"],projects:["projects"],progress:["weak_points","evidence","sessions"]}[view]||[];
       await Promise.all(tables.map(t=>this.read(t)));
       if(view==="progress"){
         const [scores,parents,bookings]=await Promise.all([
