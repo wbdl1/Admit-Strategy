@@ -57,3 +57,14 @@ test('starting and grading a source concept retain its source reference without 
  state.session={session:{method:'flashcard'},cards:[{id:'card'}],items:[{review_card_id:'card'}]};
  assert.match(workspace.sourceMarkup(state),/View source/);
 });
+
+
+test('answer feedback keeps the source for the answered concept until Next item',()=>{
+ const workspace=new StudyWorkspace({portal:{},patch(){},notify(){}});
+ const cards=['answered','next'].map(id=>({id,term:id,study_source_items:[{id:'source-'+id}]}));
+ const state={store:{cards},session:{session:{method:'flashcard'},cards,items:[{review_card_id:'next'}]},feedback:{before:{id:'answered'}}};
+ assert.match(workspace.sourceMarkup(state),/data-id="answered"/);
+ assert.doesNotMatch(workspace.sourceMarkup(state),/data-id="next"/);
+ state.feedback=null;
+ assert.match(workspace.sourceMarkup(state),/data-id="next"/);
+});
