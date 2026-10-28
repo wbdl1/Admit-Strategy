@@ -45,3 +45,15 @@ test('coverage buttons save after concept reveal while flashcards still require 
  await workspace.click(state,event);assert.deepEqual(answers,['missed']);state.session.session.reflection_revealed_at=null;await workspace.click(state,event);assert.equal(answers.length,1);
  state.session.items[0].presentation='flashcard';await workspace.click(state,event);assert.equal(answers.length,1);state.revealed=true;await workspace.click(state,event);assert.equal(answers.length,2);
 });
+
+
+test('starting and grading a source concept retain its source reference without another fetch',async()=>{
+ const workspace=new StudyWorkspace({portal:{},patch(){},onChange(){},notify(){}});
+ workspace.lock=()=>{};workspace.status=()=>{};workspace.render=()=>{};
+ const source=[{id:'proposal',source_id:'source',locator:'Page 2',study_sources:{filename:'Worksheet.pdf'}}];
+ const state={root:{querySelector:()=>null},store:{units:[],cards:[{id:'card',term:'Cell',box:1,study_source_items:source}],sync(){},async mutate(name){return name==='start'?{ok:true,cards:[{id:'card',term:'Cell',box:1}]}:{ok:true,record:{id:'card',term:'Cell',box:2}};}}};
+ await workspace.mutate(state,'start',{});await workspace.mutate(state,'answer',{});
+ assert.equal(state.store.cards[0].box,2);assert.deepEqual(state.store.cards[0].study_source_items,source);
+ state.session={session:{method:'flashcard'},cards:[{id:'card'}],items:[{review_card_id:'card'}]};
+ assert.match(workspace.sourceMarkup(state),/View source/);
+});

@@ -795,7 +795,7 @@ function assessmentList(items){
       "</strong><div><span class='date-chip'>" + safe(formatDate(item.date) + (item.time ? " at " + item.time : "") + " • " + daysLabel(item.date)) +
       "</span></div></div><div class='record-actions'>" + reviewBadge(item.status) +
       "<button class='record-edit' type='button' data-open-editor='0' data-editor-title='Edit summative'>Edit</button></div></div><div class='details'>" +
-      classification + detail("Class",item.subject) + detail("Topics",item.topics) + "</div>" + (canonicalPortal&&item.classId&&!needsConfirmation?"<button type='button' class='btn' data-start-study='"+safe(item.classId)+"' data-study-assessment='"+safe(item.id)+"' data-study-focus='practice' data-study-hub>Study for this assessment →</button>":"") + "<details class='assessment-more'><summary>Details & management</summary>" + detail("Type",item.type) + detail("Source",item.sourceType) + detail("Notes",item.notes) + "<div class='prep-line'><span>Preparation</span><span>" +
+      classification + detail("Class",item.subject) + detail("Topics",item.topics) + "</div>" + (canonicalPortal&&!needsConfirmation?"<button type='button' class='btn secondary' data-source-assessment='"+safe(item.id)+"'>Study guide sources</button>":"") + (canonicalPortal&&item.classId&&!needsConfirmation?"<button type='button' class='btn' data-start-study='"+safe(item.classId)+"' data-study-assessment='"+safe(item.id)+"' data-study-focus='practice' data-study-hub>Study for this assessment →</button>":"") + "<details class='assessment-more'><summary>Details & management</summary>" + detail("Type",item.type) + detail("Source",item.sourceType) + detail("Notes",item.notes) + "<div class='prep-line'><span>Preparation</span><span>" +
       complete + "/" + target + " actions</span></div><div class='bar'><div style='width:" + percentage +
       "%'></div></div><details class='form-panel edit-panel'><summary>Edit summative or assessment</summary><form class='portal-form' data-portal-form>" +
       "<input type='hidden' name='operation' value='updateassessment'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
@@ -816,30 +816,7 @@ function assessmentList(items){
 }
 
 function projectList(items){
-  if(canonicalPortal)items=(items||[]).filter(function(item){return !item.archivedAt;});
-  if(!items || !items.length) return "<div class='empty'>No projects or activities yet. Track an extracurricular, competition, passion project, volunteering activity, club, research project, business or other sustained activity.</div>";
-  return items.map(function(item){
-    return "<article class='item'><div class='record-head'><strong>" + safe(item.title || "Project or activity") +
-      "</strong><div class='record-actions'>" + reviewBadge(item.status) +
-      "<button class='record-edit' type='button' data-open-editor='0' data-editor-title='Edit project or activity'>Edit</button></div></div><div class='details'>" +
-      detail("Summary",item.detail) + detail("Role",item.role) + detail("Stage",item.stage) +
-      detail("Current goal",item.currentGoal) + detail("Next action",item.nextAction) +
-      detail("Output",item.output) + detail("Impact / evidence",item.impact) +
-      detail("Long-term direction",item.longTermDirection) + "</div>" +
-      "<details class='form-panel edit-panel'><summary>Edit project or activity</summary><form class='portal-form' data-portal-form>" +
-      "<input type='hidden' name='operation' value='updateproject'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
-      "<div class='form-grid'><label>Name<input name='title' maxlength='160' required value='" + safe(item.title || "") + "'></label>" +
-      "<label>Role<input name='role' maxlength='160' value='" + safe(item.role || "") + "' placeholder='Founder, team member, volunteer'></label></div>" +
-      "<label>Summary<textarea name='detail' maxlength='1200'>" + safe(item.detail || "") + "</textarea></label>" +
-      "<div class='form-grid'><label>Stage<input name='stage' maxlength='100' value='" + safe(item.stage || "") + "' placeholder='Idea, research, prototype, launched'></label>" +
-      "<label>Status<select name='status'>" + optionList(PROJECT_STATUSES,allowedValue(PROJECT_STATUSES,item.status,"Idea")) + "</select></label></div>" +
-      "<label>Current goal<textarea name='currentGoal' maxlength='800'>" + safe(item.currentGoal || "") + "</textarea></label>" +
-      "<label>Next concrete action<textarea name='nextAction' maxlength='800'>" + safe(item.nextAction || "") + "</textarea></label>" +
-      "<div class='form-grid'><label>Output<textarea name='output' maxlength='800'>" + safe(item.output || "") + "</textarea></label>" +
-      "<label>Impact or evidence<textarea name='impact' maxlength='800'>" + safe(item.impact || "") + "</textarea></label></div>" +
-      "<label>Long-term direction<textarea name='longTermDirection' maxlength='800'>" + safe(item.longTermDirection || "") + "</textarea></label>" +
-      formActions("Save project") + "</form></details>"+personalArchiveForm("project",item)+"</article>";
-  }).join("");
+  return window.Admit.projectCardsMarkup(items,{events:currentData.projectEvents||[],evidence:currentData.evidenceWins||[],pages:currentData.projectPages||{},today:qatarToday(),canEdit:canonicalPortal?.canEdit!==false,archive:function(item){return personalArchiveForm('project',item);}});
 }
 
 function feedbackRequestForm(item){
@@ -953,21 +930,7 @@ function addWeakPointForm(){
     formActions("Add weak point") + "</form></details>";
 }
 
-function addProjectForm(){
-  return "<details class='form-panel'><summary>Add a project or activity</summary><form class='portal-form' data-portal-form>" +
-    "<input type='hidden' name='operation' value='addproject'>" +
-    "<div class='form-grid'><label>Name<input name='title' maxlength='160' required placeholder='Doha light pollution project'></label>" +
-    "<label>Role<input name='role' maxlength='160' placeholder='Founder, team member, volunteer'></label></div>" +
-    "<label>Summary<textarea name='detail' maxlength='1200' placeholder='What is the project and why does it matter?'></textarea></label>" +
-    "<div class='form-grid'><label>Stage<input name='stage' maxlength='100' placeholder='Idea, research, prototype, launched'></label>" +
-    "<label>Status<select name='status'>" + optionList(PROJECT_STATUSES,"Idea") + "</select></label></div>" +
-    "<label>Current goal<textarea name='currentGoal' maxlength='800'></textarea></label>" +
-    "<label>Next concrete action<textarea name='nextAction' maxlength='800'></textarea></label>" +
-    "<div class='form-grid'><label>Output<textarea name='output' maxlength='800' placeholder='Map, event, prototype, article, competition entry'></textarea></label>" +
-    "<label>Impact or evidence<textarea name='impact' maxlength='800' placeholder='Who used it, what changed, or what proves the work?'></textarea></label></div>" +
-    "<label>Long-term direction<textarea name='longTermDirection' maxlength='800' placeholder='How this connects to the student's interests or future direction'></textarea></label>" +
-    formActions("Add project") + "</form></details>";
-}
+function addProjectForm(){return window.Admit.projectCreationMarkup();}
 
 function addEvidenceForm(){
   return "<details class='form-panel'><summary>Add Evidence &amp; Win</summary><form class='portal-form' data-portal-form>" +
@@ -1268,13 +1231,13 @@ function viewMarkup(view,context){
   const progress = currentData.progress || {};
   if(view === "calendar" && canonicalPortal) return "<section class='portal-section'><div id='canonical-calendar-" + (context || view) + "' data-calendar-workspace></div></section>";
   if(view === "assessments") return "<section class='portal-section'><h2>Assessments</h2><p class='muted'>What you’re preparing for.</p>"+addAssessmentForm()+"<div class='assessment-list'>" + assessmentList(currentData.assessments.filter(function(a){return !["completed","cancelled"].includes(String(a.status).toLowerCase());}).sort(function(a,b){return String(a.date+"T"+(a.time||"24:00")).localeCompare(String(b.date+"T"+(b.time||"24:00"))) || String(a.id).localeCompare(String(b.id));})) + assessmentPagingMarkup() + "</div><details class='form-panel'><summary>Calendar</summary>" + viewMarkup("calendar","assessments") + "</details></section>";
-  if(view === "today" && canonicalPortal) return "<section class='portal-section'><div class='section-head'><h2>Today</h2><p>What Admit Strategy recommends you do now.</p></div>"+window.Admit.studyTodayMarkup(currentData,qatarToday())+"<section class='today-other'><h3>Coming up</h3>"+nextAssessmentCard(currentData.nextAssessment)+"</section>"+"<details class='form-panel'><summary>Actions &amp; planning</summary>"+todayPlanPanel(currentData.todayPlan)+taskList(currentData.tasks.filter(function(task){return !task.archivedAt && !['completed','archived'].includes(String(task.status).toLowerCase());}))+addTaskForm()+plannerList(currentData.planner)+addPlannerForm()+"</details></section>";
+  if(view === "today" && canonicalPortal) return "<section class='portal-section'><div class='section-head'><h2>Today</h2><p>What Admit Strategy recommends you do now.</p></div>"+window.Admit.studyTodayMarkup(currentData,qatarToday())+"<section class='today-other'><h3>Coming up</h3>"+nextAssessmentCard(currentData.nextAssessment)+"</section>"+window.Admit.projectTodayMarkup(currentData,qatarToday())+"<details class='form-panel'><summary>Actions &amp; planning</summary>"+todayPlanPanel(currentData.todayPlan)+taskList(currentData.tasks.filter(function(task){return !task.archivedAt && !['completed','archived'].includes(String(task.status).toLowerCase());}))+addTaskForm()+plannerList(currentData.planner)+addPlannerForm()+"</details></section>";
   if(view === "today") return "<section class='portal-section'><div class='section-head'><div><span class='section-kicker'>Daily command center</span><h2>Today</h2></div><p>Your scheduled work, due reviews, assessments, and weekly actions in one place.</p></div>" + nextAssessmentCard(currentData.nextAssessment) + todayPlanPanel(currentData.todayPlan) + "<div class='card'><h3>Reviews due</h3>" + compactReviewQueue(currentData.reviewCards.filter(function(c){return c.box<5 && (!c.nextReview || c.nextReview<=qatarToday());}),null) + "</div><div class='card' style='margin-top:14px'><h3>Actions &amp; optional evidence</h3><div class='list'>" + taskList(canonicalPortal?currentData.tasks.filter(function(task){return !["archived","completed"].includes(String(task.status).toLowerCase());}):currentData.tasks) + "</div>" + addTaskForm() + "</div><details class='form-panel'><summary>More this week</summary>" + setupPanel(currentData) + "</details></section>";
   if(view === "classes") return "<section class='portal-section'><div class='section-head'><div><span class='section-kicker'>Subject workspaces</span><h2>Classes</h2></div><p>What you’re learning: units, concepts, materials and tests.</p></div><div id='classWorkspace'>" + classWorkspace(currentData) + "</div></section>";
   if(view === "calendar") return "<section class='portal-section'><div class='section-head'><div><span class='section-kicker'>Calendar sync</span><h2>Academic &amp; Extracurricular Calendar</h2></div><p>Import upcoming events from a dedicated school or activities calendar.</p></div><div class='info-box privacy-callout'><strong>Privacy first:</strong> link a separate school/activities calendar—not a personal calendar. The private feed URL is never shown after saving and is deleted on disconnect.</div><div class='card' style='margin-top:12px'><h3>Connections</h3>" + calendarSourceList(currentData.calendarSources) + linkCalendarForm() + "</div><div class='card' style='margin-top:12px'><h3>Upcoming imported events</h3><div class='list'>" + calendarEventList(currentData.calendarEvents) + "</div></div></section>";
   if(view === "materials") return "<section class='portal-section'><div class='section-head'><div><span class='section-kicker'>Study library</span><h2>Materials</h2></div><p>All secure school-approved links, organized by class.</p></div><div class='card'>" + materialList(currentData.materials) + addMaterialForm() + "<div class='locked-note'><strong>Private by design:</strong> linked files are organized only and are not processed by AI.</div></div></section>";
-  if(view === "projects") return "<section class='portal-section projects-workspace'><div class='section-head'><h2>Projects &amp; Activities</h2><p>Build something, contribute, and keep your next step clear.</p></div>" + addProjectForm() + "<div class='list'>" + projectList((currentData.projects || []).slice().sort(function(a,b){return Number(['Completed','Archived'].includes(a.status))-Number(['Completed','Archived'].includes(b.status));})) + "</div></section>";
-  if(view === "progress") return "<section class='portal-section'><div class='section-head'><div><span class='section-kicker'>Progress</span><h2>Your progress</h2></div><p>See what’s improving and what to practice next.</p></div>"+(canonicalPortal?window.Admit.studyHistoryMarkup(currentData.studyOverview,qatarToday()):"<div class='grid four'>" + progressCard("Study System",progress.studySystem,"Use of effective methods on real schoolwork.") + progressCard("Consistency",progress.consistency,"Completion of agreed sessions and actions.") + progressCard("Direction",progress.direction,"Clarity of priorities and next actions.") + nextAssessmentCard(currentData.nextAssessment) + "</div>") + (canonicalPortal ? "<details class='portfolio-section'><summary>All work & history</summary><div id='canonical-work-history' data-work-history class='card' style='margin-top:14px'></div></details>" : "") + "<details class='portfolio-section'><summary>Personal notes & achievements</summary><div class='card' style='margin-top:14px'><h3>My mistake notes</h3><p>Notes you add yourself. Automatic Weak Points are in Study.</p><div class='list'>" + errorLogList(currentData.weakPoints) + "</div>" + addWeakPointForm() + "</div><div class='card' style='margin-top:14px'><h3>Evidence &amp; Wins</h3><div class='list'>" + evidenceList(currentData.evidenceWins) + "</div>" + addEvidenceForm() + "</div><div class='columns' style='margin-top:14px'><div class='card'><h3>Next Meeting</h3><p class='muted' data-next-meeting>" + safe(currentData.nextMeeting || "No upcoming meeting found yet.") + "</p><div class='meeting-help'>" + (canonicalPortal ? "<button type='button' class='btn secondary' onclick='accountExperience.booking()'>Manage meetings</button>" : "<strong>Need to delay or reschedule?</strong><br>Email <a href='mailto:ryanwbdl@gmail.com?subject=Delay%20Admit%20Strategy%20meeting'>ryanwbdl@gmail.com</a>.") + "</div></div><div class='card'><h3>Parent Update</h3><p class='muted'>" + safe(currentData.parentUpdate || "Parent update coming soon.") + "</p></div><div class='card wide'><h3>Progress History</h3><div class='list'>" + sessionHistoryList(currentData.progressHistory) + "</div></div><div class='card wide'><h3>All Session Notes</h3><div class='list'>" + simpleList(currentData.sessionNotes,"No session notes added yet.") + "</div></div></div></details></section>";
+  if(view === "projects") return "<section class='portal-section projects-workspace'><div class='section-head'><h2>Projects &amp; Activities</h2><p>Build something, contribute, and keep your next step clear. Check in weekly.</p></div>" + addProjectForm() + "<h3>This week</h3><div class='list'>" + projectList((currentData.projects || []).slice().sort(function(a,b){return Number(['Completed','Archived'].includes(a.status))-Number(['Completed','Archived'].includes(b.status));})) + "</div></section>";
+  if(view === "progress") return "<section class='portal-section'><div class='section-head'><div><span class='section-kicker'>Progress</span><h2>Your progress</h2></div><p>See what’s improving and what to practice next.</p></div>"+(canonicalPortal?window.Admit.studyHistoryMarkup(currentData.studyOverview,qatarToday()):"<div class='grid four'>" + progressCard("Study System",progress.studySystem,"Use of effective methods on real schoolwork.") + progressCard("Consistency",progress.consistency,"Completion of agreed sessions and actions.") + progressCard("Direction",progress.direction,"Clarity of priorities and next actions.") + nextAssessmentCard(currentData.nextAssessment) + "</div>") + (canonicalPortal&&currentData.projectOverview ? "<section class='today-other'><h3>Projects &amp; Activities · this week</h3><p>"+safe(currentData.projectOverview.actions_7d)+" actions completed · "+safe(currentData.projectOverview.milestones_7d)+" milestones reached · "+safe(currentData.projectOverview.outputs_7d)+" outputs saved</p><button type='button' class='btn secondary' data-app-view='projects'>Open Projects</button></section>" : "") + (canonicalPortal ? "<details class='portfolio-section'><summary>All work & history</summary><div id='canonical-work-history' data-work-history class='card' style='margin-top:14px'></div></details>" : "") + "<details class='portfolio-section'><summary>Personal notes & achievements</summary><div class='card' style='margin-top:14px'><h3>My mistake notes</h3><p>Notes you add yourself. Automatic Weak Points are in Study.</p><div class='list'>" + errorLogList(currentData.weakPoints) + "</div>" + addWeakPointForm() + "</div><div class='card' style='margin-top:14px'><h3>Evidence &amp; Wins</h3><div class='list'>" + evidenceList(currentData.evidenceWins) + "</div>" + addEvidenceForm() + "</div><div class='columns' style='margin-top:14px'><div class='card'><h3>Next Meeting</h3><p class='muted' data-next-meeting>" + safe(currentData.nextMeeting || "No upcoming meeting found yet.") + "</p><div class='meeting-help'>" + (canonicalPortal ? "<button type='button' class='btn secondary' onclick='accountExperience.booking()'>Manage meetings</button>" : "<strong>Need to delay or reschedule?</strong><br>Email <a href='mailto:ryanwbdl@gmail.com?subject=Delay%20Admit%20Strategy%20meeting'>ryanwbdl@gmail.com</a>.") + "</div></div><div class='card'><h3>Parent Update</h3><p class='muted'>" + safe(currentData.parentUpdate || "Parent update coming soon.") + "</p></div><div class='card wide'><h3>Progress History</h3><div class='list'>" + sessionHistoryList(currentData.progressHistory) + "</div></div><div class='card wide'><h3>All Session Notes</h3><div class='list'>" + simpleList(currentData.sessionNotes,"No session notes added yet.") + "</div></div></div></details></section>";
   if(canonicalPortal) return "<section class='portal-section'><div class='section-head'><div><span class='section-kicker'>Account</span><h2>Your plan &amp; preferences</h2></div><p>A useful workspace, with no subscription required.</p></div><div class='card'><h3>Free — Organize yourself</h3><p>Classes, upcoming assessments, Today, manual study planning, Box reviews, evidence and basic progress are included.</p></div><div class='card' style='margin-top:14px'><h3>Plus — Automate yourself</h3><p>Coming later, at a target price of $11.99/month USD. Planned study-planning automation and calendar-aware adjustments will help keep your week on track.</p><p class='muted'>Plus is not available to buy yet. Your Free tools remain available. Human coaching and Blueprint are separate services; Plus does not include guaranteed meetings.</p></div><div class='card' style='margin-top:14px'><h3>Quick portal guide</h3><p>Find your way around Today, Classes, Assessments, Study and Progress.</p><button class='btn secondary' type='button' data-restart-guide>Restart portal guide</button></div><div class='card' style='margin-top:14px'><h3>Communication preferences</h3><p class='muted'>Automated study tips and reminders are not active yet. Your diagnosis consent is recorded; contact Ryan to review or withdraw it.</p></div><div class='info-box privacy-callout'><strong>Private student data. Optional guardian sharing.</strong><br>Use the privacy page or contact Ryan to request access, correction or deletion.</div></section>";
   const reminderAction = currentData.portalReminders ? "false" : "true";
   const reminderLabel = currentData.portalReminders ? "Turn portal reminders off" : "Turn portal reminders on";
@@ -1312,7 +1275,7 @@ function openPanelKeys(root){
     if(!form) return "";
     const operation = form.querySelector("[name='operation']");
     const recordId = form.querySelector("[name='recordId']");
-    return (operation ? operation.value : "") + ":" + (recordId ? recordId.value : "new");
+    return form.id || (operation ? operation.value : "") + ":" + (recordId ? recordId.value : "new");
   }).filter(Boolean);
 }
 
@@ -1321,13 +1284,14 @@ function restoreOpenPanels(root,keys){
   root.querySelectorAll("details form[data-portal-form]").forEach(function(form){
     const operation = form.querySelector("[name='operation']");
     const recordId = form.querySelector("[name='recordId']");
-    const key = (operation ? operation.value : "") + ":" + (recordId ? recordId.value : "new");
+    const key = form.id || (operation ? operation.value : "") + ":" + (recordId ? recordId.value : "new");
     if(keys.indexOf(key) >= 0) form.closest("details").open = true;
   });
 }
 
 function affectedViews(operation){
-  if(["addproject","updateproject","archiveproject","restoreproject"].includes(operation)) return ["projects","progress"];
+  if(["addproject","updateproject","archiveproject","restoreproject","completeproject","milestoneproject","reachproject"].includes(operation)) return ["projects","today","progress"];
+  if(["addevidence","updateevidence","requestfeedback"].includes(operation))return ["projects","progress"];
   if(["addclass","updateclass","addreviewcard","updatereviewcard","movereviewcard","addassessment","updateassessment","classifyassessment","addplanner","updateplanner"].indexOf(operation) >= 0) return ["today","classes","assessments"];
   if(["addmaterial","updatematerial"].indexOf(operation) >= 0) return ["classes","materials"];
   if(["linkcalendar","synccalendar","disconnectcalendar"].indexOf(operation) >= 0) return ["today","classes","assessments","calendar"];
@@ -1489,7 +1453,7 @@ function applyDemoAction(values,options){
   }
   if(operation === "addevidence"){
     currentData.evidenceWins.unshift({
-      id:newRecordId,date:values.date,activity:values.activity,whatIDid:values.whatIDid,evidence:values.evidence,
+      id:newRecordId,projectId:values.projectId,projectEventId:values.projectEventId,date:values.date,activity:values.activity,whatIDid:values.whatIDid,evidence:values.evidence,
       proofUrl:values.proofUrl,result:values.result,reflection:values.reflection,status:canonicalPortal?"Saved":"Submitted",coachReview:canonicalPortal?"":"Pending"
     });
   }
@@ -1503,13 +1467,18 @@ function applyDemoAction(values,options){
   if(operation === "addproject"){
     currentData.projects.push({id:newRecordId,title:values.title,detail:values.detail,role:values.role,stage:values.stage,
       currentGoal:values.currentGoal,nextAction:values.nextAction,output:values.output,impact:values.impact,
-      longTermDirection:values.longTermDirection,status:values.status});
+      longTermDirection:values.longTermDirection,status:values.status,activityType:values.activityType,targetDate:values.targetDate,reflection:values.reflection});
   }
   if(operation === "updateproject"){
     const project = currentData.projects.find(function(entry){ return entry.id === values.recordId; });
-    if(project) Object.assign(project,{title:values.title,detail:values.detail,role:values.role,stage:values.stage,
-      currentGoal:values.currentGoal,nextAction:values.nextAction,output:values.output,impact:values.impact,
-      longTermDirection:values.longTermDirection,status:values.status});
+    if(project)for(const key of ['title','detail','role','stage','currentGoal','nextAction','output','impact','longTermDirection','status','activityType','targetDate','reflection'])if(values[key]!==undefined)project[key]=values[key];
+  }
+  if(['completeproject','milestoneproject','reachproject'].includes(operation)){
+    const project=currentData.projects.find(p=>p.id===values.recordId),now=new Date().toISOString();
+    currentData.projectEvents ||= [];
+    if(project&&operation==='completeproject'&&project.nextAction){currentData.projectEvents.unshift({id:newRecordId,projectId:project.id,kind:'action',title:project.nextAction,completedAt:now,createdAt:now});project.nextAction='';project.targetDate='';}
+    if(project&&operation==='milestoneproject')currentData.projectEvents.unshift({id:newRecordId,projectId:project.id,kind:'milestone',title:values.title,targetDate:values.targetDate,createdAt:now});
+    if(project&&operation==='reachproject'){const milestone=currentData.projectEvents.find(e=>e.id===values.eventId&&e.projectId===project.id);if(milestone)milestone.completedAt=now;}
   }
   if(operation === "addassessment"){
     currentData.assessments.push({
@@ -1607,6 +1576,7 @@ const operationCollections = {
   assessment:"assessments",reviewcard:"reviewCards",class:"classes",material:"materials"
 };
 function collectionFor(operation){
+  if(["completeproject","milestoneproject","reachproject"].includes(operation))return "projects";
   if(operation === "submittaskproof") return "tasks";
   if(operation === "requestfeedback") return "evidenceWins";
   return operationCollections[operation.replace(/^(add|update|move|review|archive|restore)/,"")] || null;
@@ -1682,7 +1652,7 @@ function ensureSaveQueue(){
       if(job.state==="saved"){
         if(ui && ui.form && ui.form.dataset.revision===ui.revision){
           delete ui.form.dataset.dirty;
-          if(/^add/.test(job.values.operation)){
+          if(/^add/.test(job.values.operation)||job.values.operation==="milestoneproject"){
             ui.form.reset();
             ui.form.querySelectorAll("[data-default-today]").forEach(function(input){input.value=qatarToday();});
             // Keep the form open: collapsing it after persistence shrinks the
@@ -1793,6 +1763,7 @@ document.addEventListener("submit",function(event){
   }
   if(!form.reportValidity()) return;
   const values = formValues(form);
+  if(values.operation==="addevidence"&&values.projectId&&!values.evidence)values.evidence=values.whatIDid||"";
   if(values.operation === "submittaskproof" && !String(values.proofNote || "").trim() && !String(values.proofUrl || "").trim()){
     showStatus("Add an evidence note or an https evidence link.",false);
     return;
@@ -1802,7 +1773,7 @@ document.addEventListener("submit",function(event){
     return;
   }
   if((values.operation === "addevidence" || values.operation === "updateevidence") &&
-      !String(values.evidence || "").trim() && !String(values.proofUrl || "").trim()){
+      !String(values.evidence || "").trim() && !String(values.proofUrl || "").trim() && !values.fileId){
     showStatus("Add proof details or an https evidence link.",false);
     return;
   }
@@ -1816,10 +1787,16 @@ document.addEventListener("submit",function(event){
 
 document.addEventListener('change',function(event){if(event.target.matches('[data-class-picker]')){selectedReviewSubject=event.target.value;activeClassTab='topics';window.Admit.patch(document.getElementById('classWorkspace'),classWorkspace(currentData));primeClassInputs();applyAccountPermissions();return;}if(event.target.matches('[data-study-hub-class]')){studyHubClass=event.target.value;window.Admit.patch(document.getElementById('view-study'),viewMarkup('study'));applyAccountPermissions();}});
 document.addEventListener("click",function(event){
+  const projectPage=event.target.closest('[data-project-page]');
+  if(projectPage&&canonicalPortal){const adapter=canonicalPortal;projectPage.disabled=true;adapter.loadProjectPage(projectPage.dataset.projectPage,projectPage.dataset.projectId).then(function(){if(adapter!==canonicalPortal)return;currentData=derive(adapter.data);renderAffectedViews('updateproject');}).catch(function(error){projectPage.disabled=false;projectPage.nextElementSibling.textContent=error.message+' Try again.';});return;}
+  const projectFile=event.target.closest('[data-project-download]');
+  if(projectFile){fileExperience?.download({fileId:projectFile.dataset.projectDownload},projectFile,{status:projectFile.parentElement.querySelector('[data-project-file-status]')});return;}
+  const sourceGuide=event.target.closest('[data-source-assessment]');
+  if(sourceGuide){fileExperience?.sources.guide(sourceGuide.dataset.sourceAssessment);return;}
   const refreshStudy=event.target.closest('[data-refresh-study]');
   if(refreshStudy){refreshStudy.disabled=true;canonicalPortal.refreshStudyOverview().then(function(){currentData=derive(canonicalPortal.data);renderAffectedViews('movereviewcard');});return;}
   const startStudy=event.target.closest('[data-start-study],[data-open-study-session]');
-  if(startStudy){studyHubClass=startStudy.dataset.startStudy||startStudy.dataset.studyClass;switchPortalView('study');const root=document.getElementById('view-study');window.Admit.patch(root,viewMarkup('study'));applyAccountPermissions();studyExperience.open(studyHubClass,{unitId:startStudy.hasAttribute('data-study-unit')?(startStudy.dataset.studyUnit||'unfiled'):'all',sessionId:startStudy.dataset.openStudySession,assessmentId:startStudy.dataset.studyAssessment,recommended:startStudy.hasAttribute('data-study-recommended'),focus:startStudy.dataset.studyFocus,method:startStudy.dataset.studyMethod,mode:startStudy.dataset.studyFocus,cardIds:startStudy.dataset.studyCards?JSON.parse(startStudy.dataset.studyCards):null,hub:startStudy.hasAttribute('data-study-hub')});return;}
+  if(startStudy){studyHubClass=startStudy.dataset.startStudy||startStudy.dataset.studyClass;switchPortalView('study');const root=document.getElementById('view-study');window.Admit.patch(root,viewMarkup('study'));applyAccountPermissions();studyExperience.open(studyHubClass,{unitId:startStudy.hasAttribute('data-study-unit')?(startStudy.dataset.studyUnit||'unfiled'):'all',sessionId:startStudy.dataset.openStudySession,assessmentId:startStudy.dataset.studyAssessment,recommended:startStudy.hasAttribute('data-study-recommended'),focus:startStudy.dataset.studyFocus,method:startStudy.dataset.studyMethod,mode:startStudy.dataset.studyFocus,cardIds:startStudy.dataset.studyCards?JSON.parse(startStudy.dataset.studyCards):null,sourceModel:startStudy.dataset.sourceModel,sourceTitle:startStudy.dataset.sourceTitle,hub:startStudy.hasAttribute('data-study-hub')});return;}
   const studyButton=event.target.closest("[data-open-study]");
   if(studyButton){studyHubClass=currentData.classes.find(c=>c.name===studyButton.dataset.openStudy)?.id||'';switchPortalView('study');window.Admit.patch(document.getElementById('view-study'),viewMarkup('study'));applyAccountPermissions();return;}
   const classAccessButton=event.target.closest("[data-class-access]");
@@ -1939,7 +1916,7 @@ window.addEventListener("message",function(event){
   else pending.reject(Object.assign(new Error(data.error||"The change could not be confirmed."),{retryable:data.retryable===true,rejected:data.rejected===true}));
 });
 window.addEventListener("beforeunload",function(event){
-  if((saveQueue && saveQueue.unsaved.length) || studyExperience?.unsaved.length || fileExperience?.uploads.unsaved.length || calendarExperience?.unsaved.length || accountExperience?.coach?.unsaved.length || document.querySelector("form[data-dirty]")) {event.preventDefault();event.returnValue="";}
+  if((saveQueue && saveQueue.unsaved.length) || studyExperience?.unsaved.length || fileExperience?.sources.unsaved || fileExperience?.uploads.unsaved.length || calendarExperience?.unsaved.length || accountExperience?.coach?.unsaved.length || document.querySelector("form[data-dirty]")) {event.preventDefault();event.returnValue="";}
 });
 
 async function reconcilePortal(operation){
@@ -1986,7 +1963,7 @@ function handleSessionChange(state){
   }else if(state==="cleared"){
     suspendedDialogs=[];document.querySelectorAll("dialog[open]").forEach(function(dialog){dialog.close();});
     document.getElementById("portalEditorBody").replaceChildren();
-    if(sync)sync.remove();saveQueue=null;mutationUI.clear();canonicalPortal=null;studyExperience?.dispose();studyExperience=null;
+    if(sync)sync.remove();saveQueue=null;mutationUI.clear();canonicalPortal=null;studyExperience?.dispose();studyExperience=null;fileExperience?.dispose();fileExperience=null;
   }
 }
 async function load(){
@@ -1999,10 +1976,10 @@ async function load(){
     return;
   }
   if(window.ADMIT_CONFIG?.backend==="supabase"){
-    accountExperience=new window.Admit.AccountExperience({config:window.ADMIT_CONFIG,onSessionChange:handleSessionChange,onMeetingChange:function(data,adapter){if(canonicalPortal!==adapter)return;currentData.nextMeeting=data.nextMeeting;const node=document.querySelector("[data-next-meeting]");if(node)node.textContent=data.nextMeeting||"No upcoming meeting found yet.";},hasPendingChanges:function(){return Boolean(saveQueue?.unsaved.length || studyExperience?.unsaved.length || fileExperience?.uploads.unsaved.length || calendarExperience?.unsaved.length);},root:document.getElementById("app"),onPortal:function(data,adapter){
+    accountExperience=new window.Admit.AccountExperience({config:window.ADMIT_CONFIG,onSessionChange:handleSessionChange,onMeetingChange:function(data,adapter){if(canonicalPortal!==adapter)return;currentData.nextMeeting=data.nextMeeting;const node=document.querySelector("[data-next-meeting]");if(node)node.textContent=data.nextMeeting||"No upcoming meeting found yet.";},hasPendingChanges:function(){return Boolean(saveQueue?.unsaved.length || studyExperience?.unsaved.length || fileExperience?.sources.unsaved || fileExperience?.uploads.unsaved.length || calendarExperience?.unsaved.length);},root:document.getElementById("app"),onPortal:function(data,adapter){
       calendarExperience?.dispose();calendarExperience=new window.Admit.CalendarWorkspace({portal:adapter,config:window.ADMIT_CONFIG,onChange:function(){if(canonicalPortal===adapter){currentData=adapter.data;renderAffectedViews("addassessment");}}});
       historyExperience?.dispose();historyExperience=new window.Admit.WorkHistory({portal:adapter,render:historyRecordMarkup,patch:window.Admit.patch,onRows:function(){if(canonicalPortal===adapter){currentData=derive(adapter.data);renderAffectedViews("addassessment");}}});
-      canonicalPortal=adapter;const studyActor=accountExperience.user.id,studyStudent=adapter.studentId;studyExperience?.dispose();studyExperience=new window.Admit.StudyWorkspace({portal:adapter,config:window.ADMIT_CONFIG,isActive:function(){return canonicalPortal===adapter&&adapter.studentId===studyStudent&&accountExperience?.user?.id===studyActor;},patch:window.Admit.patch,notify:showStatus,onChange:function(){if(canonicalPortal===adapter){currentData=derive(adapter.data);renderAffectedViews("movereviewcard");}}});fileExperience=new window.Admit.FilesWorkspace({portal:adapter,config:window.ADMIT_CONFIG,onChange:function(){if(canonicalPortal===adapter)currentData=derive(adapter.data);}});saveQueue=null;mutationUI.clear();activePortalView="today";selectedReviewSubject="";portalViewScroll={};
+      canonicalPortal=adapter;const studyActor=accountExperience.user.id,studyStudent=adapter.studentId;studyExperience?.dispose();studyExperience=new window.Admit.StudyWorkspace({portal:adapter,config:window.ADMIT_CONFIG,isActive:function(){return canonicalPortal===adapter&&adapter.studentId===studyStudent&&accountExperience?.user?.id===studyActor;},patch:window.Admit.patch,notify:showStatus,onChange:function(){if(canonicalPortal===adapter){currentData=derive(adapter.data);renderAffectedViews("movereviewcard");}}});fileExperience?.dispose();fileExperience=new window.Admit.FilesWorkspace({portal:adapter,config:window.ADMIT_CONFIG,isActive:function(){return canonicalPortal===adapter&&accountExperience?.user?.id===studyActor;},onSourceChange:async function(classId){if(canonicalPortal!==adapter)return;currentData=derive(adapter.data);const state=studyExperience.states.get(classId);if(state)await studyExperience.load(state);renderAffectedViews("movereviewcard");},onChange:function(){if(canonicalPortal===adapter)currentData=derive(adapter.data);}});saveQueue=null;mutationUI.clear();activePortalView="today";selectedReviewSubject="";portalViewScroll={};
       adapter.isPending=function(id){return saveQueue?.unsaved.some(function(job){return job.values.recordId===id || job.id===id;});};
       document.getElementById("portalMode").textContent="Private account workspace";
       render(data,false);applyAccountPermissions();

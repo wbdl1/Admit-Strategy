@@ -64,6 +64,12 @@ export class StudyDiagrams {
   this.root.querySelectorAll('input,select,textarea,button').forEach(b=>{if(!['retry','retry-upload'].includes(b.dataset.diagramAction))b.disabled=b.dataset.unavailable==='true'||!!this.busy||!!this.pending||!!this.importPending||!!job&&['preparing','uploading','validating'].includes(job.state);});
  }
  async image(id){this.loadingImages.add(id);try{const url=await privateStudyImage(this.portal,id);if(this.disposed){URL.revokeObjectURL(url);return;}this.images.set(id,url);this.capture();this.render();}catch(e){this.message=e.message;this.status();}finally{this.loadingImages.delete(id);}}
+ async fromSource(fileId,title){
+  if(this.disposed||!this.isActive()||this.portal.canEdit===false||this.unit.archived_at)return;
+  if(this.draft||this.savedDraft){this.message='Finish or close your current model before creating another.';this.status();return;}
+  this.draft={id:crypto.randomUUID(),file_id:fileId,title:String(title||'Source model').replace(/\.[^.]+$/,''),points:[],row_version:null};
+  this.preview=false;this.selected=-1;this.dirty=true;this.message='Tap the image to add labels. The original uploaded image is reused.';this.render();
+ }
  async upload(file){if(!this.isActive()||this.busy||this.pending||this.importPending||this.portal.canEdit===false||this.unit.archived_at)return;try{if(!/\.(png|jpe?g|webp)$/i.test(file.name))throw new Error('Choose a PNG, JPEG or WebP image.');this.job=this.uploads.add(file,this.unit.class_id);await this.job.done;if(!this.isActive()||this.disposed)return;this.afterUpload();}catch(e){this.message=e.message;this.status();}}
  afterUpload(){if(this.job?.state==='saved'){this.draft={id:crypto.randomUUID(),file_id:this.job.result.file.id,title:this.job.result.file.original_name.replace(/\.[^.]+$/,''),points:[],row_version:null};this.preview=false;this.selected=-1;this.dirty=true;this.message='Image added. Tap where the first label belongs.';this.render();}else this.status();}
  async submit(event){if(!event.target.matches('[data-diagram-editor]'))return;event.preventDefault();event.stopPropagation();if(this.busy||this.pending||this.importPending||!event.target.reportValidity())return;this.capture();

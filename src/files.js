@@ -1,3 +1,4 @@
+import {SourcesWorkspace} from './sources.js';
 import {boundedFetch} from "./network.js";
 const types={pdf:"application/pdf",docx:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",pptx:"application/vnd.openxmlformats-officedocument.presentationml.presentation",png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",webp:"image/webp",txt:"text/plain",md:"text/plain",csv:"text/csv"};
 const accept=Object.keys(types).map(x=>"."+x).join(",");
@@ -67,11 +68,36 @@ export class FileUploads {
 }
 
 export class FilesWorkspace {
-  constructor({portal,config,onChange=()=>{}}){
+  constructor({portal,config,onChange=()=>{},onSourceChange=()=>{},isActive=()=>true}){
     this.portal=portal;this.config=config;this.onChange=onChange;this.widgets=new Map();this.operationKeys=new Map();
-    this.uploads=new FileUploads({portal,config,onChange:()=>{this.refreshAll();this.onChange();}});
+    this.sources=new SourcesWorkspace({portal,config,onChange:onSourceChange,isActive});
+    this.uploads=new FileUploads({portal,config,onChange:job=>{this.refreshAll();this.onChange();if(job?.projectForm){this.projectUploadState(job);return;}if(job?.state==="saved"&&!job.sourceOpened){job.sourceOpened=true;const material=this.portal.data.materials.find(m=>m.id===job.result.material.id);if(material)this.sources.open(material);}}});
   }
+  projectUploadState(job){
+    const f=job.projectForm;if(!f?.isConnected)return;
+    const n=f.querySelector('[data-project-file-status]');
+    n.textContent=job.state==='saved'?'File attached ✓':job.state==='failed'?job.error.message:job.state==='paused'?'Upload paused. Resume or continue without this file.':'Uploading evidence… '+Math.round(job.progress*100)+'%';
+    f.elements.fileId.value=job.state==='saved'?job.result.file.id:'';
+    f.querySelector('button[type=submit]').disabled=job.state!=='saved';
+    f.querySelector('[data-project-proof]').disabled=job.running;
+    f.querySelector('[data-project-upload-actions]')?.remove();
+    const actions=element('div',null,'record-actions');actions.dataset.projectUploadActions='';
+    if(['failed','paused'].includes(job.state)){
+      if(job.error?.retryable!==false)actions.append(button(job.state==='paused'?'Resume upload':'Retry upload',()=>this.uploads.retry(job.id)));
+      actions.append(button('Continue without file',()=>{job.state='dismissed';job.projectForm=null;f.elements.fileId.value='';f.querySelector('[data-project-proof]').value='';n.textContent='No file attached. You can still save a description or link.';f.querySelector('button[type=submit]').disabled=false;actions.remove();}));
+    }else if(['preparing','uploading'].includes(job.state))actions.append(button('Pause upload',()=>this.uploads.pause(job.id)));
+    n.after(actions);
+  }
+  dispose(){this.sources.dispose();}
   mountAll(){
+    for(const input of document.querySelectorAll('[data-project-proof]')){
+      if(input.dataset.bound)continue;input.dataset.bound='true';input.onchange=()=>{
+        const f=input.closest('form');if(!input.files[0])return;
+        try{const job=this.uploads.add(input.files[0],null);job.projectForm=f;f.dataset.dirty='true';f.elements.fileId.value='';this.projectUploadState(job);}
+        catch(e){f.querySelector('[data-project-file-status]').textContent=e.message;}
+      };
+    }
+
     for(const root of document.querySelectorAll("[data-file-workspace]")){
       if(!this.widgets.has(root))this.mount(root);
     }
@@ -83,7 +109,7 @@ export class FilesWorkspace {
     const widget={root,classId,materialId:root.dataset.fileMaterial||null,list,jobs,status};this.widgets.set(root,widget);
     if(this.portal.canEdit&&!widget.materialId){
       const drop=element("div",null,"file-drop"),label=element("label","Choose files","btn"),picker=element("input");picker.type="file";picker.accept=accept;picker.multiple=true;picker.setAttribute('aria-label','Choose files');label.append(picker);
-      drop.append(element("strong","Drop files here"),element("span","or "),label,element("p","PDF, Word, PowerPoint, images or text · up to 20 MB each","form-help"));
+      drop.append(element("strong","Drop notes, worksheets, slides or study guides here"),element("span","or "),label,element("p","PDF, Word, PowerPoint, images or text · up to 20 MB each","form-help"));
       const add=files=>{status.textContent="";if(files.length>10){status.textContent="Choose up to 10 files at a time.";return;}for(const file of files){try{this.uploads.add(file,classId);}catch(error){status.textContent+=file.name+': '+error.message+' ';status.setAttribute("role","alert");}}};
       picker.onchange=()=>{add([...picker.files]);picker.value="";};
       drop.ondragover=event=>{event.preventDefault();drop.classList.add("drag-over");};drop.ondragleave=()=>drop.classList.remove("drag-over");
@@ -104,6 +130,7 @@ export class FilesWorkspace {
       let row=[...widget.list.children].find(node=>node.dataset.fileRow===record.id);
       if(!row){row=element("article",null,"item");row.dataset.fileRow=record.id;const title=element("strong"),actions=element("div",null,"record-actions");row.append(title,actions);
         const current=()=>this.portal.data.materials.find(m=>m.id===record.id)||record;
+        const study=button("Open source & study items",()=>this.sources.open(current()));actions.append(study);
         const open=button("Download",event=>this.download(current(),event.currentTarget,widget));open.setAttribute('aria-label','Download '+record.title);actions.append(open);
         if(this.portal.canEdit){
           const picker=element("input");picker.type="file";picker.accept=accept;picker.hidden=true;picker.setAttribute("aria-label","Replacement file for "+record.title);
@@ -117,11 +144,12 @@ export class FilesWorkspace {
     }
     for(const job of this.uploads.jobs.values()){
       if(widget.classId&&job.classId!==widget.classId)continue;
+      if(job.state==="dismissed"){widget.jobs.querySelector(`[data-upload-id="${job.id}"]`)?.remove();continue;}
       let row=[...widget.jobs.children].find(node=>node.dataset.uploadId===job.id);
-      if(!row){row=element("div",null,"file-job");row.dataset.uploadId=job.id;row.append(element("strong",job.args?.p_name||job.file?.name),element("progress"),element("p"),button("Retry upload",()=>this.uploads.retry(job.id)),button("Pause upload",()=>this.uploads.pause(job.id)));row.querySelector("progress").max=100;row.querySelector("progress").setAttribute("aria-label","Upload progress");row.querySelector("p").setAttribute("role","status");widget.jobs.append(row);}
+      if(!row){row=element("div",null,"file-job");row.dataset.uploadId=job.id;row.append(element("strong",job.args?.p_name||job.file?.name),element("progress"),element("p"),button("Retry upload",()=>this.uploads.retry(job.id)),button("Pause upload",()=>this.uploads.pause(job.id)),button("Dismiss",()=>{job.state="dismissed";job.file=null;this.refreshAll();}));row.querySelector("progress").max=100;row.querySelector("progress").setAttribute("aria-label","Upload progress");row.querySelector("p").setAttribute("role","status");widget.jobs.append(row);}
       const labels={preparing:"Preparing file…",uploading:"Uploading… "+Math.round(job.progress*100)+"%",validating:"Finishing upload…",paused:"Upload paused. Your file is kept here to resume.",saved:"Saved ✓ — available below",failed:job.error?.message||"Upload failed. Retry."};
       row.querySelector("p").textContent=labels[job.state];const progress=row.querySelector("progress");progress.value=Math.round(job.progress*100);progress.hidden=["saved","failed","paused"].includes(job.state);
-      const buttons=row.querySelectorAll('button');buttons[0].hidden=!['failed','paused'].includes(job.state)||job.error?.retryable===false;buttons[0].textContent=job.state==='paused'?'Resume upload':'Retry upload';buttons[1].hidden=!['preparing','uploading'].includes(job.state);
+      const buttons=row.querySelectorAll('button');buttons[0].hidden=!['failed','paused'].includes(job.state)||job.error?.retryable===false;buttons[0].textContent=job.state==='paused'?'Resume upload':'Retry upload';buttons[1].hidden=!['preparing','uploading'].includes(job.state);buttons[2].hidden=job.state!=='failed'||job.error?.retryable!==false;
     }
   }
   async download(record,b,widget){

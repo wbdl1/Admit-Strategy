@@ -21,3 +21,16 @@ test("confirmed creates reset only the submitted revision and keep its panel ope
     assert.equal(form.dataset.dirty,revision==="submitted"?undefined:"true");
   }
 });
+
+
+test('patching a dirty form preserves browser-owned file selections and its uploaded file reference',()=>{
+ const runtime=readFileSync(new URL('../src/runtime.js',import.meta.url),'utf8');let hooks;
+ const context={morphdom(_a,_b,options){hooks=options;}};
+ vm.runInNewContext(runtime.slice(runtime.indexOf('function key('),runtime.indexOf('window.Admit =')),context);
+ context.patch({cloneNode(){return {}; }},'');
+ const make=selector=>({hasAttribute(){return false;},matches(s){return s===selector;},closest(){return {};},isEqualNode(){return false;},tagName:'INPUT'});
+ const selected=make('input[type="file"]');Object.defineProperty(selected,'value',{get(){return 'C:\\fakepath\\notes.txt';}});
+ const target={};Object.defineProperty(target,'value',{set(){throw new Error('Browser forbids copying a file path');}});
+ assert.equal(hooks.onBeforeElUpdated(selected,target),false);
+ assert.equal(hooks.onBeforeElUpdated(make('input[type="hidden"][name="fileId"]'),{}),false);
+});

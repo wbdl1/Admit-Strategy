@@ -1,5 +1,5 @@
 import {createdPage,splitPage,assessmentPage,splitAssessmentPage} from "./page-cursor.js";
-const collections={classes:"classes",assessments:"assessments",tasks:"tasks",study_blocks:"planner",study_materials:"materials",review_cards:"reviewCards",weak_points:"weakPoints",projects:"projects",evidence:"evidenceWins",sessions:"sessionNotes",progress_scores:"progressHistory",calendar_sources:"calendarSources",calendar_events:"calendarEvents"};
+const collections={classes:"classes",assessments:"assessments",tasks:"tasks",study_blocks:"planner",study_materials:"materials",review_cards:"reviewCards",weak_points:"weakPoints",projects:"projects",project_events:"projectEvents",evidence:"evidenceWins",sessions:"sessionNotes",progress_scores:"progressHistory",calendar_sources:"calendarSources",calendar_events:"calendarEvents"};
 const operationTables={class:"classes",assessment:"assessments",task:"tasks",planner:"study_blocks",material:"study_materials",reviewcard:"review_cards",weakpoint:"weak_points",project:"projects",evidence:"evidence"};
 const camel=s=>s.replace(/_([a-z])/g,(_,c)=>c.toUpperCase());
 const label=s=>String(s||"").replaceAll("_"," ").replace(/^./,c=>c.toUpperCase());
@@ -49,15 +49,19 @@ export class PortalData {
   async open(student){
     this.studentId=student.id;this.student=student;this.raw.clear();this.loaded.clear();this.loading.clear();
     this.assessmentCursor=undefined;this.assessmentsFrom=today();this.assessmentLoading=null;
-    this.data={student:{id:student.id,name:student.profiles?.display_name||"Student",summary:student.summary||"",grade:student.grade},accountStatus:student.status,plan:"Free",planStatus:"Active",progress:{},progressHistory:[],portalReminders:false};
+    this.data={projectPages:{},student:{id:student.id,name:student.profiles?.display_name||"Student",summary:student.summary||"",grade:student.grade},accountStatus:student.status,plan:"Free",planStatus:"Active",progress:{},progressHistory:[],portalReminders:false};
     Object.values(collections).forEach(key=>this.data[key]=[]);
     await this.read("classes",{limit:100});
     await Promise.all([
       this.loadUpcomingAssessments(60),
       this.read("tasks",{order:"due_date",limit:60,filter:q=>q.in("status",["not_started","in_progress","submitted"])}),
       this.read("review_cards",{order:"next_review",limit:60,filter:q=>q.lte("next_review",today())}),
+      this.read("projects",{order:"target_date",limit:50,filter:q=>q.not("target_date","is",null).lte("target_date",today()).not("status","in","(completed,archived,paused)")}),
+      this.read("project_events",{order:"target_date",limit:20,filter:q=>q.eq("kind","milestone").is("completed_at",null).lte("target_date",new Date(Date.now()+7*86400000).toISOString().slice(0,10))}),
       this.read("study_blocks",{order:"date",limit:60,filter:q=>q.gte("date",today())})
     ]);
+    const milestoneProjects=[...new Set(this.data.projectEvents.map(e=>e.projectId))].filter(id=>!this.data.projects.some(p=>p.id===id));
+    if(milestoneProjects.length)this.ingest('projects',await this.result(this.query('projects').in('id',milestoneProjects)));
     await this.refreshStudyOverview();this.loaded.add("today");return this.data;
   }
   async refreshStudyOverview(){
@@ -110,13 +114,21 @@ export class PortalData {
   historyRecords(table,ids){
     return ids.map(id=>this.data[collections[table]]?.find(record=>record.id===id)).filter(Boolean);
   }
+  async loadProjectPage(table,projectId){
+    if(!['project_events','evidence'].includes(table))throw new Error('Unknown project history');
+    this.data.projectPages??={};const key=table+':'+projectId,cursor=this.data.projectPages[key];if(cursor===null)return;
+    const page=splitPage(await this.result(createdPage(this.query(table).eq('project_id',projectId),cursor)));
+    this.ingest(table,page.records);this.data.projectPages[key]=page.cursor;
+  }
   async loadView(view){
     if(this.loaded.has(view))return;
     if(this.loading.has(view))return this.loading.get(view);
     const promise=(async()=>{
-      const tables={classes:["study_materials","weak_points","evidence"],assessments:[],calendar:[],materials:["study_materials"],projects:["projects"],progress:["weak_points","evidence","sessions"]}[view]||[];
-      await Promise.all(tables.map(t=>this.read(t)));
+      const tables={classes:["study_materials","weak_points","evidence"],assessments:[],calendar:[],materials:["study_materials"],projects:["projects","project_events","evidence"],progress:["weak_points","evidence","sessions"]}[view]||[];
+      await Promise.all(tables.map(t=>this.read(t,{ascending:!["project_events","evidence"].includes(t)})));
+      if(view==="projects")await this.read("project_events",{filter:q=>q.eq("kind","milestone").is("completed_at",null)});
       if(view==="progress"){
+        this.data.projectOverview=await this.rpc("project_overview",{p_student_id:this.studentId});
         const [scores,parents,bookings]=await Promise.all([
           this.result(this.client.from("progress_scores").select("*").eq("student_id",this.studentId).is("archived_at",null).order("scored_at",{ascending:false}).limit(100)),
           this.result(this.client.from("parent_updates").select("body").eq("student_id",this.studentId).in("status",["approved","sent"]).is("archived_at",null).order("created_at",{ascending:false}).limit(1)),
@@ -146,14 +158,14 @@ export class PortalData {
       study_materials:{title:"title",url:"external_url",fileType:"file_type",notes:"notes"},
       review_cards:{unit:"unit",term:"term",prompt:"prompt",answer:"answer"},
       weak_points:{title:"title",detail:"detail",mistake:"mistake",cause:"cause",fix:"fix",retry:"retry",nextReview:"next_review",lastReviewedAt:"last_reviewed_at",status:"status"},
-      projects:{title:"title",detail:"detail",role:"role",stage:"stage",currentGoal:"current_goal",nextAction:"next_action",output:"output",impact:"impact",longTermDirection:"long_term_direction",status:"status"},
-      evidence:{date:"date",activity:"activity",whatIDid:"what_i_did",evidence:"proof_text",proofUrl:"proof_url",result:"result",reflection:"reflection"}
+      projects:{title:"title",detail:"detail",role:"role",stage:"stage",currentGoal:"current_goal",nextAction:"next_action",output:"output",impact:"impact",longTermDirection:"long_term_direction",status:"status",activityType:"activity_type",targetDate:"target_date",reflection:"reflection"},
+      evidence:{projectId:"project_id",projectEventId:"project_event_id",fileId:"file_id",date:"date",activity:"activity",whatIDid:"what_i_did",evidence:"proof_text",proofUrl:"proof_url",result:"result",reflection:"reflection"}
     }[table];
     const record={};for(const [source,target] of Object.entries(fields))if(v[source]!==undefined){
       let value=v[source];
       if(["status","kind","confidence","difficulty","importance"].includes(target))value=status(value)||null;
       if(target==="kind"&&value==="project_deadline")value="deadline";
-      if(["due_date","due_time","start_time","end_time","next_review","proof_url"].includes(target))value=value||null;
+      if(["due_date","due_time","start_time","end_time","next_review","proof_url","target_date","project_id","project_event_id","file_id"].includes(target))value=value||null;
       if(["default_minutes","box1_days","box2_days","box3_days","box4_days","prep_target","prep_completed"].includes(target))value=Number(value);
       record[target]=value;
     }
@@ -166,7 +178,11 @@ export class PortalData {
     let prepared=this.requests.get(id);
     if(!prepared){
       const operation=values.operation;
-      if(operation==="movereviewcard"){
+      if(["completeproject","milestoneproject","reachproject"].includes(operation)){
+        const row=this.raw.get('projects:'+values.recordId),v={};
+        for(const [a,b] of [['title','title'],['targetDate','target_date'],['eventId','event_id'],['nextAction','next_action']])if(values[a]!==undefined)v[b]=values[a];
+        prepared={name:'project_step',table:'projects',args:{p_project_id:values.recordId,p_action:{completeproject:'complete_action',milestoneproject:'milestone',reachproject:'complete_milestone'}[operation],p_values:v,p_expected_version:row?.row_version,p_request_key:id}};
+      }else if(operation==="movereviewcard"){
         const row=this.raw.get("review_cards:"+values.recordId);
         prepared={name:"review_card",table:"review_cards",args:{p_card_id:values.recordId,p_box:Number(values.box),p_expected_version:row?.row_version,p_request_key:id}};
       }else if(operation==="requestfeedback"){
@@ -200,6 +216,9 @@ export class PortalData {
     catch(error){if(error.code==="P0409")this.conflicts.set(key,true);throw error;}
     if(response.deleted||response.ok===false)throw Object.assign(new Error('This record was deleted. Reload the workspace to continue.'),{retryable:false,rejected:true});
     const record=response.record;
+    if(["projects","evidence"].includes(prepared.table))this.data.projectOverview=await this.rpc("project_overview",{p_student_id:this.studentId});
+    if(response.events)this.ingest("project_events",response.events,{confirmed:true});
+    else if(prepared.table==="projects")await this.read("project_events",{ascending:false,filter:q=>q.eq("project_id",record.id)});
     if(["classes","assessments","review_cards"].includes(prepared.table))await this.refreshStudyOverview();
     if(prepared.table==="evidence"){
       const prior=this.raw.get(key);

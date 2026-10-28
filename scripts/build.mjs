@@ -22,7 +22,16 @@ await build({entryPoints:[resolve(root,"src/calendar-worker.js")],bundle:true,mi
 const workerPath=resolve(target,"assets/calendar-worker.js");
 const workerName="calendar-worker-"+createHash("sha256").update(await readFile(workerPath)).digest("hex").slice(0,12)+".js";
 await rename(workerPath,resolve(target,"assets",workerName));
-const config = { ...publicConfig, calendarWorkerUrl:"assets/"+workerName };
+// Extraction libraries are loaded only in a dedicated worker, never on portal startup.
+await build({entryPoints:[resolve(root,'src/source-worker.js')],bundle:true,minify:true,
+ outfile:resolve(target,'assets/source-worker.js'),format:'esm',target:['safari16','chrome110','edge110']});
+await copyFile(resolve(root,'node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs'),resolve(target,'assets/pdf-worker.js'));
+const sourceWorkers={};
+for(const name of ['source-worker','pdf-worker']){
+ const path=resolve(target,'assets',name+'.js'),filename=name+'-'+createHash('sha256').update(await readFile(path)).digest('hex').slice(0,12)+'.js';
+ await rename(path,resolve(target,'assets',filename));sourceWorkers[name]='assets/'+filename;
+}
+const config = { ...publicConfig, calendarWorkerUrl:"assets/"+workerName, sourceWorkerUrl:sourceWorkers['source-worker'], pdfWorkerUrl:sourceWorkers['pdf-worker'] };
 await writeFile(resolve(target, "assets/config.js"), "window.ADMIT_CONFIG = " + JSON.stringify(config).replace(/</g, "\\u003c") + ";\n");
 console.log("Static site built. Environment:", config.environment, "Backend:", config.backend);
 // HTML URLs stay stable; changing scripts/config receive new URLs so a cached
