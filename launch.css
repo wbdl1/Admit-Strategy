@@ -1,0 +1,43 @@
+/* Expressive public pages, using the same readable surfaces and controls as Study. */
+body::before,body::after,.hero-panel::before{display:none}
+body{overflow-x:clip}section{padding:72px 24px;scroll-margin-top:100px}
+nav{background:#fffefa;border-color:var(--line);border-radius:16px;box-shadow:0 8px 28px #11161a0a;backdrop-filter:none}
+nav a{color:var(--muted);min-height:44px;display:inline-flex;align-items:center}nav a:hover{color:var(--petrol);text-decoration:underline}
+.brand{color:var(--petrol)}.logo{background:var(--petrol);color:#fffefa;box-shadow:none}
+.nav-cta{background:var(--mist);color:var(--petrol)!important;border-radius:10px}
+.hero{min-height:760px;padding-top:150px}.hero-grid{gap:48px}.hero h1{line-height:1.08;letter-spacing:-.045em}.gradient-text{background:none;color:var(--petrol);-webkit-text-fill-color:var(--petrol)}
+.lead,.card p,.card li,.founder-card p,.step-card p,.price-card p,.price-card li,.price-period,.quote{color:var(--muted)}
+.eyebrow,.chip,.plan-label{color:var(--petrol);background:var(--mist);border-color:var(--line);font-size:.875rem}.pulse{background:var(--petrol);box-shadow:none}
+.btn,.btn.primary{border-radius:10px;min-height:48px;background:var(--gold);color:var(--text);border:1px solid transparent;box-shadow:none;font-size:1rem;line-height:1.4;transform:none}
+.btn.primary:hover{background:#e7ab3c;transform:none}.btn.secondary{color:var(--petrol);background:transparent;border-color:#879d98}.btn.secondary:hover{background:var(--mist);transform:none}
+.btn:disabled{opacity:1;background:#e3e9e6;color:var(--muted)}
+.glass,.hero-panel,.booking-card,.testimonial,.faq-card,.founder-card,.portal-preview,.card,.step-card,.price-card,.price-card.featured{background:var(--panel);border-color:var(--line);border-radius:20px;box-shadow:none;backdrop-filter:none}
+.hero-panel{background:var(--mist);padding:20px}.stat,.portal-box{background:var(--panel);border-color:var(--line);border-radius:12px}.stat strong{font-size:1.5rem;color:var(--petrol)}.stat span{font-size:1rem}
+.quote{background:transparent;border:0;border-radius:0;padding:12px 4px 0}.card:hover{background:var(--panel);transform:none}.icon,.check{background:var(--mist);color:var(--petrol);box-shadow:none}
+.section-title h2{line-height:1.15;letter-spacing:-.035em}.section-title{margin-bottom:32px}.founder-badge{background:var(--mist);color:var(--petrol);box-shadow:none}
+.timeline:before{background:var(--line)}.timeline-progress,.dot{background:var(--petrol);box-shadow:none}.step{opacity:1;transform:none}.phase{font-size:.875rem;color:var(--petrol)}
+.feature{background:var(--panel);border-color:var(--line)}.feature-status,.result,.result.pending{background:var(--mist);color:var(--text);border-color:var(--line)}.result.error{color:var(--red);background:#fae5dc;border-color:#a52929}
+.price-card.featured{border:2px solid var(--petrol)}.price-card .price{color:var(--petrol)}.privacy-link{color:var(--petrol)}
+.faq-card p,.notice,.fine,.form-note,footer{color:var(--muted)}
+.chat{background:var(--panel);border-color:var(--line);box-shadow:0 12px 50px #11161a24;border-radius:20px}.chat-head{background:var(--petrol);color:#fffefa}.chat-head small{color:#fffefa}.chat-head button{color:#fffefa;min-width:44px;background:transparent}
+.chat-body{background:var(--paper);color:var(--text)}.msg.bot,.msg{background:var(--mist);color:var(--text);border-color:var(--line)}.msg.user{background:var(--petrol);color:#fffefa}
+.chat input,.chat select,.chat textarea,.booking-card input,.booking-card select,.booking-card textarea{background:var(--panel);color:var(--text);border-color:#879d98;font-size:1rem;min-height:44px}.chat label,.booking-card label{color:var(--text);font-size:1rem}
+.chat .choice,.chat .option,.chat button:not(.primary):not(.chat-head button){color:var(--petrol);background:var(--panel);border-color:#879d98;min-height:44px;font-size:1rem}
+@media(max-width:800px){.hero{min-height:0;padding-top:128px}.hero-grid{gap:28px}section{padding:52px 20px}.section-title h2{font-size:2rem}.hero h1{font-size:3rem}.stat{min-height:0}.stat strong{font-size:1.25rem}}
+@media(max-width:480px){nav{top:10px;width:calc(100% - 24px);padding:8px 12px}.brand{font-size:.95rem;gap:7px}.nav-cta{font-size:.875rem;margin-left:8px;padding:8px 10px}.hero{padding-top:112px}.hero h1{font-size:2.6rem}.hero-actions>.btn{width:100%}.stat-grid{gap:10px}.stat{padding:14px}.cards,.pricing{gap:16px}.card,.price-card,.portal-preview{padding:22px}.chat{width:calc(100% - 20px);right:10px;bottom:10px;max-height:calc(100dvh - 20px)}.chat-body{max-height:calc(100dvh - 110px)}}
+/* Controls and small print retained by the public booking/diagnosis flows. */
+.founder-card p,.step-card p,.feature span,.faq-card p,.portal-box span,.contact-card a,.mailbox p,.chat-note,.chat-capture label,.chat-consent{color:var(--muted)!important}
+.contact-card a{color:var(--petrol)!important;text-decoration:underline}.contact-card,.mailbox,.contrast-card{background:var(--panel);border:1px solid var(--line);border-radius:20px}
+.chat-result{color:var(--text);background:var(--mist);border-color:var(--line)}.chat-result strong{color:var(--petrol)}
+.chat-head .chat-progress{color:#fffefa;font-size:.875rem}.chat-error,.tiny,.backend-box,.status,.price-period,.feature-status,.opt{font-size:.875rem;line-height:1.6}
+.chat .chat-submit,.chat .chat-cta{background:var(--gold)!important;color:var(--text)!important;border-radius:10px}.chat .chat-restart,.chat .chat-choice{background:var(--panel);color:var(--petrol);border:1px solid #879d98;border-radius:10px;transform:none}
+.chat .chat-choice:hover{background:var(--mist)}.chat-capture label{font-size:1rem}.chat-consent{font-size:.875rem!important}.chat input[type=checkbox],.booking-card input[type=checkbox]{min-height:20px;min-width:20px}
+.slots .slot{color:var(--text);background:var(--panel);border-color:#879d98;min-height:44px;font-size:1rem}.slots .slot.selected{color:#fffefa;background:var(--petrol);border-color:var(--petrol)}.slots .slot:disabled{color:var(--muted);background:#e3e9e6;opacity:1}
+.stat,.portal-box,.price-card{overflow-wrap:anywhere}.plan-label{border-radius:8px}.price-period{color:var(--muted)}
+.contrast-card li{color:var(--muted)}.contrast-card.admin,.contrast-card.strategy{background:var(--panel);border-color:var(--line)}
+.hero h1{font-size:clamp(2.6rem,4.4vw,4.2rem)}
+
+/* A plain-language product introduction stays with the launch headline. */
+.product-intro{padding:0;margin:24px 0}.product-intro h2{font-size:1.5rem;letter-spacing:-.02em;line-height:1.2;margin-bottom:12px;color:var(--text)}.product-intro p{font-size:1rem;line-height:1.6;color:var(--text)}
+.product-loop{list-style:none;display:flex;align-items:center;gap:14px;padding:16px 0 0;margin:0;color:var(--petrol);font-size:.875rem;font-weight:650;line-height:1.45}.product-loop li{flex:1;position:relative}.product-loop li+li{padding-left:18px}.product-loop li+li::before{content:"→";position:absolute;left:-8px;top:0}
+@media(max-width:480px){.product-loop{display:grid;gap:8px}.product-loop li+li{padding:18px 0 0}.product-loop li+li::before{content:"↓";left:0;top:-4px}.product-intro{margin:20px 0}}
