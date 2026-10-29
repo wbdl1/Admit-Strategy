@@ -5,6 +5,25 @@ import vm from "node:vm";
 
 const source=readFileSync(new URL("../portal.html",import.meta.url),"utf8");
 const queueSource=source.slice(source.indexOf("function ensureSaveQueue(){"),source.indexOf("function appendSaveRecovery("));
+test('canonical project steps wait for persisted events and rejected saves leave milestones unchanged',()=>{
+  for(const operation of ['completeproject','milestoneproject','reachproject']){
+    let hooks;
+    const project={id:'project',nextAction:'Draft outline'};
+    const event={id:'milestone',completedAt:null};
+    const data={projects:[project],projectEvents:[event]};
+    const context={saveQueue:null,canonicalPortal:{},accountExperience:{user:{id:'actor'}},currentData:data,mutationUI:new Map(),
+      window:{Admit:{bindWorkspaceMutation:()=>({active:()=>true}),MutationQueue:class{constructor(options){hooks=options;}laterPending(){return [];}}}},
+      collectionFor:()=> 'projects',applyDemoAction(){throw new Error('Canonical project events must wait for the server');},
+      renderAffectedViews(){},showStatus(){},renderSyncPanel(){},clearTimeout(){},toastTimer:null};
+    vm.runInNewContext(queueSource+';ensureSaveQueue();',context);
+    const job={id:'request',values:{operation,recordId:'project',eventId:'milestone'}};
+    hooks.optimistic(job);
+    assert.equal(data.projects[0].nextAction,'Draft outline');assert.equal(data.projectEvents.length,1);assert.equal(event.completedAt,null);
+    job.state='failed';job.error={rejected:true,message:'Retry this change'};hooks.onState(job);
+    assert.equal(data.projects[0].nextAction,'Draft outline');assert.equal(data.projectEvents.length,1);assert.equal(event.completedAt,null);
+  }
+});
+
 test("confirmed creates reset only the submitted revision and keep its panel open",()=>{
   for(const revision of ["submitted","newer-draft"]){
     const panel={open:true},button={disabled:false,textContent:"Add"},messages=[],feedback={textContent:""};

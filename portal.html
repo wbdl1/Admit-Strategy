@@ -1608,7 +1608,10 @@ function ensureSaveQueue(){
       const collection=collectionFor(job.values.operation);
       const item=collection && (currentData[collection]||[]).find(function(row){return row.id===job.values.recordId;});
       job.before=item ? JSON.parse(JSON.stringify(item)) : null;
-      if(!/calendar/.test(job.values.operation)) applyDemoAction(Object.assign({},job.values,{__recordId:job.id}),{quiet:true,keepEditor:true});
+      // Project events arrive with server IDs. A temporary demo event would
+      // survive reconciliation or falsely mark a rejected milestone complete.
+      const confirmedProjectStep=adapter && ['completeproject','milestoneproject','reachproject'].includes(job.values.operation);
+      if(!/calendar/.test(job.values.operation) && !confirmedProjectStep) applyDemoAction(Object.assign({},job.values,{__recordId:job.id}),{quiet:true,keepEditor:true});
     },
     confirm:function(job,response){
       if(!currentScope()){job.uiDeferred=true;return;}
