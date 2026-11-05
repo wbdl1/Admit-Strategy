@@ -1,3 +1,5 @@
+import {capturePendingPack,takePendingPack} from './pack-intent.js';
+capturePendingPack();
 import {projectCreationMarkup,projectCardsMarkup,projectTodayMarkup} from './projects.js';
 import {studyHubMarkup} from './study-vision.js';
 import {portalHelpMarkup} from './portal-help.js';
@@ -51,7 +53,7 @@ function patch(root, html) {
   });
 }
 
-window.Admit = { projectCreationMarkup,projectCardsMarkup,projectTodayMarkup, studyHubMarkup, portalHelpMarkup, PortalGuide, StudyWorkspace, studyTodayMarkup, studyHistoryMarkup, MutationQueue, patch, AccountExperience, FilesWorkspace, CalendarWorkspace, WorkHistory, bindWorkspaceMutation };
+window.Admit = { takePendingPack, projectCreationMarkup,projectCardsMarkup,projectTodayMarkup, studyHubMarkup, portalHelpMarkup, PortalGuide, StudyWorkspace, studyTodayMarkup, studyHistoryMarkup, MutationQueue, patch, AccountExperience, FilesWorkspace, CalendarWorkspace, WorkHistory, bindWorkspaceMutation };
 document.addEventListener("input", event => {
   const form = event.target.closest("form[data-portal-form]");
   if (form) { form.dataset.dirty = "true"; form.dataset.revision = String(Number(form.dataset.revision || 0) + 1); }

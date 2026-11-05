@@ -15,6 +15,7 @@ for (const file of await readdir(root)) {
 }
 await build({ entryPoints: [resolve(root, "src/runtime.js")], bundle: true, minify: true,
   outfile: resolve(target, "assets/runtime.js"), format: "iife", target: ["safari16", "chrome110", "edge110"] });
+await build({entryPoints:[resolve(root,"src/pack-page.js")],bundle:true,minify:true,outfile:resolve(target,"assets/pack.js"),format:"iife",target:["safari16","chrome110","edge110"]});
 await build({entryPoints:[resolve(root,"src/marketing.js")],bundle:true,minify:true,splitting:true,
   outdir:resolve(target,"assets"),format:"esm",target:["safari16","chrome110","edge110"]});
 await build({entryPoints:[resolve(root,"src/calendar-worker.js")],bundle:true,minify:true,
@@ -36,7 +37,7 @@ await writeFile(resolve(target, "assets/config.js"), "window.ADMIT_CONFIG = " + 
 console.log("Static site built. Environment:", config.environment, "Backend:", config.backend);
 // HTML URLs stay stable; changing scripts/config receive new URLs so a cached
 // earlier client cannot silently run against a newer deployment.
-for(const entry of ["runtime","marketing","config"]){
+for(const entry of ["runtime","marketing","config","pack"]){
   const original=resolve(target,"assets",entry+".js");
   const digest=createHash("sha256").update(await readFile(original)).digest("hex").slice(0,12);
   const filename=entry+"-"+digest+".js";await rename(original,resolve(target,"assets",filename));

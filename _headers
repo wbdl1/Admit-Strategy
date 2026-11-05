@@ -13,6 +13,12 @@
 /portal.html
   Cache-Control: no-store
   X-Robots-Tag: noindex, nofollow
+/pack
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+/pack.html
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
 
 # Every generated asset in this folder has a content hash in its name.
 /assets/*

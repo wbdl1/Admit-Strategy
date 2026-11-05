@@ -3,6 +3,7 @@ import {createClient} from "@supabase/supabase-js";
 import {PortalData} from "./portal-data.js";
 import {boundedFetch} from "./network.js";
 import {readDiagnosisDraft,clearDiagnosisDraft,diagnosisRequest} from "./diagnosis.js";
+import {takePendingPack} from './pack-intent.js';
 
 const safe=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
 const action=(label,fn,secondary=false)=>{const b=document.createElement("button");b.type="button";b.className="btn"+(secondary?" secondary":"");b.textContent=label;b.onclick=fn;return b;};
@@ -79,7 +80,7 @@ export class AccountExperience {
       this.message("Check your email for the sign-in link. You can keep this page open.");
     });};
   }
-  redirectUrl(){const next=new URL("portal.html",location.href);if(this.diagnosis)next.searchParams.set("diagnosis",this.diagnosis.id);else if(new URL(location.href).searchParams.get("book")==="1")next.searchParams.set("book","1");return next.href;}
+  redirectUrl(){const next=new URL("portal.html",location.href);if(this.diagnosis)next.searchParams.set("diagnosis",this.diagnosis.id);else if(new URL(location.href).searchParams.get("book")==="1")next.searchParams.set("book","1");const pack=takePendingPack();if(pack)next.hash='pack='+pack;return next.href;}
   suspendSession(){
     if(this.user&&!this.suspendedView&&(!this.root.hidden||(!this.gate.hidden&&this.coach?.content?.isConnected)))this.suspendedView={actorId:this.user.id,nodes:Array.from(this.gate.childNodes),gateHidden:this.gate.hidden,rootHidden:this.root.hidden,toolbarHidden:this.toolbar.hidden};
     this.user=null;

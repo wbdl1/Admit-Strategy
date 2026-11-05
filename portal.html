@@ -1986,6 +1986,7 @@ async function load(){
       adapter.isPending=function(id){return saveQueue?.unsaved.some(function(job){return job.values.recordId===id || job.id===id;});};
       document.getElementById("portalMode").textContent="Private account workspace";
       render(data,false);applyAccountPermissions();
+      if(adapter.student.profile_id===accountExperience.account.profile_id){const code=window.Admit.takePendingPack();if(code)studyExperience.packs.receive(code).catch(error=>studyExperience.packs.message(error.message));}
       guideExperience?.dispose();guideExperience=null;
       if(adapter.student.profile_id===accountExperience.account.profile_id){
         guideExperience=new window.Admit.PortalGuide({portal:adapter,actor:studyActor,root:document.getElementById("portalGuide"),isActive:function(){return canonicalPortal===adapter&&accountExperience?.user?.id===studyActor;},navigate:function(view,step){switchPortalView(view);if(step===3&&currentData.classes.length){selectedReviewSubject=currentData.classes[0].name;activeClassTab="topics";renderAffectedViews("addclass");}},addClass:function(){activeClassTab="overview";switchPortalView("classes");renderAffectedViews("addclass");const panel=document.querySelector(".class-add-panel");if(panel){panel.open=true;return panel;}}});guideExperience.start();
