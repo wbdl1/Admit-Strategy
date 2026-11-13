@@ -118,9 +118,9 @@ body:has(#view-study:not([hidden]) .study-focus){padding-bottom:24px}
 
 .guest-page{max-width:900px;margin:auto;padding:20px}
 .guest-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px}
-.guest-header>a:first-child{font-weight:800;text-decoration:none}
+.guest-header>a:first-child{font-weight:800;text-decoration:none;display:inline-flex;align-items:center;min-height:44px}
 .guest-workspace{max-width:680px;margin:auto}.guest-workspace h1{font-size:1.7rem;line-height:1.2;margin:12px 0}
-.guest-notice,.guest-save{color:#465b5f}.guest-save{margin-top:28px;border-top:1px solid #b7c7c3;padding-top:16px}
+.guest-notice,.guest-save{color:#465b5f}.guest-save{margin-top:28px;border-top:1px solid #b7c7c3;padding-top:16px}.guest-save>a{display:inline-flex;align-items:center;min-height:44px}
 .guest-workspace .study-session{background:#fffefa;border:1px solid #b7c7c3;border-radius:18px;padding:24px;margin:20px 0}
 .guest-workspace .study-choice-actions{display:grid;gap:10px}
 .guest-workspace .study-choice-actions button{text-align:left;justify-content:flex-start;padding:12px;min-height:48px}
