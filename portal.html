@@ -795,7 +795,7 @@ function assessmentList(items){
       "</strong><div><span class='date-chip'>" + safe(formatDate(item.date) + (item.time ? " at " + item.time : "") + " • " + daysLabel(item.date)) +
       "</span></div></div><div class='record-actions'>" + reviewBadge(item.status) +
       "<button class='record-edit' type='button' data-open-editor='0' data-editor-title='Edit summative'>Edit</button></div></div><div class='details'>" +
-      classification + detail("Class",item.subject) + detail("Topics",item.topics) + "</div>" + (canonicalPortal&&!needsConfirmation?"<button type='button' class='btn secondary' data-source-assessment='"+safe(item.id)+"'>Study guide sources</button>":"") + (canonicalPortal&&item.classId&&!needsConfirmation?"<button type='button' class='btn' data-start-study='"+safe(item.classId)+"' data-study-assessment='"+safe(item.id)+"' data-study-focus='practice' data-study-hub>Study for this assessment →</button>":"") + "<details class='assessment-more'><summary>Details & management</summary>" + detail("Type",item.type) + detail("Source",item.sourceType) + detail("Notes",item.notes) + "<div class='prep-line'><span>Preparation</span><span>" +
+      classification + detail("Class",item.subject) + detail("Topics",item.topics) + "</div>" + (canonicalPortal&&!needsConfirmation?"<button type='button' class='btn secondary' data-source-assessment='"+safe(item.id)+"'>Study guide sources</button>":"") + (canonicalPortal&&item.classId&&!needsConfirmation?"<button type='button' class='btn' data-start-study='"+safe(item.classId)+"' data-study-assessment='"+safe(item.id)+"' data-study-focus='practice' data-study-method='learn'>Practice for this assessment →</button>":"") + "<details class='assessment-more'><summary>Details & management</summary>" + detail("Type",item.type) + detail("Source",item.sourceType) + detail("Notes",item.notes) + "<div class='prep-line'><span>Preparation</span><span>" +
       complete + "/" + target + " actions</span></div><div class='bar'><div style='width:" + percentage +
       "%'></div></div><details class='form-panel edit-panel'><summary>Edit summative or assessment</summary><form class='portal-form' data-portal-form>" +
       "<input type='hidden' name='operation' value='updateassessment'><input type='hidden' name='recordId' value='" + safe(item.id) + "'>" +
@@ -1082,9 +1082,11 @@ function linkCalendarForm(){
 let studyHubClass="";
 function quickNav(){
   const items = [["today","Today"],["classes","Classes"],["study","Study"],["assessments","Assessments"],["projects","Projects"],["progress","Progress"]];
-  return "<nav class='quick-nav' aria-label='Portal sections'>" + items.map(function(item){
+  const buttons=items.map(function(item){
     return "<button type='button' data-app-view='" + item[0] + "' class='" + (activePortalView === item[0] ? "active" : "") + "'" + (activePortalView === item[0] ? " aria-current='page'" : "") + ">" + item[1] + "</button>";
-  }).join("") + "</nav>";
+  }).join("");
+  const label=items.find(function(item){return item[0]===activePortalView;})?.[1]||"Portal";
+  return "<nav class='quick-nav' aria-label='Portal sections'>"+buttons+"</nav><button type='button' class='mobile-nav-toggle' data-open-portal-menu aria-haspopup='dialog' aria-controls='portal-nav-dialog'>Menu · <span data-current-section>"+label+"</span></button><dialog id='portal-nav-dialog' class='portal-nav-dialog' aria-labelledby='portal-nav-title'><div class='study-section-heading'><h2 id='portal-nav-title'>Go to…</h2><button type='button' class='btn secondary' data-close-portal-menu>Close menu</button></div><nav aria-label='Portal destinations'>"+buttons+"</nav></dialog>";
 }
 
 function coursesPreview(){
@@ -1331,11 +1333,12 @@ function showStatus(message,ok){
 function portalViewTop(view){
   const section = document.getElementById("view-" + view);
   const nav = document.querySelector(".quick-nav");
-  const navHeight = nav ? nav.getBoundingClientRect().height : 0;
+  const navHeight = nav && getComputedStyle(nav).display!=="none" ? nav.getBoundingClientRect().height : 0;
   return section ? Math.max(0,section.offsetTop - navHeight - 12) : 0;
 }
 
 function switchPortalView(view){
+  document.getElementById("portal-nav-dialog")?.close();
   const nextView = ["today","classes","study","assessments","calendar","materials","projects","progress","settings","help"].indexOf(view) >= 0 ? view : "today";
   if(nextView === activePortalView){
     window.scrollTo(window.scrollX,portalViewTop(nextView));
@@ -1343,6 +1346,7 @@ function switchPortalView(view){
   }
   portalViewScroll[activePortalView] = {x:window.scrollX,y:Math.max(window.scrollY,portalViewTop(activePortalView))};
   activePortalView = nextView;
+  const sectionLabel=document.querySelector("[data-current-section]");if(sectionLabel)sectionLabel.textContent=nextView.charAt(0).toUpperCase()+nextView.slice(1);
   const nextRoot = document.getElementById("view-" + nextView);
   if(nextRoot && !nextRoot.dataset.loaded){ window.Admit.patch(nextRoot,viewMarkup(nextView));nextRoot.dataset.loaded="true";setFormDateDefaults();primeClassInputs(); }
   document.querySelectorAll("[data-app-section]").forEach(function(section){ section.hidden = section.getAttribute("data-app-section") !== activePortalView; });
@@ -1788,8 +1792,10 @@ document.addEventListener("submit",function(event){
   else submitRealAction(form,values);
 });
 
-document.addEventListener('change',function(event){if(event.target.matches('[data-class-picker]')){selectedReviewSubject=event.target.value;activeClassTab='topics';window.Admit.patch(document.getElementById('classWorkspace'),classWorkspace(currentData));primeClassInputs();applyAccountPermissions();return;}if(event.target.matches('[data-study-hub-class]')){studyHubClass=event.target.value;window.Admit.patch(document.getElementById('view-study'),viewMarkup('study'));applyAccountPermissions();}});
+document.addEventListener('change',function(event){if(event.target.matches('[data-class-picker]')){selectedReviewSubject=event.target.value;activeClassTab='topics';window.Admit.patch(document.getElementById('classWorkspace'),classWorkspace(currentData));primeClassInputs();applyAccountPermissions();return;}if(event.target.matches('[data-study-hub-class]')){studyHubClass=event.target.value;studyExperience?.preferences.save(studyHubClass);window.Admit.patch(document.getElementById('view-study'),viewMarkup('study'));applyAccountPermissions();}});
 document.addEventListener("click",function(event){
+  if(event.target.closest('[data-open-portal-menu]')){document.getElementById('portal-nav-dialog')?.showModal();return;}
+  if(event.target.closest('[data-close-portal-menu]')){document.getElementById('portal-nav-dialog')?.close();return;}
   const projectPage=event.target.closest('[data-project-page]');
   if(projectPage&&canonicalPortal){const adapter=canonicalPortal;projectPage.disabled=true;adapter.loadProjectPage(projectPage.dataset.projectPage,projectPage.dataset.projectId).then(function(){if(adapter!==canonicalPortal)return;currentData=derive(adapter.data);renderAffectedViews('updateproject');}).catch(function(error){projectPage.disabled=false;projectPage.nextElementSibling.textContent=error.message+' Try again.';});return;}
   const projectFile=event.target.closest('[data-project-download]');
@@ -1982,7 +1988,7 @@ async function load(){
     accountExperience=new window.Admit.AccountExperience({config:window.ADMIT_CONFIG,onSessionChange:handleSessionChange,onMeetingChange:function(data,adapter){if(canonicalPortal!==adapter)return;currentData.nextMeeting=data.nextMeeting;const node=document.querySelector("[data-next-meeting]");if(node)node.textContent=data.nextMeeting||"No upcoming meeting found yet.";},hasPendingChanges:function(){return Boolean(saveQueue?.unsaved.length || studyExperience?.unsaved.length || fileExperience?.sources.unsaved || fileExperience?.uploads.unsaved.length || calendarExperience?.unsaved.length);},root:document.getElementById("app"),onPortal:function(data,adapter){
       calendarExperience?.dispose();calendarExperience=new window.Admit.CalendarWorkspace({portal:adapter,config:window.ADMIT_CONFIG,onChange:function(){if(canonicalPortal===adapter){currentData=adapter.data;renderAffectedViews("addassessment");}}});
       historyExperience?.dispose();historyExperience=new window.Admit.WorkHistory({portal:adapter,render:historyRecordMarkup,patch:window.Admit.patch,onRows:function(){if(canonicalPortal===adapter){currentData=derive(adapter.data);renderAffectedViews("addassessment");}}});
-      canonicalPortal=adapter;const studyActor=accountExperience.user.id,studyStudent=adapter.studentId;studyExperience?.dispose();studyExperience=new window.Admit.StudyWorkspace({portal:adapter,config:window.ADMIT_CONFIG,isActive:function(){return canonicalPortal===adapter&&adapter.studentId===studyStudent&&accountExperience?.user?.id===studyActor;},patch:window.Admit.patch,notify:showStatus,onChange:function(){if(canonicalPortal===adapter){currentData=derive(adapter.data);renderAffectedViews("movereviewcard");}}});fileExperience?.dispose();fileExperience=new window.Admit.FilesWorkspace({portal:adapter,config:window.ADMIT_CONFIG,isActive:function(){return canonicalPortal===adapter&&accountExperience?.user?.id===studyActor;},onSourceChange:async function(classId){if(canonicalPortal!==adapter)return;currentData=derive(adapter.data);const state=studyExperience.states.get(classId);if(state)await studyExperience.load(state);renderAffectedViews("movereviewcard");},onChange:function(){if(canonicalPortal===adapter)currentData=derive(adapter.data);}});saveQueue=null;mutationUI.clear();activePortalView="today";selectedReviewSubject="";portalViewScroll={};
+      canonicalPortal=adapter;const studyActor=accountExperience.user.id,studyStudent=adapter.studentId;studyExperience?.dispose();studyExperience=new window.Admit.StudyWorkspace({portal:adapter,actor:studyActor,config:window.ADMIT_CONFIG,isActive:function(){return canonicalPortal===adapter&&adapter.studentId===studyStudent&&accountExperience?.user?.id===studyActor;},patch:window.Admit.patch,notify:showStatus,onChange:function(){if(canonicalPortal===adapter){currentData=derive(adapter.data);renderAffectedViews("movereviewcard");}}});fileExperience?.dispose();fileExperience=new window.Admit.FilesWorkspace({portal:adapter,config:window.ADMIT_CONFIG,isActive:function(){return canonicalPortal===adapter&&accountExperience?.user?.id===studyActor;},onSourceChange:async function(classId){if(canonicalPortal!==adapter)return;currentData=derive(adapter.data);const state=studyExperience.states.get(classId);if(state)await studyExperience.load(state);renderAffectedViews("movereviewcard");},onChange:function(){if(canonicalPortal===adapter)currentData=derive(adapter.data);}});studyHubClass=studyExperience.preferences.lastClass();saveQueue=null;mutationUI.clear();activePortalView="today";selectedReviewSubject="";portalViewScroll={};
       adapter.isPending=function(id){return saveQueue?.unsaved.some(function(job){return job.values.recordId===id || job.id===id;});};
       document.getElementById("portalMode").textContent="Private account workspace";
       render(data,false);applyAccountPermissions();

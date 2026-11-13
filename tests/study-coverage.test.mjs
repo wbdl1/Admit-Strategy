@@ -38,5 +38,5 @@ test('one reflection confirmation replaces repeated grading, keeps edits on fail
 });
 test('objective answer feedback is separate from reflection and approximate matching',()=>{
  const w=new StudyWorkspace({portal:{data:{classes:[]}}}),s={session:state(),feedback:{title:'ATP',answer:card.answer,response:card.answer,rating:'knew',before:{box:1},after:{box:2,last_rating:'knew',next_review:'2026-10-26'}}};
- assert.match(w.sessionMarkup(s),/Correct ✓/);s.feedback.approximate=true;assert.match(w.sessionMarkup(s),/Key elements found/);s.feedback.rating='missed';assert.match(w.sessionMarkup(s),/Not quite/);
+ assert.match(w.sessionMarkup(s),/✓ Correct/);s.feedback.approximate=true;assert.match(w.sessionMarkup(s),/Key elements found/);s.feedback.rating='missed';assert.match(w.sessionMarkup(s),/Key elements not found/);s.feedback.approximate=false;assert.match(w.sessionMarkup(s),/✕ Incorrect/);
 });

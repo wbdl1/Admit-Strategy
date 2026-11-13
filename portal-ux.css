@@ -84,3 +84,47 @@ input::placeholder,textarea::placeholder{color:#526267!important;opacity:1}
 .project-card h3{margin:0}.project-next{background:var(--mist,#DCE7E5);border-radius:14px;padding:16px;margin:16px 0}.project-next p{margin:6px 0 12px}.project-next .portal-form{margin:0}.project-next .form-actions{margin:0}.project-milestones h4{margin:20px 0 8px}.project-milestone{border-bottom:1px solid #bccfcd;padding:8px 0}.project-timeline{padding-left:24px}.project-timeline li{padding:8px 0}.project-timeline p{margin:4px 0}.project-timeline time{color:#4b5c60;font-size:14px}.project-card .record-head{align-items:flex-start}.project-card h3,.project-card p{overflow-wrap:anywhere}
 
 .source-dialog{box-sizing:border-box;margin:auto;max-width:calc(100vw - 24px);width:min(820px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto;background:#fffefa;color:#11161a;border:1px solid #a8c0be;border-radius:18px;padding:24px}.source-dialog::backdrop{background:#11161a88}.source-dialog h2{font-size:24px;overflow-wrap:anywhere;margin:0}.source-dialog pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;line-height:1.6}.source-proposals{display:grid;gap:16px}.source-proposal{border-bottom:1px solid #b9cdca;padding:16px 0}.source-select{display:flex!important;align-items:center;gap:8px;min-height:44px}.source-select input{width:22px!important;min-height:22px!important}.source-dialog button,.source-dialog summary{min-height:44px}.source-dialog [role=status]{color:#315f62}.source-dialog label{font-size:16px}.source-dialog .record-head{align-items:flex-start}.source-dialog .study-actions{flex-wrap:wrap}@media(max-width:600px){.source-dialog{padding:16px}.source-dialog .record-head h2{font-size:20px}.source-dialog .study-actions>*{flex:1 1 auto}}
+
+/* Retention: navigation has its own top-layer sheet, never an inline submenu
+   positioned inside a scrolled card. During practice, Pause is the way out. */
+.mobile-nav-toggle{display:none}
+.portal-nav-dialog{color:var(--text);background:var(--paper);border:1px solid var(--mist);border-radius:20px;padding:20px;width:min(460px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;box-sizing:border-box}
+.portal-nav-dialog::backdrop{background:#11161a80}
+.portal-nav-dialog nav{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.portal-nav-dialog nav button{font:inherit;min-height:52px;border:1px solid #829995;border-radius:12px;background:#fff;color:#164e51;text-align:left;padding:12px;cursor:pointer}
+.portal-nav-dialog nav button[aria-current=page]{background:#dce7e5;font-weight:800;border:2px solid #0b6b70}
+.portal-nav-dialog button:focus-visible,.mobile-nav-toggle:focus-visible{outline:3px solid #0b6b70;outline-offset:3px}
+body:has(#view-study:not([hidden]) .study-focus) :is(.account-toolbar,#app>.workspace-header,.quick-nav,.mobile-nav-toggle,#view-study .section-head){display:none}
+body:has(#view-study:not([hidden]) .study-focus){padding-bottom:24px}
+.study-focus{max-width:780px;margin-inline:auto}
+.study-focus>h3{font-size:1rem;color:#465b5f;font-weight:600}
+.study-answer-verdict{font-size:1.5rem;font-weight:800}
+.verdict-knew{color:#075a40}.verdict-partly{color:#704b00}.verdict-missed{color:#9b2424}
+.study-save-state{color:#465b5f;font-size:1rem}
+@media(max-width:600px){
+ body{padding-bottom:84px}
+ .quick-nav{display:none}
+ .mobile-nav-toggle{display:block;position:fixed;z-index:30;bottom:max(12px,env(safe-area-inset-bottom));left:16px;right:16px;min-height:48px;border:1px solid #0b6b70;border-radius:14px;background:#fffdf8;color:#164e51;font:inherit;font-weight:800;box-shadow:0 4px 20px #11161a26}
+ .portal-nav-dialog{margin:auto 16px max(12px,env(safe-area-inset-bottom));width:calc(100% - 32px);max-height:calc(100dvh - 24px)}
+ .portal-nav-dialog .study-section-heading{align-items:center;gap:8px}
+ .portal-nav-dialog h2{font-size:1.3rem;margin:0}
+ .study-context select{font-size:1rem}
+ .save-status{bottom:80px}
+ body:has(:is(input,textarea,select):focus) .mobile-nav-toggle{display:none}
+ body:has(#view-study:not([hidden]) .study-focus){padding-top:12px}
+ .study-focus{padding:12px!important}
+ .study-session{padding:8px!important}
+}
+
+.guest-page{max-width:900px;margin:auto;padding:20px}
+.guest-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px}
+.guest-header>a:first-child{font-weight:800;text-decoration:none}
+.guest-workspace{max-width:680px;margin:auto}.guest-workspace h1{font-size:1.7rem;line-height:1.2;margin:12px 0}
+.guest-notice,.guest-save{color:#465b5f}.guest-save{margin-top:28px;border-top:1px solid #b7c7c3;padding-top:16px}
+.guest-workspace .study-session{background:#fffefa;border:1px solid #b7c7c3;border-radius:18px;padding:24px;margin:20px 0}
+.guest-workspace .study-choice-actions{display:grid;gap:10px}
+.guest-workspace .study-choice-actions button{text-align:left;justify-content:flex-start;padding:12px;min-height:48px}
+.guest-workspace textarea,.guest-workspace select{width:100%;box-sizing:border-box;padding:10px}
+.guest-workspace .flashcard{width:100%;min-height:210px;border:1px solid #879d98;border-radius:16px;background:#f7f3ea;padding:20px;cursor:pointer}
+.guest-workspace .flashcard-face{display:flex;flex-direction:column;gap:20px}.guest-workspace .flashcard-text{font-size:1.35rem;font-weight:700}.guest-workspace .flashcard-side,.guest-workspace .flashcard-hint{font-size:.9rem;color:#465b5f}
+@media(max-width:600px){.guest-page{padding:16px}.guest-workspace .study-session{padding:16px!important}}
