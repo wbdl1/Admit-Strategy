@@ -109,7 +109,7 @@ export class FilesWorkspace {
     const widget={root,classId,materialId:root.dataset.fileMaterial||null,list,jobs,status};this.widgets.set(root,widget);
     if(this.portal.canEdit&&!widget.materialId){
       const drop=element("div",null,"file-drop"),label=element("label","Choose files","btn"),picker=element("input");picker.type="file";picker.accept=accept;picker.multiple=true;picker.setAttribute('aria-label','Choose files');label.append(picker);
-      drop.append(element("strong","Drop notes, worksheets, slides or study guides here"),element("span","or "),label,element("p","PDF, Word, PowerPoint, images or text · up to 20 MB each","form-help"));
+      drop.append(element("strong","Add school material"),element("span","Drop a worksheet, formative, notes, slides, vocab list or diagram here"),element("span","or "),label,element("p","PDF, Word, PowerPoint, images or text · up to 20 MB each","form-help"));
       const add=files=>{status.textContent="";if(files.length>10){status.textContent="Choose up to 10 files at a time.";return;}for(const file of files){try{this.uploads.add(file,classId);}catch(error){status.textContent+=file.name+': '+error.message+' ';status.setAttribute("role","alert");}}};
       picker.onchange=()=>{add([...picker.files]);picker.value="";};
       drop.ondragover=event=>{event.preventDefault();drop.classList.add("drag-over");};drop.ondragleave=()=>drop.classList.remove("drag-over");
@@ -130,7 +130,7 @@ export class FilesWorkspace {
       let row=[...widget.list.children].find(node=>node.dataset.fileRow===record.id);
       if(!row){row=element("article",null,"item");row.dataset.fileRow=record.id;const title=element("strong"),actions=element("div",null,"record-actions");row.append(title,actions);
         const current=()=>this.portal.data.materials.find(m=>m.id===record.id)||record;
-        const study=button("Open source & study items",()=>this.sources.open(current()));actions.append(study);
+        const study=button("Open study material",()=>this.sources.open(current()));actions.append(study);
         const open=button("Download",event=>this.download(current(),event.currentTarget,widget));open.setAttribute('aria-label','Download '+record.title);actions.append(open);
         if(this.portal.canEdit){
           const picker=element("input");picker.type="file";picker.accept=accept;picker.hidden=true;picker.setAttribute("aria-label","Replacement file for "+record.title);
@@ -147,7 +147,7 @@ export class FilesWorkspace {
       if(job.state==="dismissed"){widget.jobs.querySelector(`[data-upload-id="${job.id}"]`)?.remove();continue;}
       let row=[...widget.jobs.children].find(node=>node.dataset.uploadId===job.id);
       if(!row){row=element("div",null,"file-job");row.dataset.uploadId=job.id;row.append(element("strong",job.args?.p_name||job.file?.name),element("progress"),element("p"),button("Retry upload",()=>this.uploads.retry(job.id)),button("Pause upload",()=>this.uploads.pause(job.id)),button("Dismiss",()=>{job.state="dismissed";job.file=null;this.refreshAll();}));row.querySelector("progress").max=100;row.querySelector("progress").setAttribute("aria-label","Upload progress");row.querySelector("p").setAttribute("role","status");widget.jobs.append(row);}
-      const labels={preparing:"Preparing file…",uploading:"Uploading… "+Math.round(job.progress*100)+"%",validating:"Finishing upload…",paused:"Upload paused. Your file is kept here to resume.",saved:"Saved ✓ — available below",failed:job.error?.message||"Upload failed. Retry."};
+      const labels={preparing:"Preparing file…",uploading:"Uploading… "+Math.round(job.progress*100)+"%",validating:"Finishing upload…",paused:"Upload paused. Your file is kept here to resume.",saved:"Material added ✓ — ready to prepare",failed:job.error?.message||"Upload failed. Retry."};
       row.querySelector("p").textContent=labels[job.state];const progress=row.querySelector("progress");progress.value=Math.round(job.progress*100);progress.hidden=["saved","failed","paused"].includes(job.state);
       const buttons=row.querySelectorAll('button');buttons[0].hidden=!['failed','paused'].includes(job.state)||job.error?.retryable===false;buttons[0].textContent=job.state==='paused'?'Resume upload':'Retry upload';buttons[1].hidden=!['preparing','uploading'].includes(job.state);buttons[2].hidden=job.state!=='failed'||job.error?.retryable!==false;
     }
