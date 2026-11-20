@@ -24,3 +24,17 @@ test('source Add all requires an explicit action and uses edited proposals throu
  assert.equal(saved,undefined);await workspace.click(event);assert.deepEqual(saved,rows.map(r=>({id:r.dataset.sourceItem,term:r.elements.term.value,answer:r.elements.answer.value,status:'approved'})));
  saved=null;workspace.portal.canEdit=false;await workspace.click(event);assert.equal(saved,null);
 });
+
+test('confirmed import replaces its preview with direct study while the growing gallery stays optional',()=>{
+ const oldWindow=globalThis.window;let html='';globalThis.window={scrollX:0,scrollY:0,scrollTo(){}};
+ const unit={id:'unit',name:'Synthetic unit'},cards=Array.from({length:32},(_,i)=>({id:'card'+i,unit_id:'unit',term:'Term '+i,answer:'Answer '+i,box:1}));
+ const root={isConnected:true,hasAttribute:()=>true,querySelector:()=>null,querySelectorAll:()=>[]};
+ const workspace=new StudyWorkspace({portal:{data:{classes:[{id:'class',name:'Test'}]}},patch(_root,value){html=value;},notify(){}});workspace.restoreDrafts=()=>{};
+ const state={root,loaded:true,classId:'class',unit:'unit',page:1,filter:'active',selection:new Set(),store:{units:[unit],cards,assessments:[],links:[]},justImported:{unitId:'unit',ids:cards.map(c=>c.id)}};
+ try{workspace.render(state);assert.match(html,/<details id="import-gallery-class" class="study-gallery-disclosure"><summary>View 32 study items/);
+ const form=html.slice(html.indexOf('id="bulk-unit"'),html.indexOf('</form>',html.indexOf('id="bulk-unit"')));
+ assert.match(form,/<div data-paste-preview[^>]*><section[^>]*role="status"/);assert.match(form,/32 items added/);assert.match(form,/Start studying/);assert.match(form,/<div data-bulk-entry hidden>/);
+ assert.ok(form.includes('card31'));assert.equal((html.match(/Start studying/g)||[]).length,1);
+ state.justImported=null;workspace.render(state);assert.doesNotMatch(html,/View 32 study items|32 items added/);
+ }finally{globalThis.window=oldWindow;}
+});
