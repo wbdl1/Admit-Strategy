@@ -111,6 +111,8 @@ export class FilesWorkspace {
       const drop=element("div",null,"file-drop"),label=element("label","Choose files","btn"),picker=element("input");picker.type="file";picker.accept=accept;picker.multiple=true;picker.setAttribute('aria-label','Choose files');label.append(picker);
       drop.append(element("strong","Add school material"),element("span","Drop a worksheet, formative, notes, slides, vocab list or diagram here"),element("span","or "),label,element("p","PDF, Word, PowerPoint, images or text · up to 20 MB each","form-help"));
       const add=files=>{status.textContent="";if(files.length>10){status.textContent="Choose up to 10 files at a time.";return;}for(const file of files){try{this.uploads.add(file,classId);}catch(error){status.textContent+=file.name+': '+error.message+' ';status.setAttribute("role","alert");}}};
+      const photoLabel=element('label','Take a photo','btn secondary'),photoPicker=element('input');photoPicker.type='file';photoPicker.accept='image/jpeg,image/png,image/webp';photoPicker.setAttribute('capture','environment');photoPicker.setAttribute('aria-label','Take a photo of printed school material');photoLabel.append(photoPicker);drop.append(photoLabel);
+      photoPicker.onchange=()=>{add([...photoPicker.files]);photoPicker.value='';};
       picker.onchange=()=>{add([...picker.files]);picker.value="";};
       drop.ondragover=event=>{event.preventDefault();drop.classList.add("drag-over");};drop.ondragleave=()=>drop.classList.remove("drag-over");
       drop.ondrop=event=>{event.preventDefault();drop.classList.remove("drag-over");add([...event.dataTransfer.files]);};

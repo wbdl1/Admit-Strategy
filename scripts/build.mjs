@@ -34,7 +34,23 @@ for(const name of ['source-worker','pdf-worker']){
  const path=resolve(target,'assets',name+'.js'),filename=name+'-'+createHash('sha256').update(await readFile(path)).digest('hex').slice(0,12)+'.js';
  await rename(path,resolve(target,'assets',filename));sourceWorkers[name]='assets/'+filename;
 }
-const config = { ...publicConfig, calendarWorkerUrl:"assets/"+workerName, sourceWorkerUrl:sourceWorkers['source-worker'], pdfWorkerUrl:sourceWorkers['pdf-worker'] };
+// Self-host every OCR dependency. No photo or language request goes to a CDN.
+// A content-addressed directory keeps nested worker/core references immutable.
+const ocrFiles=[
+ ['node_modules/tesseract.js/dist/worker.min.js','worker.min.js'],
+ ['node_modules/tesseract.js/dist/worker.min.js.LICENSE.txt','worker.min.js.LICENSE.txt'],
+ ['node_modules/@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz','eng.traineddata.gz'],
+ ['node_modules/tesseract.js/LICENSE.md','TESSERACT-LICENSE.txt'],
+ ['node_modules/tesseract.js-core/LICENSE','CORE-LICENSE.txt'],
+ ...(await readdir(resolve(root,'node_modules/tesseract.js-core'))).filter(n=>n.endsWith('.wasm.js')).sort().map(n=>['node_modules/tesseract.js-core/'+n,n])
+];
+const ocrHash=createHash('sha256');for(const [file,name] of ocrFiles)ocrHash.update(name).update(await readFile(resolve(root,file)));
+const ocrDir='assets/ocr-'+ocrHash.digest('hex').slice(0,12);await mkdir(resolve(target,ocrDir));
+for(const [file,name] of ocrFiles)await copyFile(resolve(root,file),resolve(target,ocrDir,name));
+await build({entryPoints:[resolve(root,'src/photo-worker.js')],bundle:true,minify:true,outfile:resolve(target,'assets/photo-worker.js'),format:'esm',target:['safari16','chrome110','edge110']});
+const photoName='photo-worker-'+createHash('sha256').update(await readFile(resolve(target,'assets/photo-worker.js'))).digest('hex').slice(0,12)+'.js';
+await rename(resolve(target,'assets/photo-worker.js'),resolve(target,'assets',photoName));
+const config = { ...publicConfig, calendarWorkerUrl:"assets/"+workerName, sourceWorkerUrl:sourceWorkers['source-worker'], pdfWorkerUrl:sourceWorkers['pdf-worker'],photoWorkerUrl:'assets/'+photoName,ocrWorkerUrl:ocrDir+'/worker.min.js',ocrCorePath:ocrDir,ocrLangPath:ocrDir };
 await writeFile(resolve(target, "assets/config.js"), "window.ADMIT_CONFIG = " + JSON.stringify(config).replace(/</g, "\\u003c") + ";\n");
 console.log("Static site built. Environment:", config.environment, "Backend:", config.backend);
 // HTML URLs stay stable; changing scripts/config receive new URLs so a cached
